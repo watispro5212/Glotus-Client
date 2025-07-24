@@ -1,4 +1,4 @@
-import { myClient } from "..";
+import { client } from "..";
 import { EStoreAction, EStoreType } from "../types/Store";
 import DataHandler from "../utility/DataHandler";
 import settings from "../utility/Settings";
@@ -89,7 +89,7 @@ const StoreHandler = new class StoreHandler {
 
         const equipButton = div.querySelector<HTMLDivElement>(".equipButton")!;
         equipButton.onmousedown = () => {
-            myClient.ModuleHandler.equip(type, id, true, true);
+            client.ModuleHandler.equip(type, id, true, true);
         }
         
         return div.firstElementChild!;
@@ -98,7 +98,7 @@ const StoreHandler = new class StoreHandler {
     private fillStore(type: EStoreType) {
         const { itemHolder } = GameUI.getElements();
         itemHolder.innerHTML = "";
-        const items = settings.storeItems[type];
+        const items = settings._storeItems[type];
 
         for (const id of items) {
             const item = DataHandler.getStoreItem(type, id);

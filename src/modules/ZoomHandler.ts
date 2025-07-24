@@ -1,5 +1,6 @@
 import { isActiveInput } from "../utility/Common";
 import Hooker from "../utility/Hooker";
+import Logger from "../utility/Logger";
 
 const resizeEvent = new Event("resize");
 const ZoomHandler = new class ZoomHandler {
@@ -23,8 +24,8 @@ const ZoomHandler = new class ZoomHandler {
     getScale() {
         const dpr = 1;//window.devicePixelRatio;
         return Math.max(
-            innerWidth / this.scale.Default.w,
-            innerHeight / this.scale.Default.h
+            window.innerWidth / this.scale.Default.w,
+            window.innerHeight / this.scale.Default.h
         ) * dpr;
     }
 

@@ -2,57 +2,32 @@ import PlayerClient from "../../PlayerClient";
 import { EStoreType } from "../../types/Store";
 
 class Autohat {
-    readonly name = "autoHat";
+    readonly moduleName = "autoHat";
     private readonly client: PlayerClient;
-    private utilitySize: [number, number] = [0, 0];
 
     constructor(client: PlayerClient) {
         this.client = client;
     }
 
-    private handleUtility(type: EStoreType) {
-        const { ModuleHandler, myPlayer } = this.client;
-
-        const store = ModuleHandler.store[type];
-        if (store.lastUtility !== null) {
-            store.utility.delete(store.lastUtility);
-            store.lastUtility = null;
-        }
-
-        if (ModuleHandler.canAttack && store.utility.size === 0) {
-            const id = myPlayer.getBestUtilityID(type);
-            if (id === null) return;
-
-            if (ModuleHandler.equip(type, id)) {
-                store.lastUtility = id;
-                store.utility.set(id, true);
-            }
-        }
-    }
-
-    private handleEquip(type: EStoreType) {
+    private handleEquip(type: EStoreType, use: number | null): boolean {
         const { ModuleHandler } = this.client;
-        const store = ModuleHandler.store[type];
-        const size = store.utility.size;
-        const oldSize = this.utilitySize[type];
-        if (size === 0 && (size !== oldSize || store.best !== store.current)) {
-            if (ModuleHandler.equip(type, store.current)) {
-                store.best = store.current;
-            }
+        if (type === EStoreType.HAT && ModuleHandler.forceHat !== null) {
+            use = ModuleHandler.forceHat;
         }
-        this.utilitySize[type] = size;
+        if (use !== null && ModuleHandler.equip(type, use)) {
+            return true;
+        }
+        return false;
     }
 
     postTick() {
         const { ModuleHandler } = this.client;
         if (!ModuleHandler.sentHatEquip) {
-            this.handleUtility(EStoreType.HAT);
-            this.handleEquip(EStoreType.HAT);
+            this.handleEquip(EStoreType.HAT, ModuleHandler.useHat);
         }
         
         if (!ModuleHandler.sentAccEquip && !ModuleHandler.sentHatEquip) {
-            // this.handleUtility(EStoreType.ACCESSORY);
-            this.handleEquip(EStoreType.ACCESSORY);
+            this.handleEquip(EStoreType.ACCESSORY, ModuleHandler.useAcc);
         }
     }
 }

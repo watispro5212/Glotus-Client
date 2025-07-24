@@ -1,32 +1,35 @@
+import { fixTo } from './../utility/Common';
 import Config from "../constants/Config";
 import settings from "../utility/Settings";
 import Vector from "../modules/Vector";
-import { TCTX } from "../types/Common";
-import { IRenderEntity, IRenderObject } from "../types/RenderTargets";
+import { type TCTX } from "../types/Common";
+import { type IRenderEntity, type IRenderObject } from "../types/RenderTargets";
 import { WeaponVariants, Weapons } from "../constants/Items";
 import Player from "../data/Player";
-import { clamp } from "../utility/Common";
+import { clamp, getTargetValue, setTargetValue } from "../utility/Common";
 import Animal from "../data/Animal";
-import { myClient } from "..";
-import { Notification } from "./NotificationRenderer";
+import { Notify } from "./NotificationRenderer";
+import { client } from "..";
+import DataHandler from "../utility/DataHandler";
+import Logger from '../utility/Logger';
 
-class Renderer {
-    static readonly objects: IRenderObject[] = [];
+const Renderer = new class Renderer {
+    readonly renderObjects: IRenderObject[] = [];
 
-    static rect(ctx: TCTX, pos: Vector, scale: number, color: string, lineWidth = 4) {
+    rect(ctx: TCTX, pos: Vector, scale: number, color: string, lineWidth = 4) {
         ctx.save();
         ctx.strokeStyle = color;
         ctx.lineWidth = lineWidth;
         ctx.beginPath();
-        ctx.translate(-myClient.myPlayer.offset.x, -myClient.myPlayer.offset.y);
+        ctx.translate(-client.myPlayer.offset.x, -client.myPlayer.offset.y);
         ctx.translate(pos.x, pos.y);
-        ctx.rect(-scale, -scale, scale*2, scale*2);
+        ctx.rect(-scale, -scale, scale * 2, scale * 2);
         ctx.stroke();
         ctx.closePath();
         ctx.restore();
     }
 
-    static roundRect(ctx: TCTX, x: number, y: number, w: number, h: number, r: number) {
+    roundRect(ctx: TCTX, x: number, y: number, w: number, h: number, r: number) {
         if (w < 2 * r) r = w / 2;
         if (h < 2 * r) r = h / 2;
         if (r < 0) r = 0;
@@ -39,7 +42,7 @@ class Renderer {
         ctx.closePath();
     }
 
-    static circle(
+    circle(
         ctx: TCTX,
         x: number, y: number,
         radius: number,
@@ -52,14 +55,14 @@ class Renderer {
         ctx.strokeStyle = color;
         ctx.lineWidth = lineWidth;
         ctx.beginPath();
-        ctx.translate(-myClient.myPlayer.offset.x, -myClient.myPlayer.offset.y);
+        ctx.translate(-client.myPlayer.offset.x, -client.myPlayer.offset.y);
         ctx.arc(x, y, radius, 0, 2 * Math.PI);
         ctx.stroke();
         ctx.closePath();
         ctx.restore();
     }
 
-    static fillCircle(
+    fillCircle(
         ctx: TCTX,
         x: number, y: number,
         radius: number,
@@ -70,16 +73,31 @@ class Renderer {
         ctx.globalAlpha = opacity;
         ctx.fillStyle = color;
         ctx.beginPath();
-        ctx.translate(-myClient.myPlayer.offset.x, -myClient.myPlayer.offset.y);
+        ctx.translate(-client.myPlayer.offset.x, -client.myPlayer.offset.y);
         ctx.arc(x, y, radius, 0, 2 * Math.PI);
         ctx.fill();
         ctx.closePath();
         ctx.restore();
     }
 
-    static line(ctx: TCTX, start: Vector, end: Vector, color: string, opacity = 1, lineWidth = 4) {
+    renderText(ctx: TCTX, text: string, x: number, y: number, fontSize = 14, opacity = 0.5) {
         ctx.save();
-        ctx.translate(-myClient.myPlayer.offset.x, -myClient.myPlayer.offset.y);
+        ctx.fillStyle = "#fff";
+        ctx.strokeStyle = "#3d3f42";
+        ctx.lineWidth = 8;
+        ctx.lineJoin = "round";
+        ctx.textBaseline = "top";
+        ctx.globalAlpha = opacity;
+        ctx.font = `${fontSize}px Hammersmith One`;
+        ctx.translate(-client.myPlayer.offset.x, -client.myPlayer.offset.y);
+        ctx.strokeText(text, x, y);
+        ctx.fillText(text, x, y);
+        ctx.restore();
+    }
+
+    line(ctx: TCTX, start: Vector, end: Vector, color: string, opacity = 1, lineWidth = 4) {
+        ctx.save();
+        ctx.translate(-client.myPlayer.offset.x, -client.myPlayer.offset.y);
         ctx.globalAlpha = opacity;
         ctx.strokeStyle = color;
         ctx.lineCap = "round";
@@ -91,9 +109,9 @@ class Renderer {
         ctx.restore();
     }
 
-    static arrow(ctx: TCTX, length: number, x: number, y: number, angle: number, color: string) {
+    arrow(ctx: TCTX, length: number, x: number, y: number, angle: number, color: string) {
         ctx.save();
-        ctx.translate(-myClient.myPlayer.offset.x, -myClient.myPlayer.offset.y);
+        ctx.translate(-client.myPlayer.offset.x, -client.myPlayer.offset.y);
         ctx.translate(x, y);
         ctx.rotate(Math.PI / 4);
         ctx.rotate(angle);
@@ -109,12 +127,12 @@ class Renderer {
         ctx.restore();
     }
 
-    static cross(ctx: TCTX, x: number, y: number, size: number, lineWidth: number, color: string) {
+    cross(ctx: TCTX, x: number, y: number, size: number, lineWidth: number, color: string) {
         ctx.save();
         ctx.globalAlpha = 1;
         ctx.lineWidth = lineWidth;
         ctx.strokeStyle = color;
-        ctx.translate(x - myClient.myPlayer.offset.x, y - myClient.myPlayer.offset.y);
+        ctx.translate(x - client.myPlayer.offset.x, y - client.myPlayer.offset.y);
         const halfSize = size / 2;
         ctx.beginPath();
         ctx.moveTo(-halfSize, -halfSize);
@@ -128,72 +146,86 @@ class Renderer {
         ctx.restore();
     }
 
-    static getTracerColor(entity: IRenderEntity | Notification): string | null {
-        if (entity instanceof Notification) return settings.notificationTracersColor;
-        if (settings.animalTracers && entity.isAI) return settings.animalTracersColor;
+    getTracerColor(entity: IRenderEntity | Notify): string | null {
+        if (entity instanceof Notify) return settings._notificationTracersColor;
+        if (settings._animalTracers && entity.isAI) return settings._animalTracersColor;
 
         if (
-            settings.teammateTracers &&
+            settings._teammateTracers &&
             entity.isPlayer &&
-            myClient. myPlayer.isTeammateByID(entity.sid)
-        ) return settings.teammateTracersColor;
+            client.myPlayer.isTeammateByID(entity.sid)
+        ) return settings._teammateTracersColor;
 
         if (
-            settings.enemyTracers &&
+            settings._enemyTracers &&
             entity.isPlayer &&
-            myClient.myPlayer.isEnemyByID(entity.sid)
-        ) return settings.enemyTracersColor;
+            client.myPlayer.isEnemyByID(entity.sid)
+        ) return settings._enemyTracersColor;
 
         return null;
     }
 
-    static renderTracer(ctx: TCTX, entity: IRenderEntity | Notification, player: IRenderEntity) {
+    renderTracer(ctx: TCTX, entity: IRenderEntity | Notify, player: IRenderEntity) {
         const color = this.getTracerColor(entity);
         if (color === null) return;
 
         const pos1 = new Vector(player.x, player.y);
         const pos2 = new Vector(entity.x, entity.y);
 
-        if (settings.arrows) {
+        if (settings._arrows) {
             const w = 8;
             const distance = Math.min(100 + w * 2, pos1.distance(pos2) - w * 2);
             const angle = pos1.angle(pos2);
-            const pos = pos1.direction(angle, distance);
+            const pos = pos1.addDirection(angle, distance);
             this.arrow(ctx, w, pos.x, pos.y, angle, color);
         } else {
             this.line(ctx, pos1, pos2, color, 0.75);
         }
     }
 
-    static getMarkerColor(object: IRenderObject): string | null {
+    renderDistance(ctx: TCTX, entity: IRenderEntity, player: IRenderEntity) {
+        const pos1 = new Vector(player.x, player.y);
+        const pos2 = new Vector(entity.x, entity.y);
+
+        const entityTarget = client.PlayerManager.getEntity(entity.sid, !!entity.isPlayer);
+        if (entityTarget === null) return;
+
+        const pos3 = client.myPlayer.pos.current;
+        const pos4 = entityTarget.pos.current;
+        const distance = fixTo(pos3.distance(pos4), 2);
+        const center = pos1.addDirection(pos1.angle(pos2), pos1.distance(pos2) / 2);
+        this.renderText(ctx, `[${entity.sid}]: ${distance}`, center.x, center.y);
+    }
+
+    getMarkerColor(object: IRenderObject): string | null {
 
         // ID of the owner
         // if ID is undefined, it means object is a resource
         const id = object.owner?.sid;
         if (id === undefined) return null;
         if (
-            settings.itemMarkers &&
-            myClient.myPlayer.isMyPlayerByID(id)
-        ) return settings.itemMarkersColor;
+            settings._itemMarkers &&
+            client.myPlayer.isMyPlayerByID(id)
+        ) return settings._itemMarkersColor;
 
         if (
-            settings.teammateMarkers &&
-            myClient.myPlayer.isTeammateByID(id)
-        ) return settings.teammateMarkersColor;
+            settings._teammateMarkers &&
+            client.myPlayer.isTeammateByID(id)
+        ) return settings._teammateMarkersColor;
 
         if (
-            settings.enemyMarkers &&
-            myClient.myPlayer.isEnemyByID(id)
-        ) return settings.enemyMarkersColor;
+            settings._enemyMarkers &&
+            client.myPlayer.isEnemyByID(id)
+        ) return settings._enemyMarkersColor;
 
         return null;
     }
 
-    static renderMarker(ctx: TCTX, object: IRenderObject) {
+    renderMarker(ctx: TCTX, object: IRenderObject) {
         const color = this.getMarkerColor(object);
         if (color === null) return;
-        const x = object.x + object.xWiggle - myClient.myPlayer.offset.x;
-        const y = object.y + object.yWiggle - myClient.myPlayer.offset.y;
+        const x = object.x + object.xWiggle - client.myPlayer.offset.x;
+        const y = object.y + object.yWiggle - client.myPlayer.offset.y;
         ctx.save();
         ctx.strokeStyle = "#3b3b3b";
         ctx.lineWidth = 4;
@@ -206,7 +238,7 @@ class Renderer {
         ctx.restore();
     }
 
-    static barContainer(
+    barContainer(
         ctx: TCTX,
         x: number,
         y: number,
@@ -219,7 +251,7 @@ class Renderer {
         ctx.fill();
     }
 
-    static barContent(
+    barContent(
         ctx: TCTX,
         x: number,
         y: number,
@@ -234,37 +266,37 @@ class Renderer {
         ctx.fill();
     }
 
-    private static getNameY(target?: Animal | Player) {
+    private getNameY(target?: Animal | Player) {
         let nameY = 34;
         const height = 5;
-        if (target === myClient.myPlayer && settings.weaponXPBar) nameY += height;
-        if (settings.playerTurretReloadBar) nameY += height;
-        if (settings.weaponReloadBar) nameY += height;
+        if (target === client.myPlayer && settings._weaponXPBar) nameY += height;
+        if (settings._playerTurretReloadBar) nameY += height;
+        if (settings._weaponReloadBar) nameY += height;
         return nameY;
     }
 
-    static getContainerHeight(entity: IRenderEntity): number {
+    getContainerHeight(entity: IRenderEntity): number {
         const { barHeight, barPad } = Config;
         let height = barHeight;
         if (entity.isPlayer) {
             const smallBarHeight = barHeight - 4;
-            const player = myClient.PlayerManager.playerData.get(entity.sid);
+            const player = client.PlayerManager.playerData.get(entity.sid);
             if (player === undefined) return height;
 
-            if (player === myClient.myPlayer && settings.weaponXPBar) height += smallBarHeight - barPad;
-            if (settings.playerTurretReloadBar) height += smallBarHeight - barPad;
-            if (settings.weaponReloadBar) height += barHeight - barPad;
+            if (player === client.myPlayer && settings._weaponXPBar) height += smallBarHeight - barPad;
+            if (settings._playerTurretReloadBar) height += smallBarHeight - barPad;
+            if (settings._weaponReloadBar) height += barHeight - barPad;
         }
         return height;
     }
 
-    static renderBar(ctx: TCTX, entity: IRenderEntity) {
+    renderBar(ctx: TCTX, entity: IRenderEntity) {
         const { barWidth, barHeight, barPad } = Config;
         const smallBarHeight = barHeight - 4;
         const totalWidth = barWidth + barPad;
         const scale = entity.scale + 34;
 
-        const { myPlayer, PlayerManager } = myClient;
+        const { myPlayer, PlayerManager } = client;
         let x = entity.x - myPlayer.offset.x - totalWidth;
         let y = entity.y - myPlayer.offset.y + scale;
         ctx.save();
@@ -274,12 +306,12 @@ class Renderer {
 
         let height = 0;
         if (player instanceof Player) {
-        
-            const { primary, secondary, turret } = player.reload;
+
+            const [ primary, secondary, turret ] = player.reload;
 
             // Weapon XP Bar
-            if (player === myPlayer && settings.weaponXPBar) {
-                const weapon = Weapons[myPlayer.weapon.current];
+            if (player === myPlayer && settings._weaponXPBar) {
+                const weapon = DataHandler.getWeapon(myPlayer.weapon.current);
                 const current = WeaponVariants[myPlayer.getWeaponVariant(weapon.id).current].color;
                 const next = WeaponVariants[myPlayer.getWeaponVariant(weapon.id).next].color;
                 const XP = myPlayer.weaponXP[weapon.itemType];
@@ -291,25 +323,27 @@ class Renderer {
             }
 
             // Turret Reload Bar
-            if (settings.playerTurretReloadBar) {
+            if (settings._playerTurretReloadBar) {
                 this.barContainer(ctx, x, y + height, totalWidth * 2, smallBarHeight);
-                this.barContent(ctx, x, y + height, totalWidth * 2, smallBarHeight, turret.current / turret.max, settings.playerTurretReloadBarColor);
+                this.barContent(ctx, x, y + height, totalWidth * 2, smallBarHeight, turret.current / turret.max, settings._playerTurretReloadBarColor);
                 height += smallBarHeight - barPad;
             }
 
             // Weapon Reload Bar
-            if (settings.weaponReloadBar) {
+            if (settings._weaponReloadBar) {
                 const extraPad = 2.25;
                 this.barContainer(ctx, x, y + height, totalWidth * 2, barHeight);
-                this.barContent(ctx, x, y + height, totalWidth + extraPad, barHeight, primary.current / primary.max, settings.weaponReloadBarColor);
-                this.barContent(ctx, x + totalWidth - extraPad, y + height, totalWidth + extraPad, barHeight, secondary.current / secondary.max, settings.weaponReloadBarColor);
+                this.barContent(ctx, x, y + height, totalWidth + extraPad, barHeight, primary.current / primary.max, settings._weaponReloadBarColor);
+                this.barContent(ctx, x + totalWidth - extraPad, y + height, totalWidth + extraPad, barHeight, secondary.current / secondary.max, settings._weaponReloadBarColor);
                 height += barHeight - barPad;
             }
         }
 
         const target = player || animal;
         if (target) {
-            window.config.nameY = this.getNameY(target);
+            const container = getTargetValue(window, "config");
+            setTargetValue(container, "nameY", this.getNameY(target));
+            
             const { currentHealth, maxHealth } = target;
             const health = animal ? maxHealth : 100;
             const color = PlayerManager.isEnemyTarget(myPlayer, target) ? "#cc5151" : "#8ecc51";
@@ -321,15 +355,15 @@ class Renderer {
         ctx.restore();
     }
 
-    static renderHP(ctx: TCTX, entity: IRenderEntity) {
-        if (!settings.renderHP) return;
+    renderHP(ctx: TCTX, entity: IRenderEntity) {
+        if (!settings._renderHP) return;
 
         const { barPad, nameY } = Config;
         const containerHeight = this.getContainerHeight(entity);
         let text = `HP ${Math.floor(entity.health)}/${entity.maxHealth}`;
         const offset = entity.scale + nameY + barPad + containerHeight;
 
-        const { myPlayer } = myClient;
+        const { myPlayer } = client;
         const x = entity.x - myPlayer.offset.x;
         const y = entity.y - myPlayer.offset.y + offset;
 
@@ -349,7 +383,7 @@ class Renderer {
         ctx.restore();
     }
 
-    static circularBar(
+    circularBar(
         ctx: TCTX,
         object: IRenderObject,
         perc: number,
@@ -357,8 +391,8 @@ class Renderer {
         color: string,
         offset = 0
     ): number {
-        const x = object.x + object.xWiggle - myClient.myPlayer.offset.x;
-        const y = object.y + object.yWiggle - myClient.myPlayer.offset.y;
+        const x = object.x + object.xWiggle - client.myPlayer.offset.x;
+        const y = object.y + object.yWiggle - client.myPlayer.offset.y;
         const height = Config.barHeight * 0.7;
         const defaultScale = 10 + height / 2;
         const scale = defaultScale + 3 + offset;

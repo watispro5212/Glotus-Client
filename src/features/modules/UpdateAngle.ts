@@ -2,18 +2,18 @@ import PlayerClient from "../../PlayerClient";
 import { ESentAngle } from "../../types/Enums";
 
 class UpdateAngle {
-    readonly name = "updateAngle";
+    readonly moduleName = "updateAngle";
     private readonly client: PlayerClient;
     constructor(client: PlayerClient) {
         this.client = client;
     }
 
     postTick(): void {
-        const { sentAngle, mouse, cursorAngle } = this.client.ModuleHandler;
+        
+        const { sentAngle, currentAngle } = this.client.ModuleHandler;
         if (sentAngle > ESentAngle.LOW) return;
 
-        const angle = this.client.isOwner ? mouse.angle : cursorAngle;
-        this.client.ModuleHandler.updateAngle(angle);
+        this.client.ModuleHandler.updateAngle(currentAngle);
     }
 }
 

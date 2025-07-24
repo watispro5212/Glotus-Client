@@ -1,21 +1,18 @@
 import GameUI from "../UI/GameUI";
 import { ItemGroups, Items, WeaponVariants, Weapons } from "../constants/Items";
 import Vector from "../modules/Vector";
-import { TResource } from "../types/Common";
-import { EAttack, EDanger } from "../types/Enums";
-import { EItem, EWeapon, ItemGroup, ItemType, TInventory, TPlaceable, WeaponType } from "../types/Items";
-import { EAccessory, EHat, EStoreType } from "../types/Store";
-import { clamp, pointInRiver } from "../utility/Common";
+import type { TResource } from "../types/Common";
+import { EItem, EWeapon, ItemGroup, ItemType, type TInventory, type TPlaceable, WeaponType } from "../types/Items";
+import { EHat, EStoreType } from "../types/Store";
+import { clamp } from "../utility/Common";
 import settings from "../utility/Settings";
 import Player from "./Player";
 import { Accessories, Hats } from "../constants/Store";
 import PlayerClient from "../PlayerClient";
-import { myClient } from "..";
-import UI from "../UI/UI";
 import DataHandler from "../utility/DataHandler";
-import EnemyManager from "../Managers/EnemyManager";
-import { PlayerObject, Resource } from "./ObjectItem";
-import Autobreak from "../features/modules/Autobreak";
+import { PlayerObject } from "./ObjectItem";
+import UI from "../UI/UI";
+import Logger from "../utility/Logger";
 
 interface IWeaponXP {
     current: number;
@@ -44,16 +41,13 @@ class ClientPlayer extends Player {
     readonly deathPosition = new Vector;
     readonly offset = new Vector;
 
-    /**
-     * true if my player is in game
-     */
+    /** true if my player is in game */
     inGame = false;
     wasDead = true;
     diedOnce = false;
-    private platformActivated = false;
 
     receivedDamage: number | null = null;
-    timerCount = 1000 / 9;
+    timerCount = 0;//1000 / 9;
 
     /**
      * true, if my player has clown
@@ -85,45 +79,32 @@ class ClientPlayer extends Player {
         this.reset(true);
     }
 
-    /**
-     * Checks if ID is ID of my player
-     */
+    /**  if ID is ID of my player */
     isMyPlayerByID(id: number) {
         return id === this.id;
     }
 
-    /**
-     * Checks if the ID belongs to the teammate
-     */
+    /** Checks if the ID belongs to the teammate */
     isTeammateByID(id: number) {
         return this.teammates.has(id);
     }
 
-    /**
-     * Checks if the ID belongs to the enemy
-     */
+    /** Checks if the ID belongs to the enemy */
     isEnemyByID(id: number) {
         return !this.isMyPlayerByID(id) && !this.isTeammateByID(id);
     }
 
-    /**
-     * true if connected to the sandbox
-     */
+    /** true if connected to the sandbox */
     get isSandbox() {
-        return true;
-        // return window.vultr.scheme === "mm_exp";
+        return /sandbox/.test(location.hostname);
     }
 
-    /**
-     * Returns current inventory weapon or item by type
-     */
+    /** Returns current inventory weapon or item by type */
     getItemByType<T extends WeaponType | ItemType>(type: T) {
         return this.inventory[type];
     }
 
-    /**
-     * Checks if item has enough resources to be used
-     */
+    /** Checks if item has enough resources to be used */
     private hasResourcesForType(type: ItemType): boolean {
         if (this.isSandbox) return true;
 
@@ -161,9 +142,7 @@ class ClientPlayer extends Player {
         return count < limit;
     }
 
-    /**
-     * Returns true if myPlayer is capable of using item
-     */
+    /** Returns true if myPlayer is capable of using item */
     canPlace(type: ItemType | null): type is ItemType {
         return (
             type !== null &&
@@ -178,13 +157,40 @@ class ClientPlayer extends Player {
      * 
      * `null`, if player have stick and does not have a hammer
      */
-    getBestDestroyingWeapon(): WeaponType | null {
+    getBestDestroyingWeapon(target?: PlayerObject): WeaponType | null {
+        const primary = DataHandler.getWeapon(this.getItemByType(WeaponType.PRIMARY));
         const secondaryID = this.getItemByType(WeaponType.SECONDARY);
-        if (secondaryID === EWeapon.GREAT_HAMMER) return WeaponType.SECONDARY;
-
-        const primary = Weapons[this.getItemByType(WeaponType.PRIMARY)];
-        if (primary.damage !== 1) return WeaponType.PRIMARY;
+        const isHammer = secondaryID === EWeapon.GREAT_HAMMER;
+        const notStick = primary.damage !== 1;
+        // const staticModules = this.client.ModuleHandler.staticModules;
+        // if (
+        //     !staticModules.reloading.isReloaded(ReloadType.SECONDARY) &&
+        //     isHammer && notStick &&
+        //     target !== undefined &&
+        //     primary.damage >= target.health
+        // ) {
+        //     return WeaponType.PRIMARY;
+        // }
+        if (isHammer) return WeaponType.SECONDARY;
+        if (notStick) return WeaponType.PRIMARY;
         return null;
+    }
+
+    getWeaponRangeByType(type: WeaponType) {
+        const item = this.getItemByType(type)!;
+        if (DataHandler.isMelee(item)) {
+            return DataHandler.getWeapon(item).range;
+        }
+        return 0;
+    }
+
+    getFastestWeapon() {
+        const primary = DataHandler.getWeapon(this.getItemByType(WeaponType.PRIMARY));
+        const secondaryID = this.getItemByType(WeaponType.SECONDARY);
+        if (secondaryID === null) return WeaponType.PRIMARY;
+        const secondary = DataHandler.getWeapon(secondaryID);
+        if (primary.spdMult > secondary.spdMult) return WeaponType.PRIMARY;
+        return WeaponType.SECONDARY;
     }
 
     getDmgOverTime() {
@@ -206,182 +212,12 @@ class ClientPlayer extends Player {
         return Math.abs(damage);
     }
 
-    /**
-     * Returns the best hat to be equipped at the tick
-     */
-    private getBestCurrentHat() {
-        const { current, future } = this.position;
-
-        const { ModuleHandler, EnemyManager } = this.client;
-        const { actual } = ModuleHandler.getHatStore();
-
-        const useFlipper = ModuleHandler.canBuy(EStoreType.HAT, EHat.FLIPPER_HAT);
-        const useSoldier = ModuleHandler.canBuy(EStoreType.HAT, EHat.SOLDIER_HELMET);
-        const useWinter = ModuleHandler.canBuy(EStoreType.HAT, EHat.WINTER_CAP);
-        const useActual = ModuleHandler.canBuy(EStoreType.HAT, actual);
-
-        if (settings.biomehats && useFlipper) {
-            const inRiver = pointInRiver(current) || pointInRiver(future);
-            if (inRiver) {
-                // myPlayer is right on the platform
-                const platformActivated = this.checkCollision(ItemGroup.PLATFORM, -30);
-
-                // myPlayer almost left the platform
-                const stillStandingOnPlatform = this.checkCollision(ItemGroup.PLATFORM, 15);
-
-                if (!this.platformActivated && platformActivated) {
-                    this.platformActivated = true;
-                }
-
-                // myPlayer is not standing on platform
-                if (this.platformActivated && !stillStandingOnPlatform) {
-                    this.platformActivated = false;
-                }
-
-                if (!this.platformActivated) {
-                    return EHat.FLIPPER_HAT;
-                }
-            }
-        }
-
-        if (useSoldier) {
-            if (
-                settings.antienemy &&
-                (EnemyManager.detectedEnemy || EnemyManager.nearestEnemyInRangeOf(275))
-            ) return EHat.SOLDIER_HELMET;
-    
-            if (
-                settings.antispike &&
-                this.checkCollision(ItemGroup.SPIKE, 35, true)
-            ) return EHat.SOLDIER_HELMET;
-    
-            if (
-                settings.antianimal &&
-                EnemyManager.nearestDangerAnimal !== null
-            ) return EHat.SOLDIER_HELMET;
-        }
-
-        if (settings.biomehats && useWinter) {
-            const inWinter = current.y <= 2400 || future.y <= 2400;
-            if (inWinter) {
-                return EHat.WINTER_CAP;
-            }
-        }
-
-        if (useActual) return actual;
-        return EHat.UNEQUIP;
-    }
-
-    private getBestCurrentAcc() {
-        const { ModuleHandler, EnemyManager } = this.client;
-        const { actual } = ModuleHandler.getAccStore();
-
-        const useCorrupt = ModuleHandler.canBuy(EStoreType.ACCESSORY, EAccessory.CORRUPT_X_WINGS);
-        const useShadow = ModuleHandler.canBuy(EStoreType.ACCESSORY, EAccessory.SHADOW_WINGS);
-        const useTail = ModuleHandler.canBuy(EStoreType.ACCESSORY, EAccessory.MONKEY_TAIL);
-        const useActual = ModuleHandler.canBuy(EStoreType.ACCESSORY, actual);
-
-        if (EnemyManager.detectedEnemy || EnemyManager.nearestEnemyInRangeOf(275, EnemyManager.nearestEntity)) {
-            const isEnemy = EnemyManager.nearestEnemyInRangeOf(275, EnemyManager.nearestEnemy);
-            if (isEnemy && useCorrupt) return EAccessory.CORRUPT_X_WINGS;
-            if (useShadow) return EAccessory.SHADOW_WINGS;
-            if (useActual && actual !== EAccessory.MONKEY_TAIL) return actual;
-            return EAccessory.UNEQUIP;
-        }
-        // if (useCorrupt && ModuleHandler.detectedEnemy) return EAccessory.CORRUPT_X_WINGS;
-        // // if (useCorrupt && EnemyManager.nearestMeleeReloaded !== null) return EAccessory.CORRUPT_X_WINGS;
-        if (useTail) return EAccessory.MONKEY_TAIL;
-        return EAccessory.UNEQUIP;
-    }
-
-    getBestCurrentID(type: EStoreType) {
-        switch (type) {
-            case EStoreType.HAT:
-                return this.getBestCurrentHat();
-            case EStoreType.ACCESSORY:
-                return this.getBestCurrentAcc();
-        }
-    }
-
-    private getBestUtilityHat() {
-        const { ModuleHandler, EnemyManager, ObjectManager, myPlayer } = this.client;
-        const { autoBreak, spikeTick } = ModuleHandler.staticModules;
-        const id = this.getItemByType(ModuleHandler.weapon)!;
-        if (id === EWeapon.WOODEN_SHIELD) return null;
-        if (DataHandler.isShootable(id)) return EHat.SAMURAI_ARMOR;
-
-        const weapon = Weapons[id];
-        const range = weapon.range + 60;
-
-        if (spikeTick.isActive && spikeTick.tickAction === 1) {
-            return EHat.TURRET_GEAR;
-        }
-
-        if (ModuleHandler.attackingState === EAttack.ATTACK || spikeTick.isActive) {
-            const nearest = EnemyManager.nearestEntity;
-            if (
-                nearest !== null &&
-                this.collidingEntity(nearest, range + nearest.hitScale, true)
-            ) {
-                ModuleHandler.canHitEntity = true;
-                if (weapon.damage <= 1) return EHat.SAMURAI_ARMOR;
-                return EHat.BULL_HELMET;
-            }
-        }
-
-        if (ModuleHandler.attackingState !== EAttack.DISABLED || autoBreak.isActive) {
-            if (weapon.damage <= 1) return null;
-
-            const pos = myPlayer.position.current;
-            const objects = ObjectManager.retrieveObjects(pos, range);
-            for (const object of objects) {
-                if (
-                    object instanceof PlayerObject &&
-                    object.isDestroyable &&
-                    this.colliding(object, range + object.hitScale)
-                ) return EHat.TANK_GEAR;
-            }
-        }
-
-        return null;
-    }
-
-    private getBestUtilityAcc() {
-        // const { ModuleHandler, EnemyManager } = this.client;
-
-        // const id = this.getItemByType(ModuleHandler.weapon)!;
-        // if (!DataHandler.isMelee(id)) return null;
-
-        // const weapon = Weapons[id];
-        // if (weapon.damage <= 1) return null;
-
-        // const canBloody = ModuleHandler.canBuy(EStoreType.ACCESSORY, EAccessory.BLOOD_WINGS);
-        // if (
-        //     EnemyManager.nearestMeleeReloaded === null &&
-        //     ModuleHandler.canHitEntity
-        // ) {
-        //     if (canBloody) return EAccessory.BLOOD_WINGS;
-        //     return EAccessory.UNEQUIP;
-        // }
-
-        return null;
-    }
-
-    getBestUtilityID(type: EStoreType) {
-        switch (type) {
-            case EStoreType.HAT:
-                return this.getBestUtilityHat();
-            case EStoreType.ACCESSORY:
-                return this.getBestUtilityAcc();
-        }
-    }
-
     getMaxWeaponRangeClient(): number {
         const primary = this.inventory[WeaponType.PRIMARY];
         const secondary = this.inventory[WeaponType.SECONDARY];
-        const primaryRange = Weapons[primary].range;
+        const primaryRange = DataHandler.getWeapon(primary).range;
         if (DataHandler.isMelee(secondary)) {
-            const range = Weapons[secondary].range;
+            const range = DataHandler.getWeapon(secondary).range;
             if (range > primaryRange) {
                 return range;
             }
@@ -390,17 +226,16 @@ class ClientPlayer extends Player {
     }
 
     getPlacePosition(start: Vector, itemID: TPlaceable, angle: number): Vector {
-        return start.direction(angle, this.getItemPlaceScale(itemID));
+        return start.addDirection(angle, this.getItemPlaceScale(itemID));
     }
 
-    /**
-     * Called after all received packets. Player and animal positions have been updated
-     */
+    /** Called after all received packets. Player and animal positions have been updated */
     tickUpdate() {
         if (this.inGame && this.wasDead) {
             this.wasDead = false;
             this.onFirstTickAfterSpawn();
         }
+        
         if (this.hatID === EHat.SHAME && !this.shameActive) {
             this.shameActive = true;
             this.shameTimer = 0;
@@ -415,16 +250,16 @@ class ClientPlayer extends Player {
             this.shameCount = 0;
         }
 
-        this.timerCount += PlayerManager.step;
-        if (this.timerCount >= 1000) {
-            this.timerCount = 0;
-            this.poisonCount = Math.max(this.poisonCount - 1, 0);
-        }
+        // this.timerCount += PlayerManager.step;
+        // if (this.timerCount >= 1000) {
+        //     this.timerCount = 0;
+        //     this.poisonCount = Math.max(this.poisonCount - 1, 0);
+        // }
 
         ModuleHandler.postTick();
     }
 
-    updateHealth(health: number) {
+    override updateHealth(health: number) {
         super.updateHealth(health);
 
         if (this.shameActive) return;
@@ -447,9 +282,9 @@ class ClientPlayer extends Player {
         if (health < 100) {
             const { ModuleHandler } = this.client;
             ModuleHandler.staticModules.shameReset.healthUpdate();
-            // const delay = Math.max(0, 120 - SocketManager.pong + settings.healingSpeed);
+            // const delay = Math.max(0, 120 - SocketManager.pong + settings._healingSpeed);
             // const shouldReset = ModuleHandler.shameReset.healthUpdate();
-            // if (settings.autoheal || shouldReset) {
+            // if (settings._autoheal || shouldReset) {
             //     setTimeout(() => {
             //         ModuleHandler.totalPlaces += 1;
             //         ModuleHandler.heal(true);
@@ -467,27 +302,25 @@ class ClientPlayer extends Player {
     }
 
     private onFirstTickAfterSpawn() {
-        const { ModuleHandler, SocketManager, isOwner } = this.client;
+        const { ModuleHandler, PacketManager, isOwner } = this.client;
         const { mouse, staticModules } = ModuleHandler;
         // const hatStore = ModuleHandler.getHatStore();
         // const accStore = ModuleHandler.getAccStore();
         // ModuleHandler.equip(EStoreType.HAT, hatStore.best);
         // ModuleHandler.equip(EStoreType.ACCESSORY, accStore.best);
         ModuleHandler.updateAngle(mouse.sentAngle, true);
-        if (myClient.ModuleHandler.autoattack) {
-            ModuleHandler.autoattack = true;
-            SocketManager.autoAttack();
-        }
-
         if (!isOwner) {
+            const owner = this.client.owner;
             UI.updateBotOption(this.client, "title");
-            myClient.clientIDList.add(this.id);
+            owner.clientIDList.add(this.id);
 
-            const owner = myClient.ModuleHandler;
-            staticModules.tempData.setWeapon(owner.weapon);
-            staticModules.tempData.setAttacking(owner.attacking);
-            staticModules.tempData.setStore(EStoreType.HAT, owner.store[EStoreType.HAT].actual);
-            staticModules.tempData.setStore(EStoreType.ACCESSORY, owner.store[EStoreType.ACCESSORY].actual);
+            // staticModules.tempData.setWeapon(ModuleHandler.weapon);
+            staticModules.tempData.setAttacking(owner.ModuleHandler.attacking);
+            staticModules.tempData.setStore(EStoreType.HAT, owner.ModuleHandler.store[EStoreType.HAT].actual);
+            staticModules.tempData.setStore(EStoreType.ACCESSORY, owner.ModuleHandler.store[EStoreType.ACCESSORY].actual);
+            if (owner.ModuleHandler.autoattack) {
+                ModuleHandler.toggleAutoattack(true);
+            }
         }
     }
 
@@ -496,7 +329,7 @@ class ClientPlayer extends Player {
     }
 
     isUpgradeWeapon(id: EWeapon) {
-        const weapon = Weapons[id];
+        const weapon = DataHandler.getWeapon(id);
         if ("upgradeOf" in weapon) {
             return this.inventory[weapon.itemType] === weapon.upgradeOf;
         }
@@ -521,7 +354,7 @@ class ClientPlayer extends Player {
         }
 
         if (!this.client.isOwner) {
-            const id = myClient.myPlayer.upgradeOrder[this.upgradeIndex];
+            const id = this.client.owner.myPlayer.upgradeOrder[this.upgradeIndex];
             if (id !== undefined && ids.includes(id)) {
                 this.upgradeIndex += 1;
                 this.client.ModuleHandler.upgradeItem(id);
@@ -547,14 +380,14 @@ class ClientPlayer extends Player {
         }
 
         if (id < 16) {
-            const weapon = Weapons[id];
+            const weapon = DataHandler.getWeapon(id)!;
             this.inventory[weapon.itemType] = id as EWeapon & null;
             const XP = this.weaponXP[weapon.itemType];
             XP.current = 0;
             XP.max = -1;
         } else {
             id -= 16;
-            const item = Items[id];
+            const item = Items[id]!;
             this.inventory[item.itemType] = id as EItem & null;
         }
     }
@@ -584,7 +417,7 @@ class ClientPlayer extends Player {
         if (amount < previousAmount) return;
         const difference = amount - previousAmount;
         if (type === "kills") {
-            myClient.totalKills += difference;
+            this.client.owner.totalKills += difference;
             GameUI.updateTotalKill();
             return;
         }
@@ -594,11 +427,10 @@ class ClientPlayer extends Player {
 
     updateWeaponXP(amount: number) {
         const { next } = this.getWeaponVariant(this.weapon.current);
-        const XP = this.weaponXP[Weapons[this.weapon.current].itemType];
+        const XP = this.weaponXP[DataHandler.getWeapon(this.weapon.current).itemType];
         const maxXP = WeaponVariants[next].needXP;
 
         XP.current += amount;
-
         if (XP.max !== -1 && XP.current >= XP.max) {
             XP.current -= XP.max;
             XP.max = maxXP;
@@ -644,26 +476,16 @@ class ClientPlayer extends Player {
     }
 
     spawn() {
-        const name = localStorage.getItem("moo_name") || "";
-        const skin = Number(localStorage.getItem("skin_color")) || 0;
-        this.client.SocketManager.spawn(name, 1, skin === 10 ? "constructor" : skin);
-    }
-
-    handleDeath(): boolean {
-        if (settings.autospawn) {
-            this.spawn();
-            return true;
-        }
-        return false;
+        const name = window.localStorage.getItem("moo_name") || "";
+        const skin = Number(window.localStorage.getItem("skin_color")) || 0;
+        this.client.PacketManager.spawn(name, 1, skin === 10 ? "constructor" : skin);
     }
 
     handleJoinRequest(id: number, name: string) {
         this.joinRequests.push([id, name]);
     }
 
-    /**
-     * Resets player data. Called when myPlayer died
-     */
+    /** Resets player data. Called when myPlayer died */
     reset(first = false) {
         this.resetResources();
         this.resetInventory();
@@ -685,13 +507,11 @@ class ClientPlayer extends Player {
         for (const player of PlayerManager.players) {
             player.resetReload();
         }
-        this.deathPosition.setVec(this.position.current);
+        this.deathPosition.setVec(this.pos.current);
         this.diedOnce = true;
 
         if (this.client.isOwner) {
             GameUI.reset();
-        } else {
-            this.spawn();
         }
     }
 }

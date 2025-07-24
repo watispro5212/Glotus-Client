@@ -1,27 +1,37 @@
-import { myClient } from "../..";
 import PlayerClient from "../../PlayerClient";
 import GameUI from "../../UI/GameUI";
 import settings from "../../utility/Settings";
 
 class AutoAccept {
-    readonly name = "autoAccept";
+    readonly moduleName = "autoAccept";
     private readonly client: PlayerClient;
     private acceptCount = 0;
 
+    private prevClan: string | null = null;
     constructor(client: PlayerClient) {
         this.client = client;
     }
 
     postTick(): void {
-        const { myPlayer, clientIDList, SocketManager, isOwner } = this.client;
+        
+        const { myPlayer, clientIDList, PacketManager, isOwner } = this.client;
+
+        // ONCE CLAN IS CHANGED, RESET ALL REQUESTS
+        const currentClan = myPlayer.clanName;
+        if (currentClan !== this.prevClan) {
+            this.prevClan = currentClan;
+            myPlayer.joinRequests.length = 0;
+            this.client.pendingJoins.clear();
+        }
+
         if (!myPlayer.isLeader || myPlayer.joinRequests.length === 0) return;
         
-        const id = myPlayer.joinRequests[0][0];
         if (this.acceptCount === 0) {
-            if (settings.autoaccept || myClient.pendingJoins.size !== 0) {
-                SocketManager.clanRequest(id, settings.autoaccept || clientIDList.has(id));
+            const id = myPlayer.joinRequests[0]![0];
+            if (settings._autoaccept || this.client.pendingJoins.size !== 0) {
+                PacketManager.clanRequest(id, settings._autoaccept || clientIDList.has(id));
                 myPlayer.joinRequests.shift();
-                myClient.pendingJoins.delete(id);
+                this.client.pendingJoins.delete(id);
                 if (isOwner) GameUI.clearNotication();
             }
 
@@ -31,7 +41,7 @@ class AutoAccept {
             }
         }
 
-        this.acceptCount = (this.acceptCount + 1) % 7;
+        this.acceptCount = (this.acceptCount + 1) % 10;
     }
 }
 

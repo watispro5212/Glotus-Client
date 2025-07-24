@@ -1,36 +1,48 @@
-import { myClient } from "../..";
 import PlayerClient from "../../PlayerClient";
-import { cursorPosition } from "../../utility/Common";
+import settings from "../../utility/Settings";
 
 class Movement {
-    readonly name = "movement";
+    readonly moduleName = "movement";
     private readonly client: PlayerClient;
-    stopped = true;
+    isStopped = true;
     constructor(client: PlayerClient) {
         this.client = client;
     }
 
     private getPosition() {
-        const { ModuleHandler } = myClient;
-        if (ModuleHandler.lockPosition) return ModuleHandler.lockedPosition;
-        return cursorPosition();
+        const { ModuleHandler } = this.client;
+        if (settings._followCursor) {
+            return ModuleHandler.lookTarget;
+        }
+        return ModuleHandler.followTarget;
+    }
+
+    private getActualPosition() {
+        const { myPlayer, InputHandler } = this.client.owner;
+        if (settings._followCursor) {
+            return InputHandler.cursorPosition();
+        }
+        return myPlayer.pos.future;
     }
 
     postTick(): void {
-        const { myPlayer, ModuleHandler, SocketManager } = this.client;
-        const pos1 = myPlayer.position.current;
-        const pos2 = this.getPosition();
-        const distance = pos1.distance(pos2);
-        ModuleHandler.cursorAngle = pos1.angle(pos2);
-        ModuleHandler.reverseCursorAngle = pos2.angle(pos1);
+        const { InputHandler } = this.client.owner;
+        const { myPlayer, ModuleHandler } = this.client;
+        const pos1 = myPlayer.pos.current;
+        const walkPos = this.getActualPosition();
+        // const lookPos = ModuleHandler.lookTarget;
+        const lookPos = InputHandler.cursorPosition();
+        const distance = pos1.distance(walkPos);
+        const walkTo = pos1.angle(walkPos);
+        const lookAt = pos1.angle(lookPos);
+        ModuleHandler.currentAngle = lookAt;
 
         // It is completely dumb to move only towards owner. It MUST use pathfinder, but I am too lazy to implement this nonsense
-        if (distance > 175) {
-            this.stopped = false;
-            SocketManager.move(ModuleHandler.cursorAngle);
-        } else if (!this.stopped) {
-            this.stopped = true;
-            SocketManager.move(null);
+        if (distance > 130) {
+            this.isStopped = !ModuleHandler.startMovement(walkTo);
+        } else if (!this.isStopped) {
+            this.isStopped = true;
+            ModuleHandler.stopMovement();
         }
     }
 }

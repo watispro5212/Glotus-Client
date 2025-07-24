@@ -1,15 +1,16 @@
 import { Items } from "../constants/Items";
-import { PlayerObject, Resource, TObject } from "../data/ObjectItem";
+import { PlayerObject, Resource, type TObject } from "../data/ObjectItem";
 import Player from "../data/Player";
 import Vector from "../modules/Vector";
-import { EItem, TPlaceable } from "../types/Items";
-import { findPlacementAngles, getAngleOffset, inView, pointInRiver } from "../utility/Common";
-import SpatialHashGrid from "../modules/SpatialHashGrid";
-import Sorting from "../utility/Sorting";
-import { IAngle } from "../types/Common";
+import { EItem, EWeapon, type TPlaceable } from "../types/Items";
+import { findPlacementAngles, getAngleDist, inView, pointInRiver } from "../utility/Common";
+import type { IAngle } from "../types/Common";
 import PlayerClient from "../PlayerClient";
 import settings from "../utility/Settings";
 import NotificationRenderer from "../rendering/NotificationRenderer";
+import SpatialHashGrid2D from "../modules/SpatialHashGrid2D";
+import Sorting from "../utility/Sorting";
+import DataHandler from "../utility/DataHandler";
 
 class ObjectManager {
 
@@ -17,7 +18,8 @@ class ObjectManager {
      * A Map that stores all game objects
      */
     readonly objects = new Map<number, TObject>();
-    private readonly grid = new SpatialHashGrid<TObject>(100);
+    // readonly grid2D = new SpatialHashGrid2D(256);
+    readonly grid2D = new SpatialHashGrid2D(100);
 
     /**
      * A Map which stores all turret objects that are currently reloading
@@ -35,7 +37,7 @@ class ObjectManager {
     }
 
     private insertObject(object: TObject) {
-        this.grid.insert(object);
+        this.grid2D.insert(object.pos.current.x, object.pos.current.y, object.collisionScale, object.id);
         this.objects.set(object.id, object);
 
         if (object instanceof PlayerObject) {
@@ -67,7 +69,7 @@ class ObjectManager {
     }
 
     private removeObject(object: TObject) {
-        this.grid.remove(object);
+        this.grid2D.remove(object.pos.current.x, object.pos.current.y, object.collisionScale, object.id);
         this.objects.delete(object.id);
 
         if (object instanceof PlayerObject) {
@@ -84,8 +86,8 @@ class ObjectManager {
             this.removeObject(object);
 
             if (this.client.isOwner) {
-                const pos = object.position.current.copy().sub(this.client.myPlayer.offset);
-                if (settings.notificationTracers && !inView(pos.x, pos.y, object.scale)) {
+                const pos = object.pos.current.copy().sub(this.client.myPlayer.offset);
+                if (settings._notificationTracers && !inView(pos.x, pos.y, object.scale)) {
                     NotificationRenderer.add(object);
                 }
             }
@@ -135,9 +137,9 @@ class ObjectManager {
         }
     }
 
-    retrieveObjects(pos: Vector, radius: number): TObject[] {
-        return this.grid.retrieve(pos, radius);
-    }
+    // retrieveObjects(pos: Vector, size = 2): number[] {
+    //     return this.grid2D.query(pos.x, pos.y, size);
+    // }
 
     canPlaceItem(id: TPlaceable, position: Vector, addRadius = 0) {
         if (id !== EItem.PLATFORM && pointInRiver(position)) {
@@ -145,23 +147,21 @@ class ObjectManager {
         }
 
         const item = Items[id];
-        const objects = this.retrieveObjects(position, item.scale);
-        for (const object of objects) {
+        return !this.grid2D.query(position.x, position.y, 1, (id: number) => {
+            const object = this.objects.get(id)!;
             const scale = item.scale + object.placementScale + addRadius;
-            if (position.distance(object.position.current) < scale) {
-                return false;
+            if (position.distance(object.pos.current) < scale) {
+                return true;
             }
-        }
-
-        return true;
+        });
     }
 
     inPlacementRange(object: PlayerObject): boolean {
         const owner = this.client.PlayerManager.playerData.get(object.ownerID);
         if (owner === undefined || !this.client.PlayerManager.players.includes(owner)) return false;
 
-        const { previous: a0, current: a1, future: a2 } = owner.position;
-        const b0 = object.position.current;
+        const { previous: a0, current: a1, future: a2 } = owner.pos;
+        const b0 = object.pos.current;
         const item = Items[object.type];
         const range = owner.scale * 2 + item.scale + item.placeOffset;
         return (
@@ -170,34 +170,53 @@ class ObjectManager {
             a2.distance(b0) <= range
         )
     }
-    
-    private getAngleOffset(angle: number, distance: number, scale: number) {
-        
-    }
 
-    getBestPlacementAngles(position: Vector, id: TPlaceable, sortAngle: number = 0): Set<number> {
+    getBestPlacementAngles(
+        position: Vector,
+        id: TPlaceable,
+        targetAngle: number | null = null,
+        ignoreID: number | null = null,
+        ignoreHealth = false
+    ): number[] {
         const item = Items[id];
         const length = this.client.myPlayer.getItemPlaceScale(id);
-        const objects = this.retrieveObjects(position, length + item.scale);
 
+        const hammerDamage = 75 * 1.18 * 3.3;
         const angles: IAngle[] = [];
-        for (const object of objects) {
-            // if (object instanceof PlayerObject && object.health <= 88.5 * 2) continue;
+        this.grid2D.query(position.x, position.y, 1, (id: number) => {
+            const object = this.objects.get(id)!;
+            if (
+                !ignoreHealth && object instanceof PlayerObject && object.canBeDestroyed && object.health <= hammerDamage ||
+                ignoreID !== null && ignoreID === object.id 
+            ) return;
 
-            const angle = position.angle(object.position.current);
-            const distance = position.distance(object.position.current);
-            const a = object.placementScale + item.scale;
+            const pos1 = object.pos.current;
+            const angle = position.angle(pos1);
+            const distance = position.distance(pos1);
+
+            const a = object.placementScale + item.scale + 10;
             const b = distance;
             const c = length;
-            const offset = Math.acos((a ** 2 - b ** 2 - c ** 2) / (-2 * b * c));
-            if (!isNaN(offset)) {
+            const cosArg = (b * b + c * c - a * a) / (2 * b * c);
+
+            // TODO: fix when myPlayer is slightly out of trap and it shows impossible straight angle
+            if (cosArg < -1) {
+                angles.push({ angle, offset: Math.PI });
+            } else if (cosArg <= 1) {
+                const offset = Math.acos(cosArg);
                 angles.push({ angle, offset });
-            }/*  else {
-                const angleData = getAngleOffset(position, object.position.current, object.collisionScale);
-                angles.push(angleData);
-            } */
+            }
+        });
+        const finalAngles = findPlacementAngles(angles).slice(0, 3);
+        if (targetAngle === null) return finalAngles;
+
+        // Checks if it is actually possible to use targetAngle in order to place an object
+        const targetAngleOverlaps = angles.some(({ angle, offset }) => getAngleDist(targetAngle, angle) <= offset);
+        if (!targetAngleOverlaps) {
+            finalAngles.push(targetAngle);
         }
-        return findPlacementAngles(angles);//.sort(Sorting.byAngleDistance(sortAngle));
+
+        return finalAngles.sort(Sorting.byAngleDistance(targetAngle));
     }
 }
 

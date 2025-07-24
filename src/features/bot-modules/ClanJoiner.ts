@@ -1,29 +1,40 @@
-import { myClient } from "../..";
 import PlayerClient from "../../PlayerClient";
 
 class ClanJoiner {
-    readonly name = "clanJoiner";
+    readonly moduleName = "clanJoiner";
     private readonly client: PlayerClient;
     private joinCount = 0;
+
+    private prevState = false;
     constructor(client: PlayerClient) {
         this.client = client;
     }
 
     postTick(): void {
-        const { myPlayer, SocketManager } = this.client;
-        const ownerClan = myClient.myPlayer.clanName;
+        const { myPlayer, PacketManager, owner, PlayerManager } = this.client;
+        const ownerClan = owner.myPlayer.clanName;
         const myClan = myPlayer.clanName;
-        if (ownerClan === null || myClan === ownerClan) return;
 
-        if (this.joinCount === 0) {
+        // ONCE CLAN IS CHANGED, WE SHOULD RESET IT'S JOINING STATE IN ORDER TO MAKE EVERYTHING SMOOTH
+        const state = ownerClan !== myClan;
+        if (this.prevState !== state) {
+            this.prevState = state;
+
+            this.joinCount = 0;
+        }
+        if (ownerClan === null || myClan === ownerClan || !PlayerManager.clanExist(ownerClan)) return;
+
+        if (this.joinCount === 5) {
+            this.joinCount = 0;
+
             if (myClan !== null) {
-                SocketManager.leaveClan();
-            } else {
-                myClient.pendingJoins.add(myPlayer.id);
-                SocketManager.joinClan(ownerClan);
+                PacketManager.leaveClan();
+            } else if (!owner.pendingJoins.has(myPlayer.id)) {
+                owner.pendingJoins.add(myPlayer.id);
+                PacketManager.joinClan(ownerClan);
             }
         }
-        this.joinCount = (this.joinCount + 1) % 7;
+        this.joinCount += 1;
     }
 }
 

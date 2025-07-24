@@ -1,18 +1,15 @@
-import PlayerClient from "../PlayerClient";
 import { ItemGroups, Items } from "../constants/Items";
 import Vector from "../modules/Vector";
 import { EResourceType } from "../types/Enums";
-import { EItem, ItemGroup, TPlaceable } from "../types/Items";
+import { EItem, ItemGroup, type TPlaceable } from "../types/Items";
 import { pointInDesert } from "../utility/Common";
-import Animal from "./Animal";
-import Player from "./Player";
 
 /**
  * Represents resources and player objects
  */
 abstract class ObjectItem {
     readonly id: number;
-    readonly position: {
+    readonly pos: {
         readonly current: Vector;
     }
     readonly angle: number;
@@ -26,7 +23,7 @@ abstract class ObjectItem {
         scale: number,
     ) {
         this.id = id;
-        this.position = {
+        this.pos = {
             current: new Vector(x, y),
         };
         this.angle = angle;
@@ -68,7 +65,7 @@ export class Resource extends ObjectItem {
     }
 
     get isCactus() {
-        return this.type === EResourceType.FOOD && pointInDesert(this.position.current);
+        return this.type === EResourceType.FOOD && pointInDesert(this.pos.current);
     }
 }
 
@@ -85,10 +82,15 @@ export class PlayerObject extends ObjectItem {
      * current health of item
      */
     health: number;
+    tempHealth: number;
     readonly maxHealth: number;
     reload: number = -1;
     readonly maxReload: number = -1;
     readonly isDestroyable: boolean;
+
+    destroyingTick = 0;
+    /** true, if object can be destroyed by any player on the next tick */
+    canBeDestroyed = false;
 
     /**
      * true, if my player saw how this item was placed
@@ -112,6 +114,7 @@ export class PlayerObject extends ObjectItem {
         const item = Items[type];
         this.collisionDivider = "colDiv" in item ? item.colDiv : 1;
         this.health = "health" in item ? item.health : Infinity;
+        this.tempHealth = this.health;
         this.maxHealth = this.health;
         this.isDestroyable = this.maxHealth !== Infinity;
 

@@ -49,7 +49,7 @@ class Vector {
         return Math.sqrt(this.x * this.x + this.y * this.y);
     }
 
-    normalize() {
+    normalizeVec() {
         return this.length > 0 ? this.div(this.length) : this;
     }
 
@@ -73,7 +73,7 @@ class Vector {
     }
 
     setLength(value: number) {
-        return this.normalize().mult(value);
+        return this.normalizeVec().mult(value);
     }
 
     copy() {
@@ -89,7 +89,7 @@ class Vector {
         return Math.atan2(copy.y, copy.x);
     }
 
-    direction(angle: number, length: number) {
+    addDirection(angle: number, length: number) {
         return this.copy().add(Vector.fromAngle(angle, length));
     }
 
@@ -97,7 +97,7 @@ class Vector {
         return this.x === vec.x && this.y === vec.y;
     }
 
-    stringify() {
+    makeString() {
         return this.x + ":" + this.y;
     }
 }

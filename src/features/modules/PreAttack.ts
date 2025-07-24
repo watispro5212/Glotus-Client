@@ -1,28 +1,30 @@
 import PlayerClient from "../../PlayerClient";
 import { EAttack } from "../../types/Enums";
-import { WeaponTypeString } from "../../types/Items";
+import { WeaponType } from "../../types/Items";
 
 class PreAttack {
-    readonly name = "preAttack";
+    readonly moduleName = "preAttack";
     private readonly client: PlayerClient;
 
     constructor(client: PlayerClient) {
         this.client = client;
     }
 
-    postTick(): void {
-        const { ModuleHandler } = this.client;
-        const { moduleActive, useWeapon, weapon, previousWeapon, attackingState, staticModules } = ModuleHandler;
-        const type = moduleActive ? useWeapon! : weapon;
-        const stringType = WeaponTypeString[type];
-        const shouldAttack = attackingState !== EAttack.DISABLED || moduleActive;
-        const isReloaded = staticModules.reloading.isReloaded(stringType);
-        ModuleHandler.canAttack = shouldAttack && isReloaded;
+    private isReloadedByType(type: WeaponType | null) {
+        const { weapon, staticModules } = this.client.ModuleHandler;
+        const weaponType = type !== null ? type : weapon;
+        return staticModules.reloading.isReloaded(weaponType);
+    }
 
-        if (useWeapon === null && previousWeapon !== null && staticModules.reloading.isReloaded(WeaponTypeString[weapon])) {
-            ModuleHandler.whichWeapon(previousWeapon);
-            ModuleHandler.previousWeapon = null;
-        }
+    postTick(): void {
+        
+        const { ModuleHandler } = this.client;
+        const { useWeapon, weapon, forceWeapon } = ModuleHandler;
+
+        const nextWeapon = forceWeapon !== null ? forceWeapon : useWeapon;
+        const forceReloaded = this.isReloadedByType(nextWeapon);
+        const canAttack = ModuleHandler.shouldAttack && (forceReloaded && this.isReloadedByType(weapon) || forceWeapon !== null && forceReloaded);
+        ModuleHandler.shouldAttack = canAttack;
     }
 }
 

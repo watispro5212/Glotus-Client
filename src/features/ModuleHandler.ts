@@ -1,19 +1,12 @@
-import GameUI from "../UI/GameUI";
-import UI from "../UI/UI";
-import ActionPlanner from "../modules/ActionPlanner";
 import PlayerClient from "../PlayerClient";
-import { IPlaceOptions } from "../types/Common";
 import { EAttack, ESentAngle } from "../types/Enums";
-import { ItemType, WeaponType} from "../types/Items";
+import { ItemType, ReloadType, WeaponType} from "../types/Items";
 import { EHat, EStoreType } from "../types/Store";
-import { cursorPosition, formatButton, getAngle, getAngleFromBitmask, isActiveInput } from "../utility/Common";
 import DataHandler from "../utility/DataHandler";
-import settings from "../utility/Settings";
 import AntiInsta from "./modules/AntiInsta";
 import AutoPlacer from "./modules/AutoPlacer";
 import Autohat from "./modules/Autohat";
 import Automill from "./modules/Automill";
-import PlacementExecutor from "./modules/PlacementExecutor";
 import Placer from "./modules/Placer";
 import ShameReset from "./modules/ShameReset";
 import UpdateAngle from "./modules/UpdateAngle";
@@ -21,13 +14,32 @@ import UpdateAttack from "./modules/UpdateAttack";
 import ClanJoiner from "./bot-modules/ClanJoiner";
 import Movement from "./bot-modules/Movement";
 import AutoAccept from "./modules/AutoAccept";
-import Vector from "../modules/Vector";
 import TempData from "./bot-modules/TempData";
 import Reloading from "./modules/Reloading";
 import Autobreak from "./modules/Autobreak";
 import SpikeTick from "./modules/SpikeTick";
 import PreAttack from "./modules/PreAttack";
-import StoreHandler from "../UI/StoreHandler";
+import UseFastest from "./modules/UseFastest";
+import SafeWalk from "./modules/SafeWalk";
+import DefaultHat from "./modules/DefaultHat";
+import DefaultAcc from "./modules/DefaultAcc";
+import UtilityHat from "./modules/UtilityHat";
+import UseDestroying from "./modules/UseDestroying";
+import UseAttacking from "./modules/UseAttacking";
+import SpikeSync from "./modules/SpikeSync";
+import KnockbackTick from "./modules/KnockbackTick";
+import KnockbackTickHammer from "./modules/KnockbackTickHammer";
+import SpikeSyncHammer from "./modules/SpikeSyncHammer";
+import KnockbackTickTrap from "./modules/KnockbackTickTrap";
+import { reverseAngle } from "../utility/Common";
+import Vector from "../modules/Vector";
+import AutoSync from "./modules/AutoSync";
+import GameUI from "../UI/GameUI";
+import AutoBuy from "./modules/AutoBuy";
+import AutoGrind from "./modules/AutoGrind";
+import PathFinder from "./modules/PathFinder";
+import VelocityTick from "./modules/VelocityTick";
+import KBDefense from "./modules/KBDefense";
 
 interface IStore {
     readonly utility: Map<number, boolean>;
@@ -48,18 +60,36 @@ type TBotModuleList = [
 
 type TModuleList = [
     AutoAccept,
+    AutoBuy,
 
+    DefaultHat,
+    DefaultAcc,
+    SafeWalk,
     AntiInsta,
     ShameReset,
+    PathFinder,
     
+    Reloading,
+    AutoSync,
+    VelocityTick,
+    SpikeSyncHammer,
+    SpikeSync,
+    SpikeTick,
+    KnockbackTickTrap,
+    KnockbackTickHammer,
+    KnockbackTick,
+    KBDefense,
+    Autobreak,
+    UseFastest,
+    UseDestroying,
+    UseAttacking,
+    UtilityHat,
+
     AutoPlacer,
     Placer,
     Automill,
-    PlacementExecutor,
-    
-    Reloading,
-    SpikeTick,
-    Autobreak,
+    AutoGrind,
+
     PreAttack,
     Autohat,
 
@@ -67,8 +97,8 @@ type TModuleList = [
     UpdateAngle,
 ]
 
-type TupleToObject<T extends { name: string }[]> = {
-    readonly [K in T[number]["name"]]: Extract<T[number], { name: K }>;
+type TupleToObject<T extends { moduleName: string }[]> = {
+    readonly [K in T[number]["moduleName"]]: Extract<T[number], { moduleName: K }>;
 };
 
 type TModules = [...TBotModuleList, ...TModuleList];
@@ -82,41 +112,29 @@ class ModuleHandler {
     private readonly botModules: TBotModuleList;
     private readonly modules: TModuleList;
 
-    /** A list of placement hotkeys that are currently pressed */
-    private readonly hotkeys = new Map<string, ItemType>();
-
     readonly store: TStore = [
-        { utility: new Map, lastUtility: null, current: 0, best: 0, actual: 0, last: 0 },
-        { utility: new Map, lastUtility: null, current: 0, best: 0, actual: 0, last: 0 },
+        { utility: new Map, lastUtility: null, current: 0, best: 0, actual: -1, last: 0 },
+        { utility: new Map, lastUtility: null, current: 0, best: 0, actual: -1, last: 0 },
     ];
 
-    readonly actionPlanner = new ActionPlanner;
-
     /** A ID list of bought hats and accessories */
-    private readonly bought = [
+    readonly bought = [
         new Set<number>,
         new Set<number>
     ] as const;
 
+    readonly followTarget = new Vector(0, 0);
+    readonly lookTarget = new Vector(0, 0);
+    readonly endTarget = new Vector(0, 0);
+    followPath = false;
+
+    tickCount = 0;
     currentHolding: WeaponType | ItemType = WeaponType.PRIMARY;
     /** The type of weapon my player is holding */
     weapon!: WeaponType;
 
     /** Current type of item which is placing */
     currentType!: ItemType | null;
-
-    /** true if autoattack is enabled */
-    autoattack = false;
-
-    /** true if rotation is enabled */
-    private rotation = true;
-    cursorAngle = 0;
-    reverseCursorAngle = 0;
-    lockPosition = false;
-    lockedPosition = new Vector(0, 0);
-
-    /** A bitmask which represents current movement direction */
-    move!: number;
 
     /** true if myPlayer is attacking using left mouse button */
     attacking!: EAttack;
@@ -137,30 +155,36 @@ class ModuleHandler {
     healedOnce!: boolean;
     totalPlaces!: number;
     attacked!: boolean;
-    canAttack = false;
     canHitEntity = false;
 
     /** true, if some of combat or defensive modules are active */
     moduleActive = false;
-    useAngle = 0;
+    useAngle: number | null = null;
     useWeapon: WeaponType | null = null;
+    useItem: ItemType | null = null;
+    forceWeapon: WeaponType | null = null;
+    useHat: number | null = null;
+    forceHat: number | null = null;
+    useAcc: number | null = null;
     previousWeapon: WeaponType | null = null;
 
+    /** Current mouse angle, including lock rotation */
+    currentAngle = 0;
+    move_dir: number | null = null;
+    reverse_move_dir: number | null = null;
+    moveTo: number | null | "disable" = "disable";
+    prevMoveTo: number | null | "disable" = "disable";
+
+    /** true, if player is autoattacking */
+    autoattack = false;
+    shouldAttack = false;
+
     public readonly mouse = {
-        x: 0,
-        y: 0,
-        lockX: 0,
-        lockY: 0,
-
-        /** Current mouse angle, regardless of conditions */
-        _angle: 0,
-
-        /** Current mouse angle, including lock rotation */
-        angle: 0,
 
         /** An angle that was sent to the server */
         sentAngle: 0,
     }
+
 
     constructor(client: PlayerClient) {
         this.client = client;
@@ -171,18 +195,36 @@ class ModuleHandler {
             clanJoiner: new ClanJoiner(client),
 
             autoAccept: new AutoAccept(client),
+            autoBuy: new AutoBuy(client),
 
+            defaultHat: new DefaultHat(client),
+            defaultAcc: new DefaultAcc(client),
+            safeWalk: new SafeWalk(client),
             antiInsta: new AntiInsta(client),
             shameReset: new ShameReset(client),
+            pathFinder: new PathFinder(client),
+            
+            reloading: new Reloading(client),
+            autoSync: new AutoSync(client),
+            velocityTick: new VelocityTick(client),
+            spikeSyncHammer: new SpikeSyncHammer(client),
+            spikeSync: new SpikeSync(client),
+            spikeTick: new SpikeTick(client),
+            knockbackTickTrap: new KnockbackTickTrap(client),
+            knockbackTick: new KnockbackTick(client),
+            knockbackTickHammer: new KnockbackTickHammer(client),
+            kbDefense: new KBDefense(client),
+            autoBreak: new Autobreak(client),
+            useFastest: new UseFastest(client),
+            useDestroying: new UseDestroying(client),
+            useAttacking: new UseAttacking(client),
+            utilityHat: new UtilityHat(client),
             
             autoPlacer: new AutoPlacer(client),
             placer: new Placer(client),
             autoMill: new Automill(client),
-            placementExecutor: new PlacementExecutor(client),
-            
-            reloading: new Reloading(client),
-            spikeTick: new SpikeTick(client),
-            autoBreak: new Autobreak(client),
+            autoGrind: new AutoGrind(client),
+
             preAttack: new PreAttack(client),
             autoHat: new Autohat(client),
         
@@ -198,18 +240,36 @@ class ModuleHandler {
 
         this.modules = [
             this.staticModules.autoAccept,
+            this.staticModules.autoBuy,
 
+            this.staticModules.defaultHat,
+            this.staticModules.defaultAcc,
+            this.staticModules.safeWalk,
             this.staticModules.antiInsta,
             this.staticModules.shameReset,
+            this.staticModules.pathFinder,
+            
+            this.staticModules.reloading,
+            this.staticModules.autoSync,
+            this.staticModules.velocityTick,
+            this.staticModules.spikeSyncHammer,
+            this.staticModules.spikeSync,
+            this.staticModules.spikeTick,
+            this.staticModules.knockbackTickTrap,
+            this.staticModules.knockbackTickHammer,
+            this.staticModules.knockbackTick,
+            this.staticModules.kbDefense,
+            this.staticModules.autoBreak,
+            this.staticModules.useFastest,
+            this.staticModules.useDestroying,
+            this.staticModules.useAttacking,
+            this.staticModules.utilityHat,
             
             this.staticModules.autoPlacer,
             this.staticModules.placer,
             this.staticModules.autoMill,
-            this.staticModules.placementExecutor,
-            
-            this.staticModules.reloading,
-            this.staticModules.spikeTick,
-            this.staticModules.autoBreak,
+            this.staticModules.autoGrind,
+
             this.staticModules.preAttack,
             this.staticModules.autoHat,
 
@@ -220,16 +280,17 @@ class ModuleHandler {
     }
 
     private movementReset() {
-        this.hotkeys.clear();
         this.currentHolding = WeaponType.PRIMARY;
         this.weapon = WeaponType.PRIMARY;
         this.currentType = null;
-        this.move = 0;
         this.attacking = EAttack.DISABLED;
         this.attackingState = EAttack.DISABLED;
+        this.move_dir = null;
+        this.reverse_move_dir = null;
     }
-
+    
     reset(): void {
+        const { isOwner, clients } = this.client;
         this.movementReset();
         this.getHatStore().utility.clear();
         this.getAccStore().utility.clear();
@@ -243,6 +304,7 @@ class ModuleHandler {
         this.totalPlaces = 0;
         this.attacked = false;
         this.canHitEntity = false;
+        this.autoattack = false;
 
         for (const module of this.modules) {
             if ("reset" in module) {
@@ -250,21 +312,24 @@ class ModuleHandler {
             }
         }
 
-        const { isOwner, clients } = this.client;
         if (isOwner) {
             for (const client of clients) {
                 client.ModuleHandler.movementReset();
+                client.ModuleHandler.toggleAutoattack(false);
             }
         }
     }
 
-    get isMoving(): boolean {
-        const angle = getAngleFromBitmask(this.move, false);
-        return angle !== null;
-    }
-
     get holdingWeapon(): boolean {
         return this.currentHolding <= WeaponType.SECONDARY;
+    }
+
+    get isForcedHat() {
+        return this.forceHat !== null;
+    }
+
+    get isMoving() {
+        return this.move_dir !== null;
     }
 
     getHatStore() {
@@ -275,22 +340,12 @@ class ModuleHandler {
         return this.store[EStoreType.ACCESSORY];
     }
 
-    getMoveAngle(): number | null {
-        if (this.client.isOwner) return getAngleFromBitmask(this.move, false);
-        if (!this.staticModules.movement.stopped) return this.cursorAngle;
-        return null;
+    setFollowTarget(x: number, y: number) {
+        this.followTarget.setXY(x, y);
     }
 
-    handleMouse(event: MouseEvent) {
-        this.mouse.x = event.clientX;
-        this.mouse.y = event.clientY;
-        const angle = getAngle(innerWidth / 2, innerHeight / 2, this.mouse.x, this.mouse.y);
-        this.mouse._angle = angle;
-        if (this.rotation) {
-            this.mouse.lockX = event.clientX;
-            this.mouse.lockY = event.clientY;
-            this.mouse.angle = angle;
-        }
+    setLookTarget(x: number, y: number) {
+        this.lookTarget.setXY(x, y);
     }
 
     private updateSentAngle(priority: ESentAngle) {
@@ -299,11 +354,36 @@ class ModuleHandler {
     }
 
     upgradeItem(id: number) {
-        this.client.SocketManager.upgradeItem(id);
+        this.client.PacketManager.upgradeItem(id);
         this.client.myPlayer.upgradeItem(id);
     }
 
+    startMovement(angle: number | null = this.move_dir, ignore = false) {
+        if (!ignore) {
+            this.move_dir = angle;
+            this.reverse_move_dir = angle === null ? null : reverseAngle(angle);
+        }
+
+        const { safeWalk } = this.staticModules;
+        if (
+            safeWalk.willGetHit(angle, 45) ||
+            !ignore && this.moveTo !== "disable"
+        ) return false;
+
+        this.client.PacketManager.move(angle);
+        return true;
+    }
+
+    stopMovement() {
+        this.client.PacketManager.resetMoveDir();
+    }
+
+    startPlacement(type: ItemType | null) {
+        this.currentType = type;
+    }
+
     canBuy(type: EStoreType, id: number): boolean {
+        if (id === -1) return false;
         const store = DataHandler.getStore(type);
         // @ts-ignore
         const price = store[id].price;
@@ -314,7 +394,7 @@ class ModuleHandler {
     /** Buys a hat or accessory and returns true if it was successful */
     buy(type: EStoreType, id: number, force = false): boolean {
         const store = DataHandler.getStore(type);
-        const { isOwner, clients, myPlayer, SocketManager } = this.client;
+        const { isOwner, clients, myPlayer, PacketManager } = this.client;
         if (!myPlayer.inGame) return false;
 
         if (force) {
@@ -335,29 +415,32 @@ class ModuleHandler {
         }
         
         if (!bought.has(id) && myPlayer.tempGold >= price) {
-            bought.add(id);
-            SocketManager.buy(type, id);
+            // bought.add(id);
+            PacketManager.buy(type, id);
             myPlayer.tempGold -= price;
             return false;
         }
         return bought.has(id);
     }
-
+    
     /** Buys and equips a hat or accessory */
     equip(type: EStoreType, id: number, force = false, toggle = false): boolean {
         const store = this.store[type];
+        const { myPlayer, PacketManager, EnemyManager, isOwner, clients } = this.client;
         if (toggle && store.last === id && id !== 0) {
             id = 0;
         }
-        const { myPlayer, SocketManager, isOwner, clients, EnemyManager } = this.client;
+        if (!myPlayer.inGame || !this.buy(type, id, force)/*  || store.last === id */) return false;
+        if (store.last === id && myPlayer.storeData[type] === id) return false;
+        // TODO: Improve the way store handles hat equipment between forced and automatic type
+        // if (!force) {
+        //     if (store.current === id) return false;
+        //     store.current = id;
+        // }
 
-        if (!myPlayer.inGame || !this.buy(type, id, force)) return false;
+        store.last = id;
+        PacketManager.equip(type, id);
 
-        // I can play with this logic forever, but still leaving it to you..
-        // if (/* !force &&  */store.last === id) return false;
-        // store.last = id;
-
-        SocketManager.equip(type, id);
         if (type === EStoreType.HAT) {
             this.sentHatEquip = true;
         } else {
@@ -366,7 +449,6 @@ class ModuleHandler {
 
         if (force) {
             store.actual = id;
-
             if (isOwner) {
                 for (const client of clients) {
                     client.ModuleHandler.staticModules.tempData.setStore(type, id);
@@ -376,8 +458,8 @@ class ModuleHandler {
 
         const nearest = EnemyManager.nearestTurretEntity;
         const reloading = this.staticModules.reloading;
-        if (nearest !== null && reloading.isReloaded("turret")) {
-            reloading.resetByType("turret");
+        if (nearest !== null && reloading.isReloaded(ReloadType.TURRET) && type === EStoreType.HAT && id === EHat.TURRET_GEAR) {
+            reloading.resetByType(ReloadType.TURRET);
         }
         return true;
     }
@@ -386,12 +468,12 @@ class ModuleHandler {
         if (!force && angle === this.mouse.sentAngle) return;
         this.mouse.sentAngle = angle;
         this.updateSentAngle(ESentAngle.HIGH);
-        this.client.SocketManager.updateAngle(angle);
+        this.client.PacketManager.updateAngle(angle);
     }
 
-    private selectItem(type: ItemType) {
+    selectItem(type: ItemType) {
         const item = this.client.myPlayer.getItemByType(type)!;
-        this.client.SocketManager.selectItemByID(item, false);
+        this.client.PacketManager.selectItemByID(item, false);
         this.currentHolding = type;
     }
 
@@ -400,7 +482,7 @@ class ModuleHandler {
             this.mouse.sentAngle = angle;
         }
         this.updateSentAngle(priority);
-        this.client.SocketManager.attack(angle);
+        this.client.PacketManager.attack(angle);
 
         if (this.holdingWeapon) {
             this.attacked = true;
@@ -408,7 +490,20 @@ class ModuleHandler {
     }
 
     stopAttack() {
-        this.client.SocketManager.stopAttack();
+        this.client.PacketManager.stopAttack();
+    }
+
+    toggleAutoattack(state = !this.autoattack) {
+        const { PacketManager, isOwner, clients } = this.client;
+        if (this.attackingState !== EAttack.DISABLED) return;
+        this.autoattack = state;
+        PacketManager.autoAttack();
+
+        // if (isOwner) {
+        //     for (const client of clients) {
+        //         client.ModuleHandler.toggleAutoattack(state);
+        //     }
+        // }
     }
 
     whichWeapon(type: WeaponType = this.weapon) {
@@ -417,82 +512,33 @@ class ModuleHandler {
 
         this.currentHolding = type;
         this.weapon = type;
-        this.client.SocketManager.selectItemByID(weapon, true);
+        this.client.PacketManager.selectItemByID(weapon, true);
     }
 
-    place(type: ItemType, { angle = this.mouse.angle, priority, last }: IPlaceOptions) {
+    place(type: ItemType, angle = this.currentAngle) {
+        this.totalPlaces += 1;
         this.selectItem(type);
-        this.attack(angle, priority);
-        if (last) this.whichWeapon();
+        this.attack(angle, ESentAngle.LOW);
+        this.whichWeapon();
     }
 
-    heal(last: boolean) {
+    heal() {
         this.selectItem(ItemType.FOOD);
         this.attack(null, ESentAngle.LOW);
-        if (last) this.whichWeapon();
+        this.whichWeapon();
     }
 
-    private placementHandler(type: ItemType, code: string) {
-        const item = this.client.myPlayer.getItemByType(type);
-        if (item === null) return;
-        this.hotkeys.set(code, type);
-        this.currentType = type;
-
-        const { isOwner, clients } = this.client;
-        if (isOwner) {
-            for (const client of clients) {
-                client.ModuleHandler.placementHandler(type, code);
-            } 
-        }
-    }
-
-    private handleMovement() {
-        const angle = getAngleFromBitmask(this.move, false);
-        this.client.SocketManager.move(angle);
-    }
-
-    private toggleAutoattack(value?: boolean) {
-        if (this.attackingState !== EAttack.DISABLED) return;
-
-        const { SocketManager, isOwner, clients } = this.client;
-        if (isOwner) {
-            this.autoattack = !this.autoattack;
-            SocketManager.autoAttack();
-
-            for (const client of clients) {
-                client.ModuleHandler.toggleAutoattack(this.autoattack);
-            }
-        } else if (typeof value === "boolean" && this.autoattack !== value) {
-            this.autoattack = value;
-            SocketManager.autoAttack();
-        }
-    }
-
-    private toggleRotation() {
-        this.rotation = !this.rotation;
-        if (this.rotation) {
-            const { x, y, _angle } = this.mouse;
-            this.mouse.lockX = x;
-            this.mouse.lockY = y;
-            this.mouse.angle = _angle;
-        }
-    }
-
-    private toggleBotPosition() {
-        this.lockPosition = !this.lockPosition;
-        if (this.lockPosition) {
-            const pos = cursorPosition();
-            this.lockedPosition.setVec(pos);
-        }
-    }
-
-    private updateStoreState(type: EStoreType) {
-        const { myPlayer } = this.client;
-        const id = myPlayer.getBestCurrentID(type);
-        this.store[type].current = id;
-    }
-
+    colls: number[] = [];
     postTick() {
+        const { isOwner, ObjectManager, myPlayer } = this.client;
+        // const { x, y } = myPlayer.pos.current;
+        // const ids: number[] = [];
+        // ObjectManager.grid2D.query(x, y, 2, (id: number) => {
+        //     ids.push(id);
+        // });
+        // this.colls = ids;
+
+        this.tickCount += 1;
         this.sentAngle = ESentAngle.NONE;
         this.sentHatEquip = false;
         this.sentAccEquip = false;
@@ -504,10 +550,15 @@ class ModuleHandler {
         this.canHitEntity = false;
         this.moduleActive = false;
         this.useWeapon = null;
-
-        const { isOwner } = this.client;
-        this.updateStoreState(EStoreType.HAT);
-        this.updateStoreState(EStoreType.ACCESSORY);
+        this.useItem = null;
+        this.forceWeapon = null;
+        this.useHat = null;
+        this.forceHat = null;
+        this.useAcc = null;
+        this.useAngle = null;
+        this.shouldAttack = false;
+        this.prevMoveTo = this.moveTo;
+        this.moveTo = "disable";
 
         if (!isOwner) {
             for (const botModule of this.botModules) {
@@ -519,131 +570,10 @@ class ModuleHandler {
             module.postTick();
         }
         this.attackingState = this.attacking;
-    }
-
-    handleKeydown(event: KeyboardEvent) {
-        const target = event.target as HTMLElement;
-        if (event.code === "Space" && target.tagName === "BODY") {
-            event.preventDefault();
-        }
-        if (event.repeat) return;
-        if (UI.activeHotkeyInput !== null) return;
-        
-        const isInput = isActiveInput();
-        if (event.code === settings.toggleMenu && !isInput) {
-            UI.toggleMenu();
-        }
-
-        if (event.code === settings.toggleChat) {
-            GameUI.handleEnter(event);
-        }
-        if (!this.client.myPlayer.inGame) return;
-        if (isInput) return;
-
-        const { isOwner, clients } = this.client;
-        const type = event.code === settings.primary ? WeaponType.PRIMARY : event.code === settings.secondary ? WeaponType.SECONDARY : null;
-        if (type !== null) {
-            this.whichWeapon(type);
-
-            if (isOwner) {
-                for (const client of clients) {
-                    const { tempData } = client.ModuleHandler.staticModules; 
-                    tempData.setWeapon(type);
-                }
-            }
-        }
-
-        if (event.code === settings.food) this.placementHandler(ItemType.FOOD, event.code);
-        if (event.code === settings.wall) this.placementHandler(ItemType.WALL, event.code);
-        if (event.code === settings.spike) this.placementHandler(ItemType.SPIKE, event.code);
-        if (event.code === settings.windmill) this.placementHandler(ItemType.WINDMILL, event.code);
-        if (event.code === settings.farm) this.placementHandler(ItemType.FARM, event.code);
-        if (event.code === settings.trap) this.placementHandler(ItemType.TRAP, event.code);
-        if (event.code === settings.turret) this.placementHandler(ItemType.TURRET, event.code);
-        if (event.code === settings.spawn) this.placementHandler(ItemType.SPAWN, event.code);
-
-        const copyMove = this.move;
-        if (event.code === settings.up) this.move |= 1;
-        if (event.code === settings.left) this.move |= 4;
-        if (event.code === settings.down) this.move |= 2;
-        if (event.code === settings.right) this.move |= 8;
-        if (copyMove !== this.move) this.handleMovement();
-
-        if (event.code === settings.autoattack) this.toggleAutoattack();
-        if (event.code === settings.lockrotation) this.toggleRotation();
-        if (event.code === settings.lockBotPosition) this.toggleBotPosition();
-
-        if (event.code === settings.toggleShop) StoreHandler.toggleStore();
-        if (event.code === settings.toggleClan) GameUI.openClanMenu();
-    }
-
-    handleKeyup(event: KeyboardEvent) {
-        if (!this.client.myPlayer.inGame) return;
-
-        const copyMove = this.move;
-        if (event.code === settings.up) this.move &= -2;
-        if (event.code === settings.left) this.move &= -5;
-        if (event.code === settings.down) this.move &= -3;
-        if (event.code === settings.right) this.move &= -9;
-        if (copyMove !== this.move) this.handleMovement();
-
-        if (this.currentType !== null && this.hotkeys.delete(event.code)) {
-            const entry = [...this.hotkeys].pop();
-            this.currentType = entry !== undefined ? entry[1] : null;
-            if (this.currentType === null) {
-                this.whichWeapon();
-            }
-
-            const { isOwner, clients } = this.client;
-            if (isOwner) {
-                for (const client of clients) {
-                    const { ModuleHandler } = client;
-                    if (ModuleHandler.currentType !== null && ModuleHandler.hotkeys.delete(event.code)) {
-                        const entry = [...ModuleHandler.hotkeys].pop();
-                        ModuleHandler.currentType = entry !== undefined ? entry[1] : null;
-                        if (ModuleHandler.currentType === null) {
-                            ModuleHandler.whichWeapon();
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    handleMousedown(event: MouseEvent) {
-        const button = formatButton(event.button);
-
-        // if (button === "MBTN") {
-        //     this.instakill.start();
-        //     return;
-        // }
-
-        const state = button === "LBTN" ? EAttack.ATTACK : button === "RBTN" ? EAttack.DESTROY : null;
-        if (state !== null && this.attacking === EAttack.DISABLED) {
-            this.attacking = state;
-            this.attackingState = state;
-
-            const { isOwner, clients } = this.client;
-            if (isOwner) {
-                for (const client of clients) {
-                    client.ModuleHandler.staticModules.tempData.setAttacking(state);
-                }
-            }
-        }
-    }
-
-    handleMouseup(event: MouseEvent) {
-        const button = formatButton(event.button);
-
-        if ((button === "LBTN" || button === "RBTN") && this.attacking !== EAttack.DISABLED) {
-            this.attacking = EAttack.DISABLED;
-
-            const { isOwner, clients } = this.client;
-            if (isOwner) {
-                for (const client of clients) {
-                    client.ModuleHandler.staticModules.tempData.setAttacking(EAttack.DISABLED);
-                }
-            }
+        if (isOwner) {
+            this.client.InputHandler.postTick();
+            GameUI.updateFastQ(this.didAntiInsta);
+            GameUI.updateTotalPlaces(this.totalPlaces);
         }
     }
 }

@@ -1,16 +1,16 @@
 import Config from "../constants/Config";
-import { Weapons } from "../constants/Items";
 import Animal from "../data/Animal";
 import ClientPlayer from "../data/ClientPlayer";
 import { PlayerObject } from "../data/ObjectItem";
 import Player from "../data/Player";
 import PlayerClient from "../PlayerClient";
-import { TTarget } from "../types/Common";
+import type { TTarget } from "../types/Common";
 import { EResourceType } from "../types/Enums";
-import { EWeapon, TMelee, WeaponTypeString} from "../types/Items";
+import { EWeapon, type TMelee} from "../types/Items";
 import { EHat } from "../types/Store";
 import { getAngleDist } from "../utility/Common";
-import Logger from "../utility/Logger";
+import DataHandler from "../utility/DataHandler";
+import settings from "../utility/Settings";
 
 interface IPlayerData {
     readonly socketID?: string;
@@ -42,6 +42,9 @@ class PlayerManager {
      */
     readonly animals: Animal[] = [];
 
+    /** Represents existing clans, string = clanName, number = ownerID */
+    readonly clanData = new Map<string, number>();
+
     start = Date.now();
 
     /**
@@ -56,6 +59,16 @@ class PlayerManager {
 
     get timeSinceTick() {
         return Date.now() - this.start;
+    }
+
+    getEntity(id: number, isPlayer: boolean): Player | Animal | null {
+        if (isPlayer && this.playerData.has(id)) {
+            return this.playerData.get(id)!;
+        } else if (!isPlayer && this.animalData.has(id)) {
+            return this.animalData.get(id)!;
+        }
+
+        return null;
     }
 
     createPlayer({ socketID, id, nickname, health, skinID }: IPlayerData) {
@@ -79,11 +92,23 @@ class PlayerManager {
         return player;
     }
 
+    createClan(name: string, ownerID: number) {
+        this.clanData.set(name, ownerID);
+    }
+
+    deleteClan(name: string) {
+        this.clanData.delete(name);
+    }
+
+    clanExist(name: string | null) {
+        return name !== null && this.clanData.has(name);
+    }
+
     canHitTarget(player: Player, weaponID: TMelee, target: TTarget) {
-        const pos = target.position.current;
-        const distance = player.position.current.distance(pos);
-        const angle = player.position.current.angle(pos);
-        const range = Weapons[weaponID].range + target.hitScale;
+        const pos = target.pos.current;
+        const distance = player.pos.current.distance(pos);
+        const angle = player.pos.current.angle(pos);
+        const range = DataHandler.getWeapon(weaponID).range + target.hitScale;
         return distance <= range && getAngleDist(angle, player.angle) <= Config.gatherAngle;
     }
 
@@ -98,8 +123,8 @@ class PlayerManager {
         }
         
         // When player hits, we must reset his reload
-        const weapon = Weapons[weaponID];
-        const type = WeaponTypeString[weapon.itemType];
+        const weapon = DataHandler.getWeapon(weaponID);
+        const type = weapon.itemType;
         reload[type].current = 0;
         reload[type].max = player.getWeaponSpeed(weaponID);
 
@@ -189,7 +214,7 @@ class PlayerManager {
     }
 
     postTick() {
-        const { EnemyManager, ProjectileManager, ObjectManager, myPlayer } = this.client;
+        const { EnemyManager, ProjectileManager, ObjectManager, myPlayer, isOwner } = this.client;
         EnemyManager.handleEnemies(this.players, this.animals);
 
         // Call all other classes after updating player and animal positions
@@ -200,11 +225,13 @@ class PlayerManager {
         if (myPlayer.inGame) {
             myPlayer.tickUpdate();
         }
+
+        if ((settings._autospawn || !isOwner) && !myPlayer.inGame) {
+            myPlayer.spawn();
+        }
     }
 
-    /**
-     * Checks if players are enemies by their clan names.
-     */
+    /** Checks if players are enemies by their clan names. */
     isEnemy(target1: Player, target2: Player) {
         return (
             target1 !== target2 && (
@@ -214,6 +241,7 @@ class PlayerManager {
         )
     }
 
+    /** Checks if 2 entities are enemies to each other, globally */
     isEnemyByID(ownerID: number, target: Player) {
         const player = this.playerData.get(ownerID)!;
 
@@ -244,8 +272,8 @@ class PlayerManager {
         if (weapon !== EWeapon.WOODEN_SHIELD) return false;
         
         const { myPlayer, ModuleHandler } = this.client;
-        const pos1 = owner.position.current;
-        const pos2 = target.position.current;
+        const pos1 = owner.pos.current;
+        const pos2 = target.pos.current;
         const angle = pos1.angle(pos2);
         const ownerAngle = myPlayer.isMyPlayerByID(owner.id) ? ModuleHandler.mouse.sentAngle : owner.angle; 
         return getAngleDist(angle, ownerAngle) <= Config.shieldAngle;

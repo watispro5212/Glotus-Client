@@ -4,23 +4,16 @@ import Config from "../constants/Config";
 import { ItemGroup } from "../types/Items";
 import Entity from "./Entity";
 
-/**
- * Animal class. Represents all animals including bosses
- */
+/** Animal class. Represents all animals including bosses */
 class Animal extends Entity {
-    type = -1;
+    type!: EAnimal;
     currentHealth = 0;
-    private _maxHealth = 0;
-    private nameIndex = 0;
+    maxHealth = 0;
     isDanger = false;
     isHostile = false;
 
     constructor(client: PlayerClient) {
         super(client);
-    }
-
-    get maxHealth() {
-        return this._maxHealth;
     }
 
     canBeTrapped() {
@@ -39,15 +32,15 @@ class Animal extends Entity {
         this.id = id;
         this.type = type;
 
-        this.position.previous.setVec(this.position.current);
-        this.position.current.setXY(x, y);
+        this.pos.previous.setVec(this.pos.current);
+        this.pos.current.setXY(x, y);
         this.setFuturePosition();
 
         const animal = Animals[type];
         this.angle = angle;
         this.currentHealth = health;
-        this._maxHealth = animal.health;
-        this.nameIndex = nameIndex;
+        this.maxHealth = animal.health;
+        nameIndex;
         this.scale = animal.scale;
         
         const isHostile = animal.hostile && type !== EAnimal.TREASURE;

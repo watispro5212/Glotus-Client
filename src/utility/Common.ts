@@ -1,8 +1,7 @@
-import { myClient } from "..";
 import Config from "../constants/Config";
 import Vector from "../modules/Vector";
 import ZoomHandler from "../modules/ZoomHandler";
-import { IAngle } from "../types/Common";
+import { type IAngle } from "../types/Common";
 
 export const getAngle = (x1: number, y1: number, x2: number, y2: number) => {
     return Math.atan2(y2 - y1, x2 - x1);
@@ -23,6 +22,12 @@ export const fixTo = (value: number, fraction: number) => {
 export const getAngleDist = (a: number, b: number) => {
     const p = Math.abs(b - a) % (Math.PI * 2);
     return (p > Math.PI ? (Math.PI * 2) - p : p);
+}
+
+export const findMiddleAngle = (a: number, b: number) => {
+    const x = Math.cos(a) + Math.cos(b);
+    const y = Math.sin(a) + Math.sin(b);
+    return Math.atan2(y, x);
 }
 
 export const toRadians = (degrees: number) => {
@@ -47,10 +52,26 @@ export const lerp = (start: number, end: number, factor: number) => {
     return (1 - factor) * start + factor * end;
 }
 
-let uniqueID = 0;
-export const getUniqueID = () => {
-    return uniqueID++;
+export const reverseAngle = (angle: number) => {
+    return Math.atan2(-Math.sin(angle), -Math.cos(angle));
 }
+
+export const getTargetValue = (target: any, prop: string) => {
+    return target[prop];
+}
+
+export const setTargetValue = (target: any, prop: string, value: any) => {
+    target[prop] = value;
+}
+
+const incrementor = () => {
+    let value = 0;
+    return function() {
+        return value++;
+    }
+}
+
+export const getUniqueID = incrementor();
 
 export const pointInsideRect = (
     point: Vector,
@@ -216,11 +237,10 @@ export const inRange = (value: number, min: number, max: number) => {
 }
 
 export const findPlacementAngles = (angles: IAngle[]) => {
-    // const output: number[] = [];
     const output = new Set<number>();
 
     for (let i = 0; i < angles.length; i++) {
-        const { angle, offset } = angles[i];
+        const { angle, offset } = angles[i]!;
         const start = angle - offset;
         const end = angle + offset;
 
@@ -231,7 +251,7 @@ export const findPlacementAngles = (angles: IAngle[]) => {
             if (startIntersects && endIntersects) break;
 
             if (i !== j) {
-                const { angle, offset } = angles[j];
+                const { angle, offset } = angles[j]!;
                 if (getAngleDist(start, angle) <= offset) startIntersects = true;
                 if (getAngleDist(end, angle) <= offset) endIntersects = true;
             }
@@ -239,9 +259,10 @@ export const findPlacementAngles = (angles: IAngle[]) => {
   
         if (!startIntersects) output.add(start);
         if (!endIntersects) output.add(end);
+        if (output.size > 1) break;
     }
   
-    return output;
+    return [...output];
 }
 
 export const getAngleOffset = (a: Vector, b: Vector, scale: number): IAngle => {
@@ -249,14 +270,4 @@ export const getAngleOffset = (a: Vector, b: Vector, scale: number): IAngle => {
     const angle = a.angle(b);
     const offset = Math.asin((2 * scale) / (2 * distance));
     return { angle, offset };
-}
-
-export const cursorPosition = () => {
-    const { ModuleHandler, myPlayer } = myClient;
-    const { w, h } = ZoomHandler.scale.current;
-    const scale = Math.max(innerWidth / w, innerHeight / h);
-    const cursorX = (ModuleHandler.mouse.lockX - innerWidth / 2) / scale;
-    const cursorY = (ModuleHandler.mouse.lockY - innerHeight / 2) / scale;
-    const pos = myPlayer.position.current;
-    return new Vector(pos.x + cursorX, pos.y + cursorY);
 }

@@ -1,5 +1,5 @@
 import Animal from "../data/Animal";
-import { TObject } from "../data/ObjectItem";
+import { type TObject } from "../data/ObjectItem";
 import Player from "../data/Player";
 import { ESentAngle } from "./Enums";
 
@@ -13,7 +13,6 @@ export interface IReload {
     max: number;
 }
 
-export type TReload = "primary" | "secondary" | "turret";
 export type TResource = "food" | "wood" | "stone" | "gold" | "kills";
 
 export interface IAngle {

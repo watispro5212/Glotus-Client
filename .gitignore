@@ -1,3 +1,9 @@
 node_modules
 build
 dist
+bun.lock
+private_header.txt
+loader_header.txt
+privateBuild.ts
+private
+.env

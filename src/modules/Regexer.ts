@@ -109,7 +109,7 @@ class Regexer {
 
         const index = getIndex(match);
         this.code = this.insertAtIndex(index, substr.replace(/\$(\d+)/g, (...args) => {
-            return match[args[1]];
+            return match[args[1]]!;
         }));
     }
 

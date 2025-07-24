@@ -1,168 +1,89 @@
 import { EAccessory, EHat } from "../types/Store";
-import { Cookie } from "./Storage";
-
-export interface ISettings {
-    // Keybinds
-    primary: string;
-    secondary: string;
-    food: string;
-    wall: string;
-    spike: string;
-    windmill: string;
-    farm: string;
-    trap: string;
-    turret: string;
-    spawn: string;
-
-    up: string;
-    left: string;
-    down: string;
-    right: string;
-    autoattack: string;
-    lockrotation: string;
-    lockBotPosition: string;
-    toggleChat: string;
-    toggleShop: string;
-    toggleClan: string;
-    toggleMenu: string;
-
-    // Combat
-    biomehats: boolean;
-    autoemp: boolean;
-    antienemy: boolean;
-    antianimal: boolean;
-    antispike: boolean;
-
-    autoheal: boolean;
-    healingSpeed: number;
-
-    automill: boolean;
-    autoplacer: boolean;
-    autobreak: boolean;
-
-    // Visuals
-    enemyTracers: boolean;
-    enemyTracersColor: string;
-    teammateTracers: boolean;
-    teammateTracersColor: string;
-    animalTracers: boolean;
-    animalTracersColor: string;
-    notificationTracers: boolean;
-    notificationTracersColor: string;
-    arrows: boolean;
-
-    itemMarkers: boolean;
-    itemMarkersColor: string;
-    teammateMarkers: boolean;
-    teammateMarkersColor: string;
-    enemyMarkers: boolean;
-    enemyMarkersColor: string;
-
-    weaponXPBar: boolean;
-    playerTurretReloadBar: boolean;
-    playerTurretReloadBarColor: string;
-    weaponReloadBar: boolean;
-    weaponReloadBarColor: string;
-    renderHP: boolean;
-
-    objectTurretReloadBar: boolean;
-    objectTurretReloadBarColor: string;
-    itemHealthBar: boolean;
-    itemHealthBarColor: string;
-
-    itemCounter: boolean;
-    renderGrid: boolean;
-    windmillRotation: boolean;
-    entityDanger: boolean;
-
-    displayPlayerAngle: boolean;
-    projectileHitbox: boolean;
-    possibleShootTarget: boolean;
-    weaponHitbox: boolean;
-    collisionHitbox: boolean
-    placementHitbox: boolean;
-    turretHitbox: boolean;
-    possiblePlacement: boolean;
-
-    autospawn: boolean;
-    autoaccept: boolean;
-    menuTransparency: boolean;
-    storeItems: [EHat[], EAccessory[]];
-}
+import CustomStorage from "./CustomStorage";
 
 export const defaultSettings = {
-    primary: "Digit1",
-    secondary: "Digit2",
-    food: "KeyQ",
-    wall: "Digit4",
-    spike: "KeyC",
-    windmill: "KeyR",
-    farm: "KeyT",
-    trap: "Space",
-    turret: "KeyF",
-    spawn: "KeyG",
-    up: "KeyW",
-    left: "KeyA",
-    down: "KeyS",
-    right: "KeyD",
-    autoattack: "KeyE",
-    lockrotation: "KeyX",
-    lockBotPosition: "KeyZ",
-    toggleChat: "Enter",
-    toggleShop: "ShiftLeft",
-    toggleClan: "ControlLeft",
-    toggleMenu: "Escape",
-    biomehats: true,
-    autoemp: true,
-    antienemy: true,
-    antianimal: true,
-    antispike: true,
-    autoheal: true,
-    healingSpeed: 25,
-    automill: true,
-    autoplacer: true,
-    autobreak: true,
-    enemyTracers: false,
-    enemyTracersColor: "#cc5151",
-    teammateTracers: false,
-    teammateTracersColor: "#8ecc51",
-    animalTracers: false,
-    animalTracersColor: "#518ccc",
-    notificationTracers: true,
-    notificationTracersColor: "#f5d951",
-    arrows: true,
-    itemMarkers: true,
-    itemMarkersColor: "#84bd4b",
-    teammateMarkers: true,
-    teammateMarkersColor: "#bdb14b",
-    enemyMarkers: true,
-    enemyMarkersColor: "#ba4949",
-    weaponXPBar: true,
-    playerTurretReloadBar: true,
-    playerTurretReloadBarColor: "#cf7148",
-    weaponReloadBar: true,
-    weaponReloadBarColor: "#5155cc",
-    renderHP: true,
-    objectTurretReloadBar: false,
-    objectTurretReloadBarColor: "#66d9af",
-    itemHealthBar: false,
-    itemHealthBarColor: "#6b449e",
-    itemCounter: true,
-    renderGrid: false,
-    windmillRotation: false,
-    entityDanger: true,
-    displayPlayerAngle: false,
-    projectileHitbox: false,
-    possibleShootTarget: false,
-    weaponHitbox: false,
-    collisionHitbox: false,
-    placementHitbox: false,
-    turretHitbox: false,
-    possiblePlacement: true,
-    autospawn: false,
-    autoaccept: false,
-    menuTransparency: false,
-    storeItems: [[
+    _primary: "Digit1",
+    _secondary: "Digit2",
+    _food: "KeyQ",
+    _wall: "Digit4",
+    _spike: "KeyC",
+    _windmill: "KeyR",
+    _farm: "KeyT",
+    _trap: "Space",
+    _turret: "KeyF",
+    _spawn: "KeyG",
+    _up: "KeyW",
+    _left: "KeyA",
+    _down: "KeyS",
+    _right: "KeyD",
+    _autoattack: "KeyE",
+    _lockrotation: "KeyX",
+    _lockBotPosition: "KeyZ",
+    _toggleChat: "Enter",
+    _toggleShop: "ShiftLeft",
+    _toggleClan: "ControlLeft",
+    _toggleMenu: "Escape",
+    _biomehats: true,
+    _autoemp: true,
+    _antienemy: true,
+    _antianimal: true,
+    _antispike: true,
+    _autoheal: true,
+    _autoSync: true,
+    _velocityTick: true,
+    _spikeSyncHammer: true,
+    _spikeSync: true,
+    _spikeTick: true,
+    _knockbackTickTrap: true,
+    _knockbackTickHammer: true,
+    _knockbackTick: true,
+    _automill: true,
+    _autoplacer: true,
+    _autobreak: true,
+    _safeWalk: true,
+    _autoGrind: true,
+    _enemyTracers: false,
+    _enemyTracersColor: "#cc5151",
+    _teammateTracers: false,
+    _teammateTracersColor: "#8ecc51",
+    _animalTracers: false,
+    _animalTracersColor: "#518ccc",
+    _notificationTracers: true,
+    _notificationTracersColor: "#f5d951",
+    _arrows: true,
+    _itemMarkers: true,
+    _itemMarkersColor: "#84bd4b",
+    _teammateMarkers: true,
+    _teammateMarkersColor: "#bdb14b",
+    _enemyMarkers: true,
+    _enemyMarkersColor: "#ba4949",
+    _weaponXPBar: true,
+    _playerTurretReloadBar: true,
+    _playerTurretReloadBarColor: "#cf7148",
+    _weaponReloadBar: true,
+    _weaponReloadBarColor: "#5155cc",
+    _renderHP: true,
+    _objectTurretReloadBar: false,
+    _objectTurretReloadBarColor: "#66d9af",
+    _itemHealthBar: false,
+    _itemHealthBarColor: "#6b449e",
+    _itemCounter: true,
+    _renderGrid: false,
+    _windmillRotation: false,
+    _entityDanger: true,
+    _displayPlayerAngle: false,
+    _projectileHitbox: false,
+    _possibleShootTarget: false,
+    _weaponHitbox: false,
+    _collisionHitbox: false,
+    _placementHitbox: false,
+    _turretHitbox: false,
+    _possiblePlacement: true,
+    _autospawn: false,
+    _autoaccept: false,
+    _menuTransparency: false,
+    _followCursor: true,
+    _storeItems: [[
         EHat.WINTER_CAP,
         EHat.FLIPPER_HAT,
         EHat.SOLDIER_HELMET,
@@ -184,11 +105,10 @@ export const defaultSettings = {
         EAccessory.BLOOD_WINGS,
         EAccessory.CORRUPT_X_WINGS,
     ]],
-} satisfies ISettings;
+};
 
-defaultSettings.storeItems
-
-const settings = { ...defaultSettings, ...Cookie.get<ISettings>("Glotus") };
+export type ISettings = typeof defaultSettings;
+const settings = { ...defaultSettings, ...CustomStorage.get<ISettings>("Glotus") };
 for (const iterator in settings) {
     const key = iterator as keyof ISettings;
     if (!defaultSettings.hasOwnProperty(key)) {
@@ -197,7 +117,7 @@ for (const iterator in settings) {
 }
 
 export const SaveSettings = () => {
-    Cookie.set("Glotus", JSON.stringify(settings), 365);
+    CustomStorage.set("Glotus", settings);
 }
 SaveSettings();
 

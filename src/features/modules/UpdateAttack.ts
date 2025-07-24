@@ -2,34 +2,41 @@ import PlayerClient from "../../PlayerClient";
 import { ESentAngle } from "../../types/Enums";
 
 class UpdateAttack {
-    readonly name = "updateAttack";
+    readonly moduleName = "updateAttack";
     private readonly client: PlayerClient;
     constructor(client: PlayerClient) {
         this.client = client;
     }
 
     private getAttackAngle() {
-        const { ModuleHandler, isOwner } = this.client;
-        const { staticModules, useAngle, mouse, cursorAngle } = ModuleHandler;
-        const { spikeTick, autoBreak } = staticModules;
-
-        if (spikeTick.isActive) return useAngle;
-        if (autoBreak.isActive && !ModuleHandler.canHitEntity) return useAngle;
-        if (isOwner) return mouse.angle;
-        return cursorAngle;
+        const { useAngle, currentAngle } = this.client.ModuleHandler;
+        if (useAngle !== null) return useAngle;
+        return currentAngle;
     }
 
     postTick(): void {
         const { ModuleHandler } = this.client;
-        const { useWeapon, weapon, attacking, canAttack, sentAngle, staticModules } = ModuleHandler;
+        const { useWeapon, forceWeapon, weapon, attacking, moveTo, prevMoveTo, sentAngle, staticModules } = ModuleHandler;
         const { reloading } = staticModules;
 
-        if (useWeapon !== null && useWeapon !== weapon) {
-            ModuleHandler.previousWeapon = weapon;
-            ModuleHandler.whichWeapon(useWeapon);
+        const nextWeapon = forceWeapon !== null ? forceWeapon : useWeapon;
+        if (nextWeapon !== null && nextWeapon !== weapon) {
+            const isReloaded = reloading.isReloaded(weapon);
+            if (isReloaded || forceWeapon !== null) {
+                ModuleHandler.whichWeapon(nextWeapon);
+            }
         }
 
-        if (canAttack) {
+        // if (useItem !== null) {
+        //     ModuleHandler.selectItem(useItem);
+        // }
+
+        if (prevMoveTo !== moveTo) {
+            const angle = moveTo === "disable" ? ModuleHandler.move_dir : moveTo;
+            ModuleHandler.startMovement(angle, true);
+        }
+
+        if (ModuleHandler.shouldAttack) {
             const angle = this.getAttackAngle();
             ModuleHandler.attack(angle);
             ModuleHandler.stopAttack();

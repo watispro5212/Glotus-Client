@@ -1,5 +1,4 @@
-import { myClient } from "..";
-
+import Logger from '../utility/Logger';
 const toBytes = (b64: string) => {
     return Uint8Array.from(atob(b64), c => c.charCodeAt(0));
 }
@@ -111,25 +110,27 @@ class Altcha {
         return { challengeData: data, solution };
     }
 
-    async generate(): Promise<string> {
+    async generate(encode = true): Promise<string> {
         try {
             const challengeData = await this.fetchChallenge();
             const { solution } = await this.validateChallenge(challengeData);
             const encoded = Altcha.createPayload(challengeData, solution as NonNullable<WorkerResult>);
             this.code = `alt:${encoded}`;
-            return encodeURIComponent(this.code);
+            if (encode) {
+                return encodeURIComponent(this.code);
+            }
+            return this.code;
         } catch (error) {
-            console.error("Token generation failed:", error);
+            Logger.error("Token generation failed:", error);
             throw error;
         }
     }
 }
 
-const altcha = new Altcha();
-const createSocket = async () => {
+export const altcha = new Altcha();
+const createSocket = async (href: string) => {
     const token = await altcha.generate();
-    const socket = myClient.connection.socket!;
-    const origin = new URL(socket.url).origin;
+    const origin = new URL(href).origin;
     const url = origin + "/?token=" + token;
     const ws = new WebSocket(url);
     ws.binaryType = "arraybuffer";

@@ -1,15 +1,18 @@
 {
     "name": "glotus-client",
     "author": "Murka",
-    "version": "2.0.5",
+    "version": "3.4",
     "description": "An excellent Moomoo.io hack for a comfortable gaming experience",
     "license": "MIT",
     "private": true,
+    "module": "src/index.ts",
+    "type": "module",
     "scripts": {
-        "start-listen": "node ./hoster/index.js",
-        "dev": "cross-env MODE=development webpack --watch",
-        "start": "concurrently \"npm run start-listen\" \"npm run dev\"",
-        "build": "cross-env MODE=production webpack"
+        "host": "bun run hoster.ts",
+        "dev": "cross-env NODE_ENV=development bun build src/index.ts --outdir dist --watch --target browser",
+        "build": "cross-env NODE_ENV=production bun run build.ts",
+        "private": "cross-env NODE_ENV=production bun run privateBuild.ts",
+        "start": "concurrently \"bun run host\" \"bun run dev\""
     },
     "keywords": [
         "hack",
@@ -23,20 +26,17 @@
         "browser"
     ],
     "devDependencies": {
-        "@types/express": "^4.17.21",
-        "@types/node": "^18.11.18",
-        "concurrently": "^8.2.2",
-        "cors": "^2.8.5",
+        "@types/bun": "latest",
+        "concurrently": "^9.1.2",
         "cross-env": "^7.0.3",
-        "express": "^4.18.2",
-        "html-loader": "^4.2.0",
-        "raw-loader": "^4.0.2",
-        "sass": "^1.57.1",
-        "sass-loader": "^13.2.0",
-        "terser-webpack-plugin": "^5.3.6",
-        "ts-loader": "^9.4.2",
-        "ts-node": "^10.9.1",
-        "webpack": "^5.75.0",
-        "webpack-cli": "^5.0.1"
+        "js-confuser": "^2.0.0",
+        "terser": "^5.40.0",
+        "type-fest": "^4.41.0"
+    },
+    "peerDependencies": {
+        "typescript": "^5"
+    },
+    "dependencies": {
+        "google-closure-compiler": "^20250721.0.0"
     }
 }

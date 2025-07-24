@@ -1,36 +1,67 @@
+import Config from "../../constants/Config";
 import PlayerClient from "../../PlayerClient";
+import { EHat } from "../../types/Store";
+import { findMiddleAngle, getAngleDist } from "../../utility/Common";
 import settings from "../../utility/Settings";
 
 class Autobreak {
-    readonly name = "autoBreak";
+    readonly moduleName = "autoBreak";
     private readonly client: PlayerClient;
     
-    isActive = false;
-
     constructor(client: PlayerClient) {
         this.client = client;
     }
 
     postTick(): void {
-        this.isActive = false;
+        
         const { EnemyManager, myPlayer, ModuleHandler } = this.client;
-        if (!settings.autobreak || ModuleHandler.moduleActive) return;
+        if (!settings._autobreak || ModuleHandler.moduleActive) return;
 
+        const secondNearestEnemyObject = EnemyManager.secondNearestEnemyObject;
+        const nearestEnemyObject = EnemyManager.nearestEnemyObject;
         const nearestTrap = EnemyManager.nearestTrap;
-        const type = ModuleHandler.weapon;
+        const nearestTarget = nearestTrap || nearestEnemyObject;
+        if (nearestTarget === null) return;
 
-        // Too much issues going on with this method
-        // It selects a weapon perfectly, but the whole logic when it should break an object or attack enemy is completely broken.
-        // const type = myPlayer.getBestDestroyingWeapon();
+        const type = myPlayer.getBestDestroyingWeapon(nearestTarget);
+        if (type === null) return;
 
-        if (nearestTrap !== null && type !== null) {
-            this.isActive = true;
+        const pos1 = myPlayer.pos.current;
+        const pos2 = nearestTarget.pos.current;
+        const distance = pos1.distance(pos2);
+        const weaponRange = myPlayer.getWeaponRangeByType(type);
+        const range = weaponRange + nearestTarget.hitScale;
+        if (nearestTarget === nearestEnemyObject && distance > range) {
+            return;
+        }
 
-            const pos1 = myPlayer.position.current;
-            const pos2 = nearestTrap.position.current;
+        let angle = pos1.angle(pos2);
+        if (secondNearestEnemyObject !== null && nearestTarget !== secondNearestEnemyObject) {
+            const pos3 = secondNearestEnemyObject.pos.current;
+            const distance = pos1.distance(pos3);
+            const range = weaponRange + secondNearestEnemyObject.hitScale;
+
+            const angle2 = pos1.angle(pos3);
+            const middleAngle = findMiddleAngle(angle, angle2);
+            if (
+                distance <= range &&
+                getAngleDist(angle, middleAngle) <= Config.gatherAngle &&
+                getAngleDist(angle2, middleAngle) <= Config.gatherAngle
+            ) {
+                angle = middleAngle;
+            }
+        }
+
+        const { reloading } = ModuleHandler.staticModules;
+        if (nearestTrap !== null) ModuleHandler.forceWeapon = type;
+        if (reloading.isReloaded(type)) {
             ModuleHandler.moduleActive = true;
-            ModuleHandler.useAngle = pos1.angle(pos2);
-            ModuleHandler.useWeapon = type;
+            ModuleHandler.useAngle = angle;
+            if (nearestTrap === null) {
+                ModuleHandler.forceWeapon = type;
+            }
+            ModuleHandler.forceHat = EHat.TANK_GEAR;
+            ModuleHandler.shouldAttack = true;
         }
     }
 }

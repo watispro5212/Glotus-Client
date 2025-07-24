@@ -1,28 +1,21 @@
 import { Resource } from "../data/ObjectItem";
 import Projectile from "../data/Projectile";
 import GameUI from "../UI/GameUI";
-import { IncomingPacket, OutcomingPacket, SocketClient, SocketServer } from "../types/Socket";
+import { SocketServer } from "../types/Socket";
 import { getUniqueID } from "../utility/Common";
-import { EItem, EWeapon } from "../types/Items";
-import { EStoreAction, EStoreType } from "../types/Store";
 import Vector from "../modules/Vector";
 import PlayerClient from "../PlayerClient";
-import { clearInterval } from "timers";
 import StoreHandler from "../UI/StoreHandler";
 
 class SocketManager {
     private readonly client: PlayerClient;
-
+    socket: WebSocket | null = null;
+    socketSend: typeof WebSocket.prototype.send | null = null;
     /**
      * An array of actions, that should be executed after receiving all packets
      */
     private readonly PacketQueue: (() => void)[] = [];
     startPing = Date.now();
-
-    /**
-     * Time in ms between server and client
-     */
-    ping = 0;
 
     /**
      * Time in ms between client, server and client
@@ -35,65 +28,52 @@ class SocketManager {
     tickTimeout: ReturnType<typeof setTimeout> | undefined;
 
     constructor(client: PlayerClient) {
-        this.message = this.message.bind(this);
         this.client = client;
+    }
 
-        const attachMessage = (socket: WebSocket) => {
-            socket.addEventListener("message", this.message);
-            socket.onclose = () => {
-                socket.removeEventListener("message", this.message);
-            }
-
-            // let count = 0;
-            // const send = socket.send;
-            // socket.send = function(data) {
-            //     count += 1;
-            //     return send.call(this, data);
-            // }
-
-            // setInterval(() => {
-            //     // if (count === 0) return;
-            //     console.log("COUNT: ", count);
-            //     count = 0;
-            // }, 1000);
-        }
-
-        const connection = client.connection;
-        if (connection.socket === undefined) {
-            Object.defineProperty(connection, "socket", {
-                set(value: WebSocket) {
-                    delete connection.socket;
-                    connection.socket = value;
-                    attachMessage(value);
-                },
-                configurable: true
-            })
-            return;
-        }
-        attachMessage(connection.socket);
+    init(socket: WebSocket) {
+        this.socket = socket;
+        this.socketSend = socket.send.bind(socket);
+        socket.addEventListener("message", (event) => this.handleMessage(event));
+        
+        // const that = this;
+        // const _send = socket.send;
+        // socket.send = function(data: Uint8Array) {
+        //     const decoder = that.client.PacketManager.Decoder;
+        //     if (decoder === null) return;
+        //     const decoded = decoder.decode(new Uint8Array(data));
+        //     const temp = [decoded[0], ...decoded[1]];
+        //     switch (temp[0]) {
+        //         case SocketClient.SPAWN: {
+        //             const name = ":D " + temp[1].name;
+        //             that.client.PacketManager.spawn(name.trim(), 1, Storage.get("skin_color"));
+        //             return;
+        //         }
+        //     }
+        //     return _send.call(this, data);
+        // }
     }
 
     private handlePing() {
-        this.pong = (Date.now() - this.startPing);
-        this.ping = this.pong / 2;
+        this.pong = Math.round(performance.now() - this.startPing);
         
         if (this.client.isOwner) {
             GameUI.updatePing(this.pong);
         }
 
         setTimeout(() => {
-            this.pingRequest();
+            this.client.PacketManager.pingRequest();
         }, 3000);
     }
 
-    private message(event: MessageEvent<ArrayBuffer>) {
-        const decoder = this.client.connection.Decoder;
+    private handleMessage(event: MessageEvent<ArrayBuffer>) {
+        const decoder = this.client.PacketManager.Decoder;
         if (decoder === null) return;
         
         const data = event.data;
         const decoded = decoder.decode(new Uint8Array(data));
-        const temp = [decoded[0], ...decoded[1]] as IncomingPacket;
-        const { myPlayer, PlayerManager, ObjectManager, ProjectileManager, LeaderboardManager } = this.client;
+        const temp = [decoded[0], ...decoded[1]];
+        const { myPlayer, ModuleHandler, PlayerManager, ObjectManager, ProjectileManager, LeaderboardManager, PacketManager } = this.client;
         switch (temp[0]) {
 
             case SocketServer.PING_RESPONSE: {
@@ -102,13 +82,14 @@ class SocketManager {
             }
 
             case SocketServer.CONNECTION_ESTABLISHED: {
-                this.pingRequest();
-                this.client.stableConnection = true;
+                this.client.connectSuccess = true;
+                
+                PacketManager.pingRequest();
                 if (this.client.isOwner) {
                     GameUI.loadGame();
                 } else {
                     this.client.myPlayer.spawn();
-                    this.client.connection.socket!.dispatchEvent(new Event("connected"));
+                    this.socket!.dispatchEvent(new Event("connected"));
                 }
 
                 break;
@@ -117,21 +98,22 @@ class SocketManager {
             case SocketServer.MY_PLAYER_SPAWN:
                 myPlayer.playerInit(temp[1]);
                 break;
-
+                
             case SocketServer.MY_PLAYER_DEATH:
                 myPlayer.reset();
+                this.client.InputHandler.reset();
                 break;
-
-            case SocketServer.UPDATE_RESOURCES: {
-                this.PacketQueue.push(
-                    () => {
-                        const type = temp[1] === "points" ? "gold" : temp[1];
-                        myPlayer.updateResources(type, temp[2]);
-                    }
-                )
-                break;
-            }
-
+                
+                case SocketServer.UPDATE_RESOURCES: {
+                    this.PacketQueue.push(
+                        () => {
+                            const type = temp[1] === "points" ? "gold" : temp[1];
+                            myPlayer.updateResources(type, temp[2]);
+                        }
+                    )
+                    break;
+                }
+                    
             case SocketServer.CREATE_PLAYER: {
                 const data = temp[1];
                 PlayerManager.createPlayer({
@@ -140,7 +122,7 @@ class SocketManager {
                     nickname: data[2],
                     health: data[6],
                     skinID: data[9],
-                })
+                });
                 break;
             }
             
@@ -155,7 +137,7 @@ class SocketManager {
             case SocketServer.MOVE_UPDATE: {
                 PlayerManager.updatePlayer(temp[1]);
                 for (let i=0;i<this.PacketQueue.length;i++) {
-                    this.PacketQueue[i]();
+                    this.PacketQueue[i]!();
                 }
                 this.PacketQueue.length = 0;
                 ObjectManager.attackedObjects.clear();
@@ -211,7 +193,7 @@ class SocketManager {
                 const turret = ObjectManager.objects.get(id);
                 if (turret !== undefined) {
                     const creations = ProjectileManager.ignoreCreation;
-                    const pos = turret.position.current.stringify();
+                    const pos = turret.pos.current.makeString();
                     creations.add(pos + ":" + angle);
                 }
 
@@ -239,7 +221,7 @@ class SocketManager {
                     temp[7],
                     temp[8]
                 );
-                projectile.position.current = projectile.formatFromCurrent(new Vector(x, y), false);
+                projectile.pos.current = projectile.formatFromCurrent(new Vector(x, y), false);
                 ProjectileManager.createProjectile(projectile);
                 break;
             }
@@ -290,104 +272,38 @@ class SocketManager {
             case SocketServer.UPDATE_STORE: {
                 const action = temp[1] === 0 ? 1 : 0;
                 StoreHandler.updateStoreState(temp[3], action, temp[2]);
+                if (temp[1] === 0) {
+                    const boughtStorage = ModuleHandler.bought[temp[3]];
+                    if (boughtStorage !== undefined) {
+                        boughtStorage.add(temp[2]);
+                    }
+                }
+                break;
+            }
+
+            case SocketServer.CLAN_INFO_INIT: {
+                const teams = temp[1].teams;
+                for (const team of teams) {
+                    PlayerManager.createClan(team.sid, team.owner);
+                }
+                break;
+            }
+
+            case SocketServer.CLAN_CREATED: {
+                PlayerManager.createClan(temp[1].sid, temp[1].owner);
+                break;
+            }
+
+            case SocketServer.CLAN_DELETED: {
+                PlayerManager.deleteClan(temp[1]);
+                break;
+            }
+
+            default: {
+                // console.log(temp);
                 break;
             }
         }
-    }
-
-    private send(data: OutcomingPacket) {
-        const connection = this.client.connection;
-        if (
-            connection.socket === undefined ||
-            connection.socket.readyState !== connection.socket.OPEN ||
-            connection.Encoder === null
-        ) return;
-
-        const [type, ...args] = data;
-        const encoded = connection.Encoder.encode([type, args]);
-        connection.socket.send(encoded);
-    }
-
-    clanRequest(id: number, accept: boolean) {
-        this.send([SocketClient.ACCEPT_CLAN_JOIN_REQUEST, id, Number(accept)]);
-    }
-
-    kick(id: number) {
-        this.send([SocketClient.KICK_FROM_CLAN, id]);
-    }
-
-    joinClan(name: string) {
-        this.send([SocketClient.JOIN_CLAN, name]);
-    }
-
-    createClan(name: string) {
-        this.send([SocketClient.CREATE_CLAN, name]);
-    }
-
-    leaveClan() {
-        this.client.myPlayer.joinRequests.length = 0;
-        this.send([SocketClient.LEAVE_CLAN]);
-    }
-
-    equip(type: EStoreType, id: number) {
-        this.send([SocketClient.STORE, EStoreAction.EQUIP, id, type]);
-    }
-
-    buy(type: EStoreType, id: number) {
-        this.send([SocketClient.STORE, EStoreAction.BUY, id, type]);
-    }
-
-    chat(message: string) {
-        this.send([SocketClient.CHAT, message]);
-    }
-
-    attack(angle: number | null) {
-        this.send([SocketClient.ATTACK, 1, angle]);
-    }
-
-    stopAttack() {
-        this.send([SocketClient.ATTACK, 0, null]);
-    }
-
-    resetMoveDir() {
-        this.send([SocketClient.RESET_MOVE_DIR]);
-    }
-
-    move(angle: number | null) {
-        this.send([SocketClient.MOVE, angle]);
-    }
-
-    autoAttack() {
-        this.send([SocketClient.PLAYER_CONTROL, 1]);
-    }
-
-    lockRotation() {
-        this.send([SocketClient.PLAYER_CONTROL, 0]);
-    }
-
-    pingMap() {
-        this.send([SocketClient.PING_MAP]);
-    }
-
-    selectItemByID(id: EWeapon | EItem, type: boolean) {
-        this.send([SocketClient.SELECT_ITEM, id, type]);
-    }
-
-    spawn(name: string, moofoll: 1 | 0, skin: any) {
-        this.send([SocketClient.SPAWN, { name, moofoll, skin }]);
-    }
-
-    upgradeItem(id: number) {
-        this.send([SocketClient.UPGRADE_ITEM, id]);
-    }
-
-    updateAngle(radians: number) {
-        this.send([SocketClient.ANGLE, radians]);
-    }
-
-    pingRequest() {
-        this.startPing = Date.now();
-        this.send([SocketClient.PING_REQUEST]);
     }
 }
 

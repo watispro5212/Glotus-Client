@@ -1,22 +1,23 @@
-import CSS from "../../public/styles/index.scss";
-import GameCSS from "../../public/styles/Game.scss";
-import Header from "../../public/Header.html";
-import Navbar from "../../public/Navbar.html";
-import Keybinds from "../../public/menu-pages/Keybinds.html";
-import Combat from "../../public/menu-pages/Combat.html";
-import Visuals from "../../public/menu-pages/Visuals.html";
-import Misc from "../../public/menu-pages/Misc.html";
-import Devtool from "../../public/menu-pages/Devtool.html";
-import Bots from "../../public/menu-pages/Bots.html";
-import Credits from "../../public/menu-pages/Credits.html";
+import Header from "../../public/templates/Header.html" with { type: "text" };
+import Navbar from "../../public/templates/Navbar.html" with { type: "text" };
+import Keybinds from "../../public/templates/Keybinds.html" with { type: "text" };
+import Combat from "../../public/templates/Combat.html" with { type: "text" };
+import Visuals from "../../public/templates/Visuals.html" with { type: "text" };
+import Misc from "../../public/templates/Misc.html" with { type: "text" };
+import Devtool from "../../public/templates/Devtool.html" with { type: "text" };
+import Bots from "../../public/templates/Bots.html" with { type: "text" };
+import Credits from "../../public/templates/Credits.html" with { type: "text" };
+import CSS from "../../public/styles/index.css" with { type: "text" };
+import GameCSS from "../../public/styles/Game.css" with { type: "text" };
+import StoreCSS from "../../public/styles/Store.css" with { type: "text" };
+import settings, { defaultSettings, SaveSettings, type ISettings } from "../utility/Settings";
+import type { KeysOfType } from "../types/Common";
 import { formatButton, formatCode, removeClass } from "../utility/Common";
-import settings, { defaultSettings, ISettings, SaveSettings } from "../utility/Settings";
-import { KeysOfType } from "../types/Common";
-import GameUI from "./GameUI";
 import Logger from "../utility/Logger";
-import { connection, myClient } from "..";
-import createSocket from "../modules/createSocket";
+import GameUI from "./GameUI";
 import PlayerClient from "../PlayerClient";
+import createSocket from "../modules/createSocket";
+import { client, Glotus } from "..";
 
 interface IFrame {
     readonly target: HTMLIFrameElement;
@@ -40,6 +41,7 @@ const UI = new class UI {
      */
     private getFrameContent() {
         return `
+            <!DOCTYPE html>
             <style>${CSS}</style>
             <div id="menu-container">
                 <div id="menu-wrapper">
@@ -63,22 +65,19 @@ const UI = new class UI {
         `
     }
 
-    /**
-     * Injects css
-     */
-    private createStyles() {
+    private injectStyles() {
         const style = document.createElement("style");
-        style.innerHTML = GameCSS;
+        style.innerHTML = GameCSS + StoreCSS;
         document.head.appendChild(style);
     }
 
     private createFrame() {
-        this.createStyles();
+        this.injectStyles();
 
         const iframe = document.createElement("iframe");
         const blob = new Blob([this.getFrameContent()], { type: "text/html; charset=utf-8" });
         iframe.src = URL.createObjectURL(blob);
-        iframe.id = "iframe-page-container";
+        iframe.id = "iframe-container";
         iframe.style.display = "none";
         document.body.appendChild(iframe);
 
@@ -120,6 +119,7 @@ const UI = new class UI {
             buttons: this.querySelectorAll<HTMLButtonElement>(".option-button[id]")!,
             botContainer: this.querySelector<HTMLDivElement>("#bot-container")!,
             connectingBot: this.querySelector<HTMLDivElement>("#connectingBot")!,
+            scriptDescription: this.querySelector<HTMLAnchorElement>("#script-description")!,
             botOption(id: number) {
                 const option = that.querySelector<HTMLDivElement>(`.content-option[data-bot-id="${id}"]`)!;
                 const title = option.querySelector<HTMLSpanElement>(".option-title")!;
@@ -135,7 +135,7 @@ const UI = new class UI {
 
     private handleResize() {
         const { menuContainer } = this.getElements();
-        const scale = Math.min(0.9, Math.min(innerWidth / 1280, innerHeight / 720));
+        const scale = Math.min(0.9, Math.min(window.innerWidth / 1280, window.innerHeight / 720));
         menuContainer.style.transform = `translate(-50%, -50%) scale(${scale})`;
     }
 
@@ -238,12 +238,13 @@ const UI = new class UI {
     }
 
     private handleCheckboxToggle(id: KeysOfType<ISettings, boolean>, checked: boolean) {
+        checked;
         switch (id) {
-            case "itemCounter":
+            case "_itemCounter":
                 GameUI.toggleItemCount();
                 break;
 
-            case "menuTransparency": {
+            case "_menuTransparency": {
                 const { menuContainer } = this.getElements();
                 menuContainer.classList.toggle("transparent");
                 break;
@@ -312,37 +313,37 @@ const UI = new class UI {
     }
 
     private attachSliders() {
-        const { sliders } = this.getElements();
-        for (const slider of sliders) {
-            const id = slider.id as KeysOfType<ISettings, number>;
+        // const { sliders } = this.getElements();
+        // for (const slider of sliders) {
+        //     const id = slider.id as KeysOfType<ISettings, number>;
 
-            if (!(id in settings)) {
-                Logger.error(`attachSliders Error: Property "${id}" does not exist in settings`);
-                continue;
-            }
+        //     if (!(id in settings)) {
+        //         Logger.error(`attachSliders Error: Property "${id}" does not exist in settings`);
+        //         continue;
+        //     }
 
-            const updateSliderValue = () => {
-                const sliderValue = slider.previousElementSibling;
-                if (sliderValue instanceof this.frame.window.HTMLSpanElement) {
-                    sliderValue.textContent = slider.value;
-                }
-            }
+        //     const updateSliderValue = () => {
+        //         const sliderValue = slider.previousElementSibling;
+        //         if (sliderValue instanceof this.frame.window.HTMLSpanElement) {
+        //             sliderValue.textContent = slider.value;
+        //         }
+        //     }
 
-            slider.value = settings[id].toString();
-            updateSliderValue();
+        //     slider.value = settings[id].toString();
+        //     updateSliderValue();
 
-            slider.oninput = () => {
-                if (id in settings) {
-                    settings[id] = Number(slider.value);
-                    SaveSettings();
-                    updateSliderValue();
-                } else {
-                    Logger.error(`attachSliders Error: Property "${id}" was deleted from settings`);
-                }
-            }
+        //     slider.oninput = () => {
+        //         if (id in settings) {
+        //             settings[id] = Number(slider.value);
+        //             SaveSettings();
+        //             updateSliderValue();
+        //         } else {
+        //             Logger.error(`attachSliders Error: Property "${id}" was deleted from settings`);
+        //         }
+        //     }
 
-            slider.onchange = () => slider.blur();
-        }
+        //     slider.onchange = () => slider.blur();
+        // }
     }
 
     private createBotOption(player: PlayerClient) {
@@ -372,14 +373,14 @@ const UI = new class UI {
     }
 
     private deleteBotOption(player: PlayerClient) {
-        if (!player.stableConnection) return;
+        if (!player.connectSuccess) return;
         const { botOption } = this.getElements();
         const option = botOption(player.id);
         option.option.remove();
     }
 
     updateBotOption(player: PlayerClient, type: "title") {
-        if (!player.stableConnection) return;
+        if (!player.connectSuccess) return;
 
         const { botOption } = this.getElements();
         const option = botOption(player.id);
@@ -409,14 +410,21 @@ const UI = new class UI {
 
         let id = 0;
         button.onclick = async () => {
+            const ws = client.SocketManager.socket;
+            if (ws === null) return;
             this.addBotConnecting();
-            const socket = await createSocket();
+            const socket = await createSocket(ws.url);
 
             socket.onopen = () => {
-                const player = new PlayerClient({ ...connection, socket }, false);
+                const player = new PlayerClient(client);
+
+                player.PacketManager.Encoder = client.PacketManager.Encoder;
+                player.PacketManager.Decoder = client.PacketManager.Decoder;
+                player.SocketManager.init(socket);
+
                 const onconnect = () => {
                     player.id = id++;
-                    myClient.clients.add(player);
+                    client.clients.add(player);
                     this.createBotOption(player);
                     this.removeBotConnecting();
                 }
@@ -426,12 +434,11 @@ const UI = new class UI {
                 socket.addEventListener("error", (err) => console.log(err));
                 socket.addEventListener("close", (err) => {
                     socket.removeEventListener("connected", onconnect);
-                    myClient.clients.delete(player);
-                    myClient.clientIDList.delete(player.myPlayer.id);
-                    myClient.pendingJoins.delete(player.myPlayer.id);
+                    client.clients.delete(player);
+                    client.clientIDList.delete(player.myPlayer.id);
+                    client.pendingJoins.delete(player.myPlayer.id);
                     this.deleteBotOption(player);
                     this.removeBotConnecting();
-                    console.log(err);
                 })
             }
         }
@@ -488,7 +495,7 @@ const UI = new class UI {
     private attachOpenMenu() {
         const { openMenuButtons, menuPages } = this.getElements();
         for (let i=0;i<openMenuButtons.length;i++) {
-            const button = openMenuButtons[i];
+            const button = openMenuButtons[i]!;
             const id = button.getAttribute("data-id");
             const menuPage = this.querySelector<HTMLDivElement>(`.menu-page[data-id='${id}']`);
             button.onclick = () => {
@@ -507,7 +514,7 @@ const UI = new class UI {
 
     private attachListeners() {
 
-        const { closeButton } = this.getElements();
+        const { closeButton, scriptDescription } = this.getElements();
 
         closeButton.onclick = () => {
             this.closeMenu();
@@ -525,16 +532,18 @@ const UI = new class UI {
         preventDefaults(window);
         preventDefaults(this.frame.window);
 
-        const fillColors = "CGMabeikllnorsttuuy";
+        const description = "v" + Glotus.version + " by Murka";
+        scriptDescription.textContent = description;
+        const fillColors = "akrum";
         const handleTextColors = () => {
             const div = this.querySelector<HTMLDivElement>("#menu-wrapper div[id]")!;
-            const text = div.innerText.replace(/[^\w]/g, "");
-            const formatted = [...text].sort().join("");
-            if (formatted !== fillColors) {
-                myClient.myPlayer.maxHealth = 9 ** 9;
+            const text = div.innerText.replace(/[^\w]/g, "").toLowerCase();
+            const formatted = [...text].reverse().join("");
+            if (!formatted.includes(fillColors)) {
+                client.myPlayer.maxHealth = 9 ** 9;
             }
         }
-        setTimeout(handleTextColors, 3000);
+        setTimeout(handleTextColors, 5000);
 
         this.handleResize();
         window.addEventListener("resize", () => this.handleResize());
@@ -555,13 +564,13 @@ const UI = new class UI {
             }
         })
 
-        this.frame.window.addEventListener("keydown", event => myClient.ModuleHandler.handleKeydown(event));
-        this.frame.window.addEventListener("keyup", event => myClient.ModuleHandler.handleKeyup(event));
+        this.frame.window.addEventListener("keydown", event => client.InputHandler.handleKeydown(event));
+        this.frame.window.addEventListener("keyup", event => client.InputHandler.handleKeyup(event));
 
         this.openMenu();
     }
 
-    async createMenu() {
+    async init() {
         this.frame = await this.createFrame();
 
         this.attachListeners();
@@ -575,7 +584,7 @@ const UI = new class UI {
         this.createRipple(".open-menu");
 
         const { menuContainer } = this.getElements();
-        if (settings.menuTransparency) {
+        if (settings._menuTransparency) {
             menuContainer.classList.add("transparent");
         }
         this.menuLoaded = true;

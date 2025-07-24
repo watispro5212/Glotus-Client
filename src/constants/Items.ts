@@ -16,6 +16,7 @@ export const Weapons = [{
     width: 140,
     xOffset: -3,
     yOffset: 18,
+    spdMult: 1,
     damage: 25,
     range: 65,
     gather: 1,
@@ -136,6 +137,7 @@ export const Weapons = [{
     yOffset: 53,
     damage: 20,
     knock: .7,
+    spdMult: 1,
     range: 110,
     gather: 1,
     speed: 300
@@ -202,7 +204,7 @@ export const Weapons = [{
     yOffset: 0,
     spdMult: .75,
     speed: 600,
-    range: 2200,
+    range: 1000,
 }, {
     id: EWeapon.GREAT_HAMMER,
     itemType: WeaponType.SECONDARY,
@@ -240,6 +242,7 @@ export const Weapons = [{
     yOffset: 0,
     spdMult: .7,
     speed: 1,
+    range: 0,
 }, {
     id: EWeapon.CROSSBOW,
     itemType: WeaponType.SECONDARY,
@@ -266,7 +269,7 @@ export const Weapons = [{
     yOffset: 0,
     spdMult: .7,
     speed: 700,
-    range: 2200,
+    range: 1200,
 }, {
     id: EWeapon.REPEATER_CROSSBOW,
     itemType: WeaponType.SECONDARY,
@@ -293,7 +296,7 @@ export const Weapons = [{
     yOffset: 0,
     spdMult: .7,
     speed: 230,
-    range: 2200,
+    range: 1200,
 }, {
     id: EWeapon.MC_GRABBY,
     itemType: WeaponType.SECONDARY,
@@ -345,7 +348,7 @@ export const Weapons = [{
     hideProjectile: true,
     spdMult: .6,
     speed: 1500,
-    range: 2200,
+    range: 1400,
 }] as const;
 
 /**

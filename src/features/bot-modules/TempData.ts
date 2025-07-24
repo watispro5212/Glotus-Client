@@ -4,7 +4,7 @@ import { WeaponType } from "../../types/Items";
 import { EStoreType } from "../../types/Store";
 
 class TempData {
-    readonly name = "tempData";
+    readonly moduleName = "tempData";
     private readonly client: PlayerClient;
     private weapon = WeaponType.PRIMARY;
     private readonly store: [number, number] = [0, 0];
@@ -13,14 +13,14 @@ class TempData {
         this.client = client;
     }
 
-    setWeapon(weapon: WeaponType) {
-        this.weapon = weapon;
-        this.updateWeapon();
-    }
+    // setWeapon(weapon: WeaponType) {
+    //     this.weapon = weapon;
+    //     this.updateWeapon();
+    // }
 
     setAttacking(attacking: EAttack) {
         const { ModuleHandler } = this.client;
-        if (ModuleHandler.attacking === attacking) return;
+        // if (ModuleHandler.attacking === attacking) return;
         ModuleHandler.attacking = attacking;
         
         if (attacking !== EAttack.DISABLED) {
@@ -33,12 +33,12 @@ class TempData {
         this.handleBuy(type);
     }
 
-    private updateWeapon() {
-        const { ModuleHandler } = this.client;
-        if (ModuleHandler.weapon !== this.weapon) {
-            ModuleHandler.whichWeapon(this.weapon);
-        }
-    }
+    // private updateWeapon() {
+    //     const { ModuleHandler } = this.client;
+    //     if (ModuleHandler.weapon !== this.weapon) {
+    //         ModuleHandler.whichWeapon(this.weapon);
+    //     }
+    // }
 
     private handleBuy(type: EStoreType) {
         const { ModuleHandler } = this.client;
@@ -52,7 +52,7 @@ class TempData {
     }
 
     postTick(): void {
-        this.updateWeapon();
+        // this.updateWeapon();
         this.handleBuy(EStoreType.HAT);
         this.handleBuy(EStoreType.ACCESSORY);
     }

@@ -1,57 +1,121 @@
-import { PlayerObject, Resource } from "../data/ObjectItem";
+import { PlayerObject, type TObject } from "../data/ObjectItem";
 import Player from "../data/Player";
 import { EDanger } from "../types/Enums";
-import { EItem, ItemGroup } from "../types/Items";
-import SpatialHashGrid from "../modules/SpatialHashGrid";
+import { EItem, EWeapon, ItemGroup } from "../types/Items";
 import PlayerClient from "../PlayerClient";
 import Animal from "../data/Animal";
-import { EHat } from "../types/Store";
-import Animals from "../constants/Animals";
+import { getAngleDist } from "../utility/Common";
+import { Items } from "../constants/Items";
+import GameUI from "../UI/GameUI";
+import DataHandler from "../utility/DataHandler";
 
 const enum ENearest {
     PLAYER,
     ANIMAL
 }
 
-type TTarget = Player | Animal | PlayerObject;
+type TEntity = Player | Animal;
+type TTarget = TEntity | TObject;
 
 class EnemyManager {
     private readonly client: PlayerClient;
 
-    private readonly enemiesGrid = new SpatialHashGrid<Player>(100);
-    readonly enemies: Player[] = [];
+    // private readonly enemiesGrid = new SpatialHashGrid<Player>(100);
+    // readonly enemies: Player[] = [];
     readonly trappedEnemies = new Set<Player>();
     private readonly dangerousEnemies: Player[] = [];
     private readonly _nearestEnemy: [Player | null, Animal | null] = [null, null];
 
     /** The closest enemy that can attack myPlayer using melee weapons */
-    nearestMeleeReloaded: Player | null = null;
+    // nearestMeleeReloaded: Player | null = null;
 
     /** The closest animal that can cause damage to myPlayer */
     nearestDangerAnimal: Animal | null = null;
+
+    /** The closest enemy trap to myPlayer */
     nearestTrap: PlayerObject | null = null;
 
-    nearestCollideSpike: Player | null = null;
-    nearestTurretEntity: TTarget | null = null;
+    /** Represents nearest object collider to myPlayer. Can be spike, cactus, teleport or boostpad */
+    nearestCollider: TObject | null = null;
+
+    /** The closest enemy that can be pushed into spike */
+    nearestEnemySpikeCollider: Player | null = null;
+
+    /** Represents spinning spike that enemy can be pushed on based on angle distance */
+    spikeCollider: PlayerObject | null = null;
+
+    /** Represents nearest enemy that is collding or going to be colliding a spike */
+    enemySpikeCollider: Player | null = null;
+
+    nearestTurretEntity: TEntity | null = null;
+
+    /** Represents some danger enemy within a specific range */
     detectedEnemy = false;
+
+    nearestTrappedEnemy: Player | null = null;
+    previousTrappedEnemy: Player | null = null;
+
+    /** Represents nearest destructable player object. Used to detect whether we should equip tank or not */
+    nearestPlayerObject: PlayerObject | null = null;
+
+    /** Represents nearest destructable enemy object. Used for autodestruction */
+    nearestEnemyObject: PlayerObject | null = null;
+    secondNearestEnemyObject: PlayerObject | null = null;
+
+    willCollideSpike = false;
+
+    /** Represents an angle to nearest enemy, on whom a spinning spike can be placed */
+    nearestSpikePlacerAngle: number[] | null = null;
+    private prevNearestSpikePlacerAngle: number[] | null = null;
+
+    /** Represents nearest enemy to the nearest enemy */
+    nearestEnemyToNearestEnemy: Player | null = null;
 
     constructor(client: PlayerClient) {
         this.client = client;
     }
 
     private reset() {
-        this.enemiesGrid.clear();
-        this.enemies.length = 0;
+        this.nearestEnemyToNearestEnemy = null;
+        this.willCollideSpike = false;
+        this.prevNearestSpikePlacerAngle = this.nearestSpikePlacerAngle;
+        this.nearestSpikePlacerAngle = null;
+        // this.enemiesGrid.clear();
+        // this.enemies.length = 0;
         this.trappedEnemies.clear();
         this.dangerousEnemies.length = 0;
         this._nearestEnemy[ENearest.PLAYER] = null;
         this._nearestEnemy[ENearest.ANIMAL] = null;
-        this.nearestMeleeReloaded = null;
+        // this.nearestMeleeReloaded = null;
         this.nearestDangerAnimal = null;
         this.nearestTrap = null;
-        this.nearestCollideSpike = null;
+        this.nearestCollider = null;
+        this.nearestEnemySpikeCollider = null;
+        this.spikeCollider = null;
+        this.enemySpikeCollider = null;
         this.nearestTurretEntity = null;
         this.detectedEnemy = false;
+
+        this.previousTrappedEnemy = this.nearestTrappedEnemy;
+        this.nearestTrappedEnemy = null;
+        this.nearestPlayerObject = null;
+        this.nearestEnemyObject = null;
+        this.secondNearestEnemyObject = null;
+    }
+
+    /** Represents previously trapped enemy, but on the current tick he is not trapped */
+    get wasTrappedEnemy() {
+        const enemy = this.previousTrappedEnemy;
+        if (enemy !== null && this.nearestTrappedEnemy === null) return enemy;
+        return null;
+    }
+
+    /** Returns a spinning spike placement angle if it wasn't possible to place on previous tick */
+    get nearestPlaceSpikeAngle() {
+        const prevAngle = this.prevNearestSpikePlacerAngle;
+        const currAngle = this.nearestSpikePlacerAngle;
+        if (prevAngle === null && currAngle !== null) return currAngle;
+        return null;
     }
 
     get nearestEnemy() {
@@ -63,13 +127,14 @@ class EnemyManager {
     }
 
     /** Returns true if first entity is closer than the second */
-    private isNear(enemy: TTarget, nearest: TTarget | null) {
-        if (nearest === null) return true;
+    private isNear(enemy: TEntity, nearest: TEntity | null): boolean;
+    private isNear(enemy: TObject, nearest: TObject | null): boolean;
+    private isNear(enemy: TTarget, nearest: TTarget | null, owner = this.client.myPlayer): boolean {
+        if (nearest === null || enemy === nearest) return true;
 
-        const { myPlayer } = this.client;
-        const a0 = myPlayer.position.current;
-        const distance1 = a0.distance(enemy.position.current);
-        const distance2 = a0.distance(nearest.position.current);
+        const a0 = owner.pos.current;
+        const distance1 = a0.distance(enemy.pos.current);
+        const distance2 = a0.distance(nearest.pos.current);
         return distance1 < distance2;
     }
 
@@ -82,22 +147,6 @@ class EnemyManager {
         return this.isNear(target1, target2) ? target1 : target2;
     }
 
-    // get nearestDangerEntity() {
-    //     const target1 = this.nearestEnemy;
-    //     const target2 = this.nearestDangerAnimal;
-    //     if (target1 === null || target1.hatID === EHat.EMP_HELMET) return target2;
-
-    //     return this.isNear(target1, target2) ? target1 : target2;
-    // }
-
-    // get nearestObject() {
-    //     const target1 = this.nearestTrap;
-    //     const target2 = this.nearestSpike;
-    //     if (target1 === null) return target2;
-
-    //     return this.isNear(target1, target2) ? target1 : target2;
-    // }
-
     /** Returns true if nearestEnemy is within the specified range */
     nearestEnemyInRangeOf(range: number, target?: Player | Animal | null) {
         const enemy = target || this.nearestEnemy;
@@ -105,19 +154,6 @@ class EnemyManager {
             enemy !== null &&
             this.client.myPlayer.collidingEntity(enemy, range)
         )
-    }
-
-    private handleNearestDanger(enemy: Player) {
-        const { myPlayer, ModuleHandler } = this.client;
-        // const extraRange = enemy.danger === EDanger.SUPER_HIGH ? 750 : (enemy.usingBoost ? 400 : 100);
-        const extraRange = enemy.usingBoost && !enemy.isTrapped ? 400 : 100;
-        const range = enemy.getMaxWeaponRange() + myPlayer.hitScale + extraRange;
-        if (myPlayer.collidingEntity(enemy, range)) {
-            if (enemy.danger >= EDanger.HIGH) {
-                ModuleHandler.needToHeal = true;
-            }
-            this.detectedEnemy = true;
-        }
     }
 
     private handleDanger(enemy: Player) {
@@ -131,67 +167,187 @@ class EnemyManager {
 
         if (enemy.danger !== EDanger.NONE) {
             this.dangerousEnemies.push(enemy);
-            this.handleNearestDanger(enemy);
+            if (enemy.danger >= EDanger.HIGH) {
+                this.client.ModuleHandler.needToHeal = true;
+            }
+            this.detectedEnemy = true;
         }
     }
 
     /** Checks if the target is standing on a particular object */
     private checkCollision(target: Player, isOwner = false) {
         target.isTrapped = false;
+        target.trappedInPrev = target.trappedIn;
+        target.trappedIn = null;
         target.onPlatform = false;
+        target.onBoostPad = false;
 
-        const { ObjectManager, PlayerManager } = this.client;
-        const objects = ObjectManager.retrieveObjects(target.position.current, target.collisionScale);
-        for (const object of objects) {
-            if (object instanceof Resource) continue;
-            if (!target.collidingObject(object, 5)) continue;
+        const { ObjectManager, PlayerManager, myPlayer, ModuleHandler } = this.client;
+        const pos1 = myPlayer.pos.current;
+        const pos2 = target.pos.current;
+        const distanceToTarget = pos1.distance(pos2);
+        const polearmRange = DataHandler.getWeapon(EWeapon.POLEARM).range + target.hitScale + 80;
+        if (distanceToTarget > polearmRange) return;
 
-            const isEnemyObject = PlayerManager.isEnemyByID(object.ownerID, target);
-            if (object.type === EItem.PIT_TRAP && isEnemyObject) {
-                this.trappedEnemies.add(target);
-                target.isTrapped = true;
+        ObjectManager.grid2D.query(target.pos.current.x, target.pos.current.y, 2, (id: number) => {
+            const object = ObjectManager.objects.get(id)!;
 
-                if (isOwner && this.isNear(target, this.nearestTrap)) {
-                    this.nearestTrap = object;
+            const pos3 = object.pos.current;
+            const distance = pos2.distance(pos3);
+            const range = object.collisionScale + target.collisionScale;
+            if (!isOwner && distance > range + 220) return;
+
+            const isPlayerObject = object instanceof PlayerObject;
+            const isCactus = !isPlayerObject && object.isCactus;
+            const isSpike = isPlayerObject && object.itemGroup === ItemGroup.SPIKE;
+            const isEnemyObject = !isPlayerObject || PlayerManager.isEnemyByID(object.ownerID, target);
+            const collidingObject = target.collidingObject(object, 5);
+
+            if (isPlayerObject && object.isDestroyable) {
+                if (object.destroyingTick !== ModuleHandler.tickCount) {
+                    object.canBeDestroyed = false;
+                    object.tempHealth = object.health;
                 }
-            } else if (object.type === EItem.PLATFORM) {
-                target.onPlatform = true;
-            } else if (object.itemGroup === ItemGroup.SPIKE && isEnemyObject) {
-                if (!isOwner && this.isNear(target, this.nearestCollideSpike)) {
-                    const pos1 = target.position.future; // current, future or both
-                    const pos2 = object.position.current;
-                    const distance = pos1.distance(pos2);
-                    const range = object.collisionScale + target.collisionScale;
-                    const willCollide = distance <= range;
-                    if (willCollide) {
-                        this.nearestCollideSpike = target;
+
+                const damage = target.getMaxBuildingDamage(object);
+                if (damage !== null) {
+                    object.destroyingTick = ModuleHandler.tickCount;
+                    object.tempHealth -= damage;
+                    if (object.tempHealth <= 0) {
+                        object.canBeDestroyed = true;
                     }
                 }
             }
-        }
+
+            // HANDLE BEING IN A TRAP
+            if (
+                isPlayerObject &&
+                isEnemyObject &&
+                collidingObject &&
+                object.type === EItem.PIT_TRAP
+            ) {
+                if (!isOwner) this.trappedEnemies.add(target);
+                target.isTrapped = true;
+                if (this.isNear(object, target.trappedIn)) {
+                    target.trappedIn = object;
+                }
+                if (isOwner && this.isNear(object, this.nearestTrap)) {
+                    this.nearestTrap = object;
+                }
+            }
+
+            if (isOwner) {
+
+                // DETECT NEAREST ENEMY OBJECT THAT IS DESTRUCTABLE
+                if (
+                    isEnemyObject &&
+                    isPlayerObject &&
+                    object.isDestroyable
+                ) {
+                    if (this.isNear(object, this.nearestEnemyObject)) {
+                        this.secondNearestEnemyObject = this.nearestEnemyObject;
+                        this.nearestEnemyObject = object;
+                    }
+                    
+                    if (
+                        object !== this.nearestEnemyObject &&
+                        this.isNear(object, this.secondNearestEnemyObject)
+                    ) {
+                        this.secondNearestEnemyObject = object;
+                    }
+                }
+
+                // DETECT NEAREST PLAYER OBJECT
+                if (
+                    isPlayerObject &&
+                    object.isDestroyable &&
+                    this.isNear(object, this.nearestPlayerObject)
+                ) {
+                    this.nearestPlayerObject = object;
+                }
+
+                // DETECT SPIKE/CACTUS COLLISION
+                if (
+                    !this.willCollideSpike &&
+                    isEnemyObject &&
+                    (isSpike || isCactus) &&
+                    target.collidingObject(object, 70)
+                ) {
+                    this.willCollideSpike = true;
+                }
+
+                // DETECT COLLISION BETWEEN PLAYER AND UNWANTED OBJECTS
+                const isAdditional = isPlayerObject && (object.type === EItem.TELEPORTER || object.type === EItem.BOOST_PAD);
+                if (
+                    isEnemyObject &&
+                    (isSpike || isCactus || isAdditional) &&
+                    target.collidingObject(object, 200) &&
+                    this.isNear(object, this.nearestCollider)
+                ) {
+                    this.nearestCollider = object;
+                }
+            } else {
+                if (
+                    isEnemyObject &&
+                    (isSpike || isCactus) &&
+                    target.collidingObject(object) &&
+                    this.isNear(target, this.enemySpikeCollider)
+                ) {
+                    this.enemySpikeCollider = target;
+                }
+
+                // MAKE SURE WE APPLY LOGIC ONLY TO THE NEAREST ENEMY AND WITHIN MAX KNOCKBACK RANGE
+                if (
+                    isPlayerObject &&
+                    object.type === EItem.SPINNING_SPIKES &&
+                    this.isNear(target, this.nearestEnemySpikeCollider) &&
+                    target.collidingObject(object, 220)
+                ) {
+
+                    // CHECK IF IT IS POSSIBLE TO PUSH ENEMY ON SPIKE
+                    const spike = DataHandler.getItem(EItem.SPINNING_SPIKES);
+                    const angleToEnemy = pos1.angle(pos2);
+                    const angleToSpike = pos1.angle(pos3);
+
+                    const distanceToSpike1 = pos1.distance(pos3);
+                    const offset = Math.asin((2 * spike.scale) / (2 * distanceToSpike1));
+                    const angleDistance = getAngleDist(angleToEnemy, angleToSpike);
+                    const intersecting = angleDistance <= offset;
+                    if (!intersecting || distanceToTarget > distanceToSpike1) return;
+
+                    if (this.spikeCollider === null) {
+                        this.nearestEnemySpikeCollider = target;
+                        this.spikeCollider = object;
+                    } else {
+
+                        // TEST IF NEW SPIKE HAS LESS DISTANCE BETWEEN STRAIGHT ANGLE THAN PREVIOUS
+                        const pos4 = this.spikeCollider.pos.current;
+
+                        const angle1 = pos2.angle(pos3);
+                        const angle2 = pos1.angle(pos3);
+                        const angle3 = pos2.angle(pos4);
+                        const angle4 = pos1.angle(pos4);
+
+                        const angleDist1 = getAngleDist(angle1, angle2);
+                        const angleDist2 = getAngleDist(angle3, angle4);
+                        if (angleDist1 < angleDist2) {
+                            this.nearestEnemySpikeCollider = target;
+                            this.spikeCollider = object;
+                        }
+                    }
+                }
+            }
+        });
     }
 
     private handleNearest<T extends ENearest>(type: T, enemy: [Player, Animal][T]) {
         if (this.isNear(enemy, this._nearestEnemy[type])) {
             this._nearestEnemy[type] = enemy;
 
-            if (enemy.canUseTurret && this.client.myPlayer.collidingEntity(enemy, 700)) {
+            if (enemy.canUseTurret && this.client.myPlayer.collidingSimple(enemy, 700)) {
                 this.nearestTurretEntity = enemy;
             }
         }
-    }
-
-    private handleNearestMelee(enemy: Player) {
-        const { myPlayer, ModuleHandler } = this.client;
-        const range = enemy.getMaxWeaponRange() + myPlayer.hitScale + 60;
-        const angle = ModuleHandler.getMoveAngle();
-
-        if (!enemy.meleeReloaded()) return;
-        if (!myPlayer.collidingEntity(enemy, range)) return;
-        if (!myPlayer.runningAwayFrom(enemy, angle)) return;
-        if (!this.isNear(enemy, this.nearestMeleeReloaded)) return;
-
-        this.nearestMeleeReloaded = enemy;
     }
 
     private handleNearestDangerAnimal(animal: Animal) {
@@ -209,24 +365,63 @@ class EnemyManager {
         // It is important to reset data on each tick
         this.reset();
 
-        const { myPlayer } = this.client;
+        const { myPlayer, ObjectManager, PlayerManager, ModuleHandler } = this.client;
         this.checkCollision(myPlayer, true);
 
         for (let i=0;i<players.length;i++) {
-            const player = players[i];
+            const player = players[i]!;
             if (myPlayer.isEnemyByID(player.id)) {
-                this.enemiesGrid.insert(player);
-                this.enemies.push(player);
+                // this.enemiesGrid.insert(player);
+                // this.enemies.push(player);
 
                 this.checkCollision(player);
                 this.handleDanger(player);
                 this.handleNearest(ENearest.PLAYER, player);
-                this.handleNearestMelee(player);
+                // this.handleNearestMelee(player);
+            }
+        }
+
+        for (const trappedEnemy of this.trappedEnemies) {
+            if (this.isNear(trappedEnemy, this.nearestTrappedEnemy)) {
+                this.nearestTrappedEnemy = trappedEnemy;
+            }
+        }
+
+        const nearest = this.nearestEnemy;
+        if (nearest !== null) {
+            const pos1 = myPlayer.pos.current;
+            const pos2 = nearest.pos.current;
+            const angleToEnemy = pos1.angle(pos2);
+    
+            const spikeID = EItem.SPINNING_SPIKES;
+            const placeLength = myPlayer.getItemPlaceScale(spikeID);
+
+            // Checks if it is possible to place spike on nearest enemy
+            // Ignores object's health and all objects included while checking
+            // This basically simulates ON_OBJECT_REMOVE call
+            const angles = ObjectManager.getBestPlacementAngles(pos1, spikeID, angleToEnemy, null, true);
+            const spikeScale = Items[spikeID].scale;
+            const possibleAngles = angles.filter(angle => {
+                const spikePos = pos1.addDirection(angle, placeLength);
+                const distance = pos2.distance(spikePos);
+                const range = nearest.collisionScale + spikeScale;
+                return distance <= range;
+            });
+            if (possibleAngles.length !== 0) {
+                this.nearestSpikePlacerAngle = possibleAngles;
+            }
+
+            for (let i=0;i<players.length;i++) {
+                const player = players[i]!;
+                if (myPlayer.isMyPlayerByID(player.id)) continue;
+                if (PlayerManager.isEnemyByID(nearest.id, player) && this.isNear(player, this.nearestEnemyToNearestEnemy)) {
+                    this.nearestEnemyToNearestEnemy = player;
+                }
             }
         }
 
         for (let i=0;i<animals.length;i++) {
-            const animal = animals[i];
+            const animal = animals[i]!;
             this.handleNearest(ENearest.ANIMAL, animal);
             this.handleNearestDangerAnimal(animal);
         }

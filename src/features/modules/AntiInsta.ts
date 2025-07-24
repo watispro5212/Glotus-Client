@@ -1,14 +1,16 @@
 import { Items } from "../../constants/Items";
 import PlayerClient from "../../PlayerClient";
 import { ItemType } from "../../types/Items";
+import GameUI from "../../UI/GameUI";
 import { clamp } from "../../utility/Common";
 import settings from "../../utility/Settings";
 
 class AntiInsta {
-    readonly name = "antiInsta";
+    readonly moduleName = "antiInsta";
     private readonly client: PlayerClient;
     private toggleAnti = false;
 
+    private healingCount = 0;
     constructor(client: PlayerClient) {
         this.client = client;
     }
@@ -24,7 +26,6 @@ class AntiInsta {
     private get canHeal() {
         const { myPlayer } = this.client;
         return (
-            settings.autoheal &&
             myPlayer.tempHealth < 100 &&
             !myPlayer.shameActive &&
             this.isSaveHeal
@@ -32,7 +33,9 @@ class AntiInsta {
     }
 
     postTick(): void {
-        const { myPlayer, ModuleHandler } = this.client;
+        if (!settings._autoheal) return;
+
+        const { myPlayer, ModuleHandler, isOwner } = this.client;
 
         const foodID = myPlayer.getItemByType(ItemType.FOOD);
         const restore = Items[foodID].restore;
@@ -46,7 +49,7 @@ class AntiInsta {
             if (myPlayer.shameActive) return;
 
             ModuleHandler.didAntiInsta = true;
-            healingTimes = Math.min(maxTimes, 3);
+            healingTimes = 1;//Math.min(maxTimes, 3);
         } else if (this.canHeal) {
             healingTimes = needTimes;
             myPlayer.tempHealth += clamp(restore * healingTimes, 0, 100);
@@ -54,11 +57,9 @@ class AntiInsta {
 
         if (healingTimes !== null) {
             ModuleHandler.healedOnce = true;
-            ModuleHandler.actionPlanner.createActions(
-                ItemType.FOOD,
-                (last) => ModuleHandler.heal(last),
-                healingTimes
-            )
+            for (let i=0;i<=healingTimes;i++) {
+                ModuleHandler.heal();
+            }
         }
     }
 }

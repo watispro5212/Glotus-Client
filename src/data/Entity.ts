@@ -3,7 +3,7 @@ import Animals from "../constants/Animals";
 import Vector from "../modules/Vector";
 import { ItemGroup } from "../types/Items";
 import { getAngleDist } from "../utility/Common";
-import { PlayerObject, Resource, TObject } from "./ObjectItem";
+import { PlayerObject, Resource, type TObject } from "./ObjectItem";
 
 interface IPos {
     readonly previous: Vector;
@@ -17,7 +17,7 @@ interface IPos {
 abstract class Entity {
     id = -1;
 
-    readonly position: IPos = {
+    readonly pos: IPos = {
         previous: new Vector,
         current: new Vector,
         future: new Vector
@@ -25,12 +25,16 @@ abstract class Entity {
 
     angle = 0;
     scale: (typeof Animals[number])["scale"] | 35 | 0 = 0;
+    speed = 0;
+    move_dir = 0;
 
     protected setFuturePosition() {
-        const { previous, current, future } = this.position;
+        const { previous, current, future } = this.pos;
         const distance = previous.distance(current);
+        this.speed = distance;
         const angle = previous.angle(current);
-        future.setVec(current.direction(angle, distance));
+        this.move_dir = angle;
+        future.setVec(current.addDirection(angle, distance));
     }
 
     get collisionScale() {
@@ -45,10 +49,15 @@ abstract class Entity {
     constructor(client: PlayerClient) {
         this.client = client;
     }
+
+    getFuturePosition(speed: number) {
+        const pos = this.pos.current.copy();
+        return pos.add(Vector.fromAngle(this.move_dir, speed));
+    }
     
     colliding(object: TObject, radius: number) {
-        const { previous: a0, current: a1, future: a2 } = this.position;
-        const b0 = object.position.current;
+        const { previous: a0, current: a1, future: a2 } = this.pos;
+        const b0 = object.pos.current;
         return (
             a0.distance(b0) <= radius ||
             a1.distance(b0) <= radius ||
@@ -57,8 +66,8 @@ abstract class Entity {
     }
 
     collidingObject(object: TObject, addRadius = 0, checkPrevious = true) {
-        const { previous: a0, current: a1, future: a2 } = this.position;
-        const b0 = object.position.current;
+        const { previous: a0, current: a1, future: a2 } = this.pos;
+        const b0 = object.pos.current;
         const radius = this.collisionScale + object.collisionScale + addRadius;
         return (
             checkPrevious && a0.distance(b0) <= radius ||
@@ -66,10 +75,17 @@ abstract class Entity {
             a2.distance(b0) <= radius
         )
     }
-        
+    
+    /** checks if entities collide with each other using their current position and given range */
+    collidingSimple(entity: Entity | PlayerObject, range: number) {
+        const pos1 = this.pos.current;
+        const pos2 = entity.pos.current;
+        return pos1.distance(pos2) <= range;
+    }
+
     collidingEntity(entity: Entity, range: number, checkBased = false, prev = true) {
-        const { previous: a0, current: a1, future: a2 } = this.position;
-        const { previous: b0, current: b1, future: b2 } = entity.position;
+        const { previous: a0, current: a1, future: a2 } = this.pos;
+        const { previous: b0, current: b1, future: b2 } = entity.pos;
         if (checkBased) {
             return (
                 prev && a0.distance(b0) <= range ||
@@ -93,6 +109,19 @@ abstract class Entity {
         )
     }
 
+    checkCollidingObject(object: PlayerObject | Resource, itemGroup: ItemGroup, addRadius = 0, checkEnemy = false, checkPrevious = true) {
+        const { ObjectManager } = this.client;
+        const matchItem = object instanceof PlayerObject && object.itemGroup === itemGroup;
+        const isCactus = object instanceof Resource && itemGroup === ItemGroup.SPIKE && object.isCactus;
+
+        if (matchItem || isCactus) {
+            if (checkEnemy && !ObjectManager.isEnemyObject(object)) return false;
+            if (this.collidingObject(object, addRadius, checkPrevious)) {
+                return true;
+            }
+        }
+        return false;
+    }
     /**
      * true, if entity is colliding an item
      * @param itemGroup type of item, that can be placed
@@ -101,20 +130,21 @@ abstract class Entity {
      */
     checkCollision(itemGroup: ItemGroup, addRadius = 0, checkEnemy = false, checkPrevious = true): boolean {
         const { ObjectManager } = this.client;
-        const objects = ObjectManager.retrieveObjects(this.position.current, this.collisionScale);
-
-        for (const object of objects) {
-            const matchItem = object instanceof PlayerObject && object.itemGroup === itemGroup;
-            const isCactus = object instanceof Resource && itemGroup === ItemGroup.SPIKE && object.isCactus;
-    
-            if (matchItem || isCactus) {
-                if (checkEnemy && !ObjectManager.isEnemyObject(object)) continue;
-                if (this.collidingObject(object, addRadius, checkPrevious)) {
-                    return true;
-                }
+        return ObjectManager.grid2D.query(this.pos.current.x, this.pos.current.y, 1, (id: number) => {
+            const object = ObjectManager.objects.get(id)!;
+            if (this.checkCollidingObject(object, itemGroup, addRadius, checkEnemy, checkPrevious)) {
+                return true;
             }
-        }
-        return false;
+        })
+        // const objects = ObjectManager.retrieveObjects(this.pos.current, 1);
+
+        // for (const objectID of objects) {
+        //     const object = ObjectManager.objects.get(objectID)!;
+        //     if (this.checkCollidingObject(object, itemGroup, addRadius, checkEnemy, checkPrevious)) {
+        //         return true;
+        //     }
+        // }
+        // return false;
     }
 
     runningAwayFrom(entity: Entity, angle: number | null): boolean {
@@ -122,8 +152,8 @@ abstract class Entity {
         // We just stay
         if (angle === null) return false;
 
-        const pos1 = this.position.current;
-        const pos2 = entity.position.current;
+        const pos1 = this.pos.current;
+        const pos2 = entity.pos.current;
         const angleTo = pos1.angle(pos2);
 
         // Running towards entity

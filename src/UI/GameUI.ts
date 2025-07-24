@@ -1,50 +1,16 @@
-import { myClient } from "..";
+import { client, Glotus } from "..";
 import Config from "../constants/Config";
 import { Items } from "../constants/Items";
-import { Accessories, Hats } from "../constants/Store";
-import ZoomHandler from "../modules/ZoomHandler";
 import { ItemGroup } from "../types/Items";
-import { EAccessory, EHat, EStoreAction, EStoreType } from "../types/Store";
-import DataHandler from "../utility/DataHandler";
+import { getTargetValue } from "../utility/Common";
+import { blockProperty } from "../utility/Hooker";
 import settings from "../utility/Settings";
-import Storage from "../utility/Storage";
+import CustomStorage from "../utility/CustomStorage";
 import StoreHandler from "./StoreHandler";
-import UI from "./UI";
 
 const GameUI = new class GameUI {
 
-    // private createStore(type: EStoreType) {
-
-    //     const storeMenu = document.createElement("div");
-    //     storeMenu.id = "storeMenu";
-
-    //     const button = document.createElement("button");
-    //     button.id = "toggleStoreType";
-
-    //     type ExtractIndex<T, K> = Extract<K[keyof K], { index: T }>
-    //     type Result<K, R extends unknown[] = []> = ExtractIndex<R["length"], K> extends never
-    //         ? R
-    //         : Result<K, [...R, ExtractIndex<R["length"], K>]>
-
-    //     const data = DataHandler.getStore(type);
-    //     const store = Object.values(data) as Result<typeof Hats> | Result<typeof Accessories>;
-
-    //     const storeHolder = document.createElement("div");
-    //     storeHolder.id = "storeHolder";
-
-    //     for (const item of store) {
-    //         if ("dontSell" in item) continue;
-    //         const element = this.generateStoreElement(type, item.id, item.name, item.price, "topSprite" in item);
-    //         storeHolder.appendChild(element);
-    //     }
-
-    //     storeMenu.appendChild(button);
-    //     storeMenu.appendChild(storeHolder);
-    // }
-
-    /**
-     * Returns game html elements
-     */
+    /** Returns game html elements */
     getElements() {
         const querySelector = document.querySelector.bind(document);
         const querySelectorAll = document.querySelectorAll.bind(document);
@@ -69,18 +35,33 @@ const GameUI = new class GameUI {
             enterGame: querySelector<HTMLDivElement>("#enterGame")!,
             nameInput: querySelector<HTMLInputElement>("#nameInput")!,
             allianceInput: querySelector<HTMLInputElement>("#allianceInput")!,
-            allianceButton: querySelector<HTMLDivElement>(".allianceButtonM")!,
+            allianceButton: querySelector<HTMLDivElement>("#allianceButton")!,
             noticationDisplay: querySelector<HTMLDivElement>("#noticationDisplay")!,
+            nativeResolution: querySelector<HTMLInputElement>("#nativeResolution")!,
+            showPing: querySelector<HTMLInputElement>("#showPing")!,
+            mapDisplay: querySelector<HTMLCanvasElement>("#mapDisplay")!,
         } as const;
     }
 
-    private createSkinColors() {
-        const index = Storage.get<number>("skin_color") || 0;
-        const { skinColorHolder } = this.getElements();
+    private selectSkinColor(skin: number) {
+        const skinValue = skin === 10 ? "toString" : skin;
+        CustomStorage.set("skin_color", skinValue);
+        const selectSkin = getTargetValue(window, "selectSkinColor");
+        if (selectSkin !== undefined) {
+            selectSkin(skinValue);
+        }
+    }
 
+    private createSkinColors() {
+        const skin_color = CustomStorage.get<"toString" | number>("skin_color") || 0;
+        const index = skin_color === "toString" ? 10 : skin_color;
+        const { setupCard } = this.getElements();
+
+        const skinHolder = document.createElement("div");
+        skinHolder.id = "skinHolder";
         let prevIndex = index;
         for (let i=0;i<Config.skinColors.length;i++) {
-            const color = Config.skinColors[i];
+            const color = Config.skinColors[i]!;
             const div = document.createElement("div");
             div.classList.add("skinColorItem");
             if (i === index) {
@@ -88,32 +69,43 @@ const GameUI = new class GameUI {
             }
             div.style.backgroundColor = color;
             div.onclick = () => {
-                const colorButton = skinColorHolder.childNodes[prevIndex];
+                const colorButton = skinHolder.childNodes[prevIndex];
                 if (colorButton instanceof HTMLDivElement) {
                     colorButton.classList.remove("activeSkin");
                 }
                 div.classList.add("activeSkin");
                 prevIndex = i;
-                (window as any).selectSkinColor(i);
+                this.selectSkinColor(i);
             }
-            skinColorHolder.appendChild(div);
+            skinHolder.appendChild(div);
         }
+        setupCard.appendChild(skinHolder);
     }
 
     private formatMainMenu() {
-        const { setupCard, serverBrowser, skinColorHolder, settingRadio } = this.getElements();
+        const { setupCard, serverBrowser, settingRadio, gameUI } = this.getElements();
         setupCard.appendChild(serverBrowser);
-        setupCard.appendChild(skinColorHolder);
+        setupCard.querySelector("br")?.remove();
         this.createSkinColors();
 
-        for (const radio of settingRadio) {
+        const radio = settingRadio[0];
+        if (radio) {
             setupCard.appendChild(radio);
         }
+
+        const div = document.createElement("div");
+        div.id = "glotusStats";
+        div.innerHTML = `
+            <span>PING: <span id="glotusPing"></span>ms</span>
+            <span>FPS: <span id="glotusFPS"></span></span>
+            <span>PACKETS: <span id="glotusPackets"></span></span>
+            <span>FastQ: <span id="glotusFastQ">false</span></span>
+            <span>Places: <span id="glotusTotalPlaces"></span></span>
+        `;
+        gameUI.appendChild(div);
     }
 
-    /**
-     * Adds item counts to the inventory. So you can see amount of placed items
-     */
+    /** Adds item counts to the inventory. So you can see amount of placed items */
     private attachItemCount() {
         const actionBar = document.querySelectorAll<HTMLDivElement>("div[id*='actionBarItem'");
         for (let i=19;i<39;i++) {
@@ -126,58 +118,35 @@ const GameUI = new class GameUI {
                 const group = item.itemGroup;
                 const span = document.createElement("span");
                 span.classList.add("itemCounter");
-                if (!settings.itemCounter) {
+                if (!settings._itemCounter) {
                     span.classList.add("hidden");
                 }
                 span.setAttribute("data-id", group + "");
 
-                const { count, limit } = myClient.myPlayer.getItemCount(group);
+                const { count, limit } = client.myPlayer.getItemCount(group);
                 span.textContent = `${count}/${limit}`;
-                actionBar[i].appendChild(span);
+                actionBar[i]!.appendChild(span);
             }
         }
     }
 
-    private attachMouse() {
-        const { gameCanvas } = this.getElements();
-
-        const { myPlayer, ModuleHandler } = myClient;
-        const handleMouse = (event: MouseEvent) => {
-            if (myPlayer.inGame && event.target !== gameCanvas) return;
-            ModuleHandler.handleMouse(event);
-        }
-        window.addEventListener("mousemove", handleMouse);
-        window.addEventListener("mouseover", handleMouse);
-
-        gameCanvas.addEventListener("mousedown", event => ModuleHandler.handleMousedown(event));
-        window.addEventListener("mouseup", event => ModuleHandler.handleMouseup(event));
-        window.addEventListener("wheel", event => ZoomHandler.handler(event));
-    }
-
     private modifyInputs() {
-        const { chatHolder, chatBox, nameInput, storeMenu } = this.getElements();
+        const { chatHolder, chatBox, nameInput } = this.getElements();
         chatBox.onblur = () => {
-            // chatHolder.classList.add("closedItem");
             chatHolder.style.display = "none";
             const value = chatBox.value;
             if (value.length > 0) {
-                myClient.SocketManager.chat(value);
+                client.PacketManager.chat(value);
             }
             chatBox.value = "";
         }
 
         nameInput.onchange = () => {
-            Storage.set("moo_name", nameInput.value, false);
+            CustomStorage.set("moo_name", nameInput.value, false);
         }
-
-        // storeMenu.remove();
-        // chatHolder.removeAttribute("style");
-        // chatHolder.classList.add("closedItem");
     }
 
-    /**
-     * When user switches option in the menu. It toggles item count
-     */
+    /** When user switches option in the menu. It toggles item count */
     toggleItemCount() {
         const items = document.querySelectorAll<HTMLSpanElement>(`span.itemCounter[data-id]`);
         for (const item of items) {
@@ -185,31 +154,109 @@ const GameUI = new class GameUI {
         }
     }
 
-    /**
-     * Updates item count of items in inventory
-     */
+    /** Updates item count of items in inventory */
     updateItemCount(group: ItemGroup) {
         const items = document.querySelectorAll<HTMLSpanElement>(`span.itemCounter[data-id='${group}']`);
-        const { count, limit } = myClient.myPlayer.getItemCount(group);
+        const { count, limit } = client.myPlayer.getItemCount(group);
         for (const item of items) {
             item.textContent = `${count}/${limit}`;
         }
     }
 
-    init() {
-        this.formatMainMenu();
-        this.attachMouse();
-        this.modifyInputs();
-        this.createTotalKill();
+    private interceptEnterGame() {
+        const enterGame = document.querySelector<HTMLDivElement>("#enterGame")!;
+        const observer = new MutationObserver(() => {
+            observer.disconnect();
+
+            this.load();
+            // this.spawn();
+        });
+        observer.observe(enterGame, { attributes: true });
     }
 
-    load() {
-        const index = Storage.get<number>("skin_color") || 0;
-        (window as any).selectSkinColor(index);
+    updatePing(ping: number) {
+        const glotusPing = document.querySelector<HTMLSpanElement>("#glotusPing");
+        if (glotusPing !== null) {
+            glotusPing.textContent = ping.toString();
+        }
+    }
+
+    updateFPS(fps: number) {
+        const glotusFPS = document.querySelector<HTMLSpanElement>("#glotusFPS");
+        if (glotusFPS !== null) {
+            glotusFPS.textContent = fps.toString();
+        }
+    }
+
+    updatePackets(packets: number) {
+        const glotusPackets = document.querySelector<HTMLSpanElement>("#glotusPackets");
+        if (glotusPackets !== null) {
+            glotusPackets.textContent = packets.toString();
+        }
+    }
+
+    updateFastQ(state: boolean) {
+        const glotusFastQ = document.querySelector<HTMLSpanElement>("#glotusFastQ");
+        if (glotusFastQ !== null) {
+            glotusFastQ.textContent = state.toString();
+        }
+    }
+
+    updateTotalPlaces(count: number) {
+        const glotusTotalPlaces = document.querySelector<HTMLSpanElement>("#glotusTotalPlaces");
+        if (glotusTotalPlaces !== null) {
+            glotusTotalPlaces.textContent = count.toString();
+        }
+    }
+
+    init() {
+        this.formatMainMenu();
+        this.modifyInputs();
+        this.createTotalKill();
+        this.interceptEnterGame();
+    }
+    
+    private load() {
+        const { nativeResolution, enterGame } = this.getElements();
+
+        if (!nativeResolution.checked) nativeResolution.click();
+        this.selectSkinColor(CustomStorage.get("skin_color") || 0);
+
+        const _enterGame = enterGame.onclick;
+        enterGame.onclick = function() {
+            Glotus.startGame();
+            enterGame.onclick = _enterGame;
+        }
     }
 
     loadGame() {
         this.attachItemCount();
+
+        // MAKE SURE OPENING DEFAULT STORE/CLAN BUTTON WILL REMOVE OUR CUSTOM SHOP
+        const { storeButton, allianceButton, mapDisplay } = this.getElements();
+        const that = this;
+        let _storeClick = storeButton.onclick!;
+        storeButton.onclick = function(...args: any) {
+            that.reset();
+            _storeClick.apply(this, args);
+        }
+
+        const _allianceClick = allianceButton.onclick!;
+        allianceButton.onclick = function(...args: any) {
+            that.reset();
+            _allianceClick.apply(this, args);
+        }
+
+        const _mapClick = mapDisplay.onclick!;
+        mapDisplay.onclick = function(event: MouseEvent) {
+            const bounds = mapDisplay.getBoundingClientRect();
+            const scale = 14400 / bounds.width;
+            const posX = (event.clientX - bounds.left) * scale;
+            const posY = (event.clientY - bounds.top) * scale;
+            client.ModuleHandler.endTarget.setXY(posX, posY);
+            client.ModuleHandler.followPath = true;
+            _mapClick.call(this, event);
+        }
     }
 
     /**
@@ -228,7 +275,7 @@ const GameUI = new class GameUI {
             clanButton.click();
         }
 
-        const popups = document.querySelectorAll<HTMLDivElement>("#chatHolder, #storeContainer, #allianceMenu");
+        const popups = document.querySelectorAll<HTMLDivElement>("#chatHolder, #storeMenu, #allianceMenu, #storeContainer");
         for (const popup of popups) {
             if (popup === element) continue;
             popup.style.display = "none";
@@ -274,10 +321,10 @@ const GameUI = new class GameUI {
         const handleClick = (type: 0 | 1) => {
             const button = this.createAcceptButton(type);
             button.onclick = () => {
-                myClient.SocketManager.clanRequest(id, !!type);
-                myClient.myPlayer.joinRequests.shift();
-                myClient.pendingJoins.delete(id);
                 this.resetNotication(noticationDisplay);
+                client.PacketManager.clanRequest(id, !!type);
+                client.myPlayer.joinRequests.shift();
+                client.pendingJoins.delete(id);
             }
             noticationDisplay.appendChild(button);
         }
@@ -285,17 +332,17 @@ const GameUI = new class GameUI {
         handleClick(1);
     }
 
-    spawn() {
+    clientSpawn() {
         const { enterGame } = this.getElements();
         enterGame.click();
     }
     
     handleEnter(event: KeyboardEvent) {
-        if (UI.isMenuOpened) return;
+        // if (UI.isMenuOpened) return;
         const { allianceInput, allianceButton } = this.getElements();
         const active = document.activeElement;
 
-        if (myClient.myPlayer.inGame) {
+        if (client.myPlayer.inGame) {
             if (active === allianceInput) {
                 allianceButton.click();
             } else {
@@ -304,10 +351,10 @@ const GameUI = new class GameUI {
             return;
         }
 
-        this.spawn();
+        this.clientSpawn();
     }
 
-    toggleChat(event: KeyboardEvent) {
+    private toggleChat(event: KeyboardEvent) {
         const { chatHolder, chatBox } = this.getElements();
         this.closePopups(chatHolder);
         if (this.isOpened(chatHolder)) {
@@ -316,11 +363,6 @@ const GameUI = new class GameUI {
         } else {
             chatBox.blur();
         }
-    }
-
-    updatePing(ping: number) {
-        const { pingDisplay } = this.getElements();
-        pingDisplay.textContent = `Ping: ${ping}ms`;
     }
 
     private createTotalKill() {
@@ -337,7 +379,7 @@ const GameUI = new class GameUI {
     updateTotalKill() {
         const counter = document.querySelector<HTMLDivElement>("#totalKillCounter");
         if (counter === null) return;
-        counter.textContent = myClient.totalKills.toString();
+        counter.textContent = client.totalKills.toString();
     }
 
     reset() {

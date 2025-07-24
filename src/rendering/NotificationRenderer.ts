@@ -1,10 +1,10 @@
-import { TObject } from "../data/ObjectItem";
-import { TCTX } from "../types/Common";
-import { IRenderEntity } from "../types/RenderTargets";
+import type { TObject } from "../data/ObjectItem";
+import type { TCTX } from "../types/Common";
+import type { IRenderEntity } from "../types/RenderTargets";
 import EntityRenderer from "./EntityRenderer";
 import Renderer from "./Renderer";
 
-export class Notification {
+export class Notify {
     readonly x: number;
     readonly y: number;
     private readonly timeout = {
@@ -34,15 +34,15 @@ export class Notification {
 }
 
 const NotificationRenderer = new class NotificationRenderer {
-    private readonly notifications = new Set<Notification>();
+    private readonly notifications = new Set<Notify>();
 
-    remove(notify: Notification) {
+    remove(notify: Notify) {
         this.notifications.delete(notify);
     }
 
     add(object: TObject) {
-        const { x, y } = object.position.current;
-        const notify = new Notification(x, y);
+        const { x, y } = object.pos.current;
+        const notify = new Notify(x, y);
         this.notifications.add(notify);
     }
 

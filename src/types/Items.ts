@@ -168,3 +168,9 @@ export type TGlobalInventory = {
     [ItemType.TURRET]: ExtractItem<{ itemType: 8 }> | null,
     [ItemType.SPAWN]: ExtractItem<{ itemType: 9 }> | null,
 }
+
+export const enum ReloadType {
+    PRIMARY,
+    SECONDARY,
+    TURRET
+}

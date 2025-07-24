@@ -1,18 +1,18 @@
 import EnemyManager from "./Managers/EnemyManager";
 import LeaderboardManager from "./Managers/LeaderboardManager";
 import ObjectManager from "./Managers/ObjectManager";
+import PacketManager from "./Managers/PacketManager";
 import PlayerManager from "./Managers/PlayerManager";
 import ProjectileManager from "./Managers/ProjectileManager";
 import SocketManager from "./Managers/SocketManager";
 import ClientPlayer from "./data/ClientPlayer";
+import InputHandler from "./features/InputHandler";
 import ModuleHandler from "./features/ModuleHandler";
-import { ISocket } from "./types/Socket";
 
 class PlayerClient {
     id = -1;
-    stableConnection = false;
-    readonly connection: ISocket;
-    readonly isOwner: boolean;
+    connectSuccess = false;
+    readonly owner: PlayerClient;
     readonly SocketManager: SocketManager;
     readonly ObjectManager: ObjectManager;
     readonly PlayerManager: PlayerManager;
@@ -21,15 +21,16 @@ class PlayerClient {
     readonly EnemyManager: EnemyManager;
     readonly ModuleHandler: ModuleHandler;
     readonly myPlayer: ClientPlayer;
+    readonly PacketManager: PacketManager;
+    readonly InputHandler: InputHandler;
 
     readonly pendingJoins = new Set<number>();
     readonly clientIDList = new Set<number>();
     readonly clients = new Set<PlayerClient>();
     totalKills = 0;
-    
-    constructor(connection: ISocket, isOwner: boolean) {
-        this.connection = connection;
-        this.isOwner = isOwner;
+
+    constructor(owner?: PlayerClient) {
+        this.owner = owner || this;
         this.SocketManager = new SocketManager(this);
         this.ObjectManager = new ObjectManager(this);
         this.PlayerManager = new PlayerManager(this);
@@ -38,23 +39,24 @@ class PlayerClient {
         this.EnemyManager = new EnemyManager(this);
         this.ModuleHandler = new ModuleHandler(this);
         this.myPlayer = new ClientPlayer(this);
+        this.PacketManager = new PacketManager(this);
+        this.InputHandler = new InputHandler(this);
+    }
+
+    get isOwner() {
+        return this.owner === this;
     }
 
     disconnect() {
-        const socket = this.connection.socket;
-        if (socket !== undefined) {
+        const socket = this.SocketManager.socket;
+        if (socket !== null) {
             socket.close();
         }
     }
 
-    // getTotalKills() {
-    //     let kills = this.myPlayer.resources.kills;
-    //     for (const client of this.clients) {
-    //         kills += client.myPlayer.resources.kills;
-    //     }
-    //     return kills;
-
-    // }
+    spawn() {
+        this.myPlayer.spawn();
+    }
 }
 
 export default PlayerClient;

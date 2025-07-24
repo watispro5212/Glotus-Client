@@ -1,18 +1,15 @@
 import { Items } from "../../constants/Items";
 import PlayerClient from "../../PlayerClient";
 import { ItemType } from "../../types/Items";
-import { getAngleFromBitmask } from "../../utility/Common";
 import settings from "../../utility/Settings";
 
 class Automill {
-    readonly name = "autoMill";
-    /**
-     * true, if module is enabled
-     */
-    private toggle = true;
+    readonly moduleName = "autoMill";
+    /** true, if module is enabled */
+    toggle = true;
 
     private readonly client: PlayerClient;
-    private placeCount = 0;
+    tickCount = 0;
 
     constructor(client: PlayerClient) {
         this.client = client;
@@ -24,34 +21,34 @@ class Automill {
 
     private get canAutomill() {
         const isOwner = this.client.isOwner;
-        const { autoattack, attacking, placedOnce } = this.client.ModuleHandler;
+        const { attacking, placedOnce } = this.client.ModuleHandler;
         return (
-            settings.automill &&
+            settings._automill &&
             this.client.myPlayer.isSandbox &&
             !placedOnce &&
-            !autoattack &&
+            // !autoattack &&
             (!isOwner || !attacking) &&
             this.toggle
         )
     }
 
-    private placeWindmill(angle: number) {
+    private placeWindmill(angle: number): boolean {
         const { myPlayer, ObjectManager, ModuleHandler, isOwner } = this.client;
         const id = myPlayer.getItemByType(ItemType.WINDMILL)!;
-        const position = myPlayer.getPlacePosition(myPlayer.position.future, id, angle);
+        const position = myPlayer.getPlacePosition(myPlayer.pos.future, id, angle);
         const radius = isOwner ? 0 : Items[id].scale;
-        if (!ObjectManager.canPlaceItem(id, position, radius)) return;
+        if (!ObjectManager.canPlaceItem(id, position, radius)) return false;
         // if (ModuleHandler.totalPlaces >= 5) return;
         // ModuleHandler.totalPlaces += 1;
 
-        ModuleHandler.actionPlanner.createAction(
-            ItemType.WINDMILL,
-            (last) => ModuleHandler.place(ItemType.WINDMILL, { angle, last })
-        )
+        const type = ItemType.WINDMILL;
+        ModuleHandler.place(type, angle);
+        ModuleHandler.placedOnce = true;
+        return true;
     }
 
     postTick(): void {
-        const { myPlayer, ModuleHandler, isOwner } = this.client;
+        const { myPlayer, ModuleHandler } = this.client;
 
         if (!this.canAutomill) return;
         if (!myPlayer.canPlace(ItemType.WINDMILL)) {
@@ -59,21 +56,19 @@ class Automill {
             return;
         }
 
-        const angle = isOwner ? getAngleFromBitmask(ModuleHandler.move, true) : ModuleHandler.reverseCursorAngle;
+        const angle = ModuleHandler.reverse_move_dir;
         if (angle === null) return;
 
         const item = Items[myPlayer.getItemByType(ItemType.WINDMILL)];
         const distance = myPlayer.getItemPlaceScale(item.id);
-        const angleBetween = Math.asin((2 * item.scale) / (2 * distance));
-        this.placeWindmill(angle - angleBetween);
-        this.placeWindmill(angle + angleBetween);
-        // Use 1x mill if 2x mill is too much
-        // if (isOwner && ModuleHandler.totalPlaces <= 2) {
-        //     this.placeWindmill(angle - angleBetween);
-        //     this.placeWindmill(angle + angleBetween);
-        // } else {
-        //     this.placeWindmill(angle);
-        // }
+        const angleBetween = Math.asin((2 * item.scale + 15) / (2 * distance)) * 2;
+
+        if (this.tickCount === 0) {
+            this.placeWindmill(angle);
+            this.placeWindmill(angle - angleBetween);
+            this.placeWindmill(angle + angleBetween);
+        }
+        this.tickCount = (this.tickCount + 1) % 3;
     }
 }
 

@@ -4,7 +4,7 @@ import { EProjectile } from "../types/Items";
 import Player from "./Player";
 
 class Projectile {
-    readonly position = {} as {
+    readonly pos = {} as {
         previous: Vector;
         current: Vector;
         future: Vector;
@@ -47,7 +47,7 @@ class Projectile {
 
     formatFromCurrent(pos: Vector, increase: boolean) {
         if (this.isTurret) return pos;
-        return pos.direction(this.angle, increase ? 70 : -70);
+        return pos.addDirection(this.angle, increase ? 70 : -70);
     }
 }
 

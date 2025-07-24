@@ -1,12 +1,8 @@
 import { Projectiles } from "../constants/Items";
-import Animal from "../data/Animal";
-import { TObject } from "../data/ObjectItem";
 import Player from "../data/Player";
 import Projectile from "../data/Projectile";
 import PlayerClient from "../PlayerClient";
-import Vector from "../modules/Vector";
 import { EProjectile } from "../types/Items";
-import { getAngleDist, lineIntersectsRect } from "../utility/Common";
 
 class ProjectileManager {
 
@@ -47,7 +43,7 @@ class ProjectileManager {
     getProjectile(owner: Player, projectile: EProjectile, onPlatform: boolean, angle: number, range: number): Projectile {
         const bullet = Projectiles[projectile];
         const isTurret = projectile === EProjectile.TURRET;
-        const { previous: a0, current: a1, future: a2 } = owner.position;
+        const { previous: a0, current: a1, future: a2 } = owner.pos;
 
         const arrow = new Projectile(
             angle,
@@ -57,9 +53,9 @@ class ProjectileManager {
             onPlatform || isTurret ? 1 : 0,
             -1, range
         );
-        arrow.position.previous = arrow.formatFromCurrent(a0, true);
-        arrow.position.current = arrow.formatFromCurrent(a1, true);
-        arrow.position.future = arrow.formatFromCurrent(a2, true);
+        arrow.pos.previous = arrow.formatFromCurrent(a0, true);
+        arrow.pos.current = arrow.formatFromCurrent(a1, true);
+        arrow.pos.future = arrow.formatFromCurrent(a2, true);
         return arrow;
     }
 
