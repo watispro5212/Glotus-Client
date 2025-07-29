@@ -48,6 +48,8 @@ class SpikeTick {
                 ModuleHandler.moduleActive = true;
                 ModuleHandler.forceHat = EHat.TURRET_GEAR;
                 this.targetEnemy = nearest;
+
+                this.client.StatsManager.spikeTickTimes += 1;
             }
         }
     }

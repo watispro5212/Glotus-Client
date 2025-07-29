@@ -27,7 +27,7 @@ class AutoPlacer {
         if (ModuleHandler.placedOnce) return;
         const nearestEnemy = EnemyManager.nearestEnemy;
         if (nearestEnemy === null) return;
-        if (!myPlayer.collidingSimple(nearestEnemy, 300)) return;
+        if (!myPlayer.collidingSimple(nearestEnemy, 400)) return;
 
         const nearestAngle = pos.angle(nearestEnemy.pos.current);
         // const nearestAngle = currentAngle;
@@ -35,7 +35,7 @@ class AutoPlacer {
         let itemType: ItemType | null = null;
         const spike = myPlayer.getItemByType(ItemType.SPIKE);
         const spikeAngles = ObjectManager.getBestPlacementAngles(pos, spike, nearestAngle);
-
+        const spikeScale = Items[spike].scale;
         let angles: number[] = [];
 
         const length = myPlayer.getItemPlaceScale(spike);
@@ -45,14 +45,14 @@ class AutoPlacer {
 
             for (const enemy of EnemyManager.trappedEnemies) {
                 const distance = newPos.distance(enemy.pos.current);
-                const range = Items[spike].scale * 2 + enemy.collisionScale;
+                const range = spikeScale + enemy.collisionScale;
                 if (distance <= range) {
                     shouldPlaceSpike = true;
                     break;
                 }
             }
 
-            if (shouldPlaceSpike) {
+            if (shouldPlaceSpike || myPlayer.wasTrapped()) {
                 angles = spikeAngles;
                 itemType = ItemType.SPIKE;
                 break;
@@ -63,7 +63,7 @@ class AutoPlacer {
             let type = currentType && currentType !== ItemType.FOOD ? currentType : ItemType.TRAP;
             if (!myPlayer.canPlace(type)) return;
 
-            if (this.placementCount >= 4) {
+            if (this.placementCount >= 3) {
                 type = ItemType.SPIKE;
             }
             const id = myPlayer.getItemByType(type)!;
@@ -81,9 +81,9 @@ class AutoPlacer {
 
         // console.log(angles.length);
         if (angles.length === 0) return;
-        if (ModuleHandler.didAntiInsta) {
-            angles.length = 1;
-        }
+        // if (ModuleHandler.didAntiInsta) {
+        //     angles.length = 1;
+        // }
         ModuleHandler.placedOnce = true;
         for (const angle of angles) {
             ModuleHandler.place(itemType, angle);

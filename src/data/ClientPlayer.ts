@@ -67,7 +67,7 @@ class ClientPlayer extends Player {
     totalGoldAmount = 0;
     age = 1;
     upgradeAge = 1;
-
+    
     poisonCount = 0;
     underTurretAttack = false;
     private readonly upgradeOrder: number[] = [];
@@ -417,8 +417,12 @@ class ClientPlayer extends Player {
         if (amount < previousAmount) return;
         const difference = amount - previousAmount;
         if (type === "kills") {
-            this.client.owner.totalKills += difference;
-            GameUI.updateTotalKill();
+            this.client.StatsManager.kills += difference;
+            this.client.StatsManager.totalKills += difference;
+            this.client.owner.StatsManager.globalKills += difference;
+            if (this.client.isOwner) {
+                GameUI.updateTotalKills(this.client.owner.StatsManager.totalKills);
+            }
             return;
         }
 
@@ -509,9 +513,11 @@ class ClientPlayer extends Player {
         }
         this.deathPosition.setVec(this.pos.current);
         this.diedOnce = true;
+        this.client.StatsManager.deaths += 1;
 
         if (this.client.isOwner) {
             GameUI.reset();
+            GameUI.updateTotalDeaths(this.client.StatsManager.deaths);
         }
     }
 }

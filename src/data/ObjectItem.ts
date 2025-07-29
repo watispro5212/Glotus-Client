@@ -13,7 +13,7 @@ abstract class ObjectItem {
         readonly current: Vector;
     }
     readonly angle: number;
-    readonly scale: number;
+    readonly scale: number = 0;
 
     constructor(
         id: number,

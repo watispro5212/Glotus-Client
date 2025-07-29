@@ -5,6 +5,7 @@ import PacketManager from "./Managers/PacketManager";
 import PlayerManager from "./Managers/PlayerManager";
 import ProjectileManager from "./Managers/ProjectileManager";
 import SocketManager from "./Managers/SocketManager";
+import StatsManager from "./Managers/StatsManager";
 import ClientPlayer from "./data/ClientPlayer";
 import InputHandler from "./features/InputHandler";
 import ModuleHandler from "./features/ModuleHandler";
@@ -23,11 +24,11 @@ class PlayerClient {
     readonly myPlayer: ClientPlayer;
     readonly PacketManager: PacketManager;
     readonly InputHandler: InputHandler;
+    readonly StatsManager: StatsManager;
 
     readonly pendingJoins = new Set<number>();
     readonly clientIDList = new Set<number>();
     readonly clients = new Set<PlayerClient>();
-    totalKills = 0;
 
     constructor(owner?: PlayerClient) {
         this.owner = owner || this;
@@ -41,6 +42,11 @@ class PlayerClient {
         this.myPlayer = new ClientPlayer(this);
         this.PacketManager = new PacketManager(this);
         this.InputHandler = new InputHandler(this);
+        this.StatsManager = new StatsManager(this);
+    }
+
+    getClientIndex(client: PlayerClient) {
+        return [...this.clients].indexOf(client);
     }
 
     get isOwner() {

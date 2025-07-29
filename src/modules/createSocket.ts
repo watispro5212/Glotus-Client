@@ -1,6 +1,6 @@
 import Logger from '../utility/Logger';
 const toBytes = (b64: string) => {
-    return Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    return window.Uint8Array.from(window.atob(b64), c => c.charCodeAt(0));
 }
 
 type ChallengeData = {
@@ -100,7 +100,6 @@ class Altcha {
         );
 
         workers.forEach(worker => worker.terminate());
-
         return results.find(r => !!r) ?? null;
     }
 

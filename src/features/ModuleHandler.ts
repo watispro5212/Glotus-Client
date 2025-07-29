@@ -529,7 +529,14 @@ class ModuleHandler {
     }
 
     colls: number[] = [];
+
+    circleOffset = 0;
+    targetSpeed = 0.3;
+    circleRadius = 400;
+    
     postTick() {
+        const rotationSpeed = this.targetSpeed / this.circleRadius;
+        this.circleOffset += rotationSpeed;
         const { isOwner, ObjectManager, myPlayer } = this.client;
         // const { x, y } = myPlayer.pos.current;
         // const ids: number[] = [];

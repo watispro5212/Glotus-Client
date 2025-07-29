@@ -101,6 +101,8 @@ const GameUI = new class GameUI {
             <span>PACKETS: <span id="glotusPackets"></span></span>
             <span>FastQ: <span id="glotusFastQ">false</span></span>
             <span>Places: <span id="glotusTotalPlaces"></span></span>
+            <span>Total Kills: <span id="glotusTotalKills">0</span></span>
+            <span>Deaths: <span id="glotusTotalDeaths">0</span></span>
         `;
         gameUI.appendChild(div);
     }
@@ -209,10 +211,23 @@ const GameUI = new class GameUI {
         }
     }
 
+    updateTotalKills(kills: number) {
+        const glotusTotalKills = document.querySelector<HTMLSpanElement>("#glotusTotalKills");
+        if (glotusTotalKills !== null) {
+            glotusTotalKills.textContent = kills.toString();
+        }
+    }
+
+    updateTotalDeaths(deaths: number) {
+        const glotusTotalDeaths = document.querySelector<HTMLSpanElement>("#glotusTotalDeaths");
+        if (glotusTotalDeaths !== null) {
+            glotusTotalDeaths.textContent = deaths.toString();
+        }
+    }
+
     init() {
         this.formatMainMenu();
         this.modifyInputs();
-        this.createTotalKill();
         this.interceptEnterGame();
     }
     
@@ -259,16 +274,12 @@ const GameUI = new class GameUI {
         }
     }
 
-    /**
-     * Checks if element is opened. Used for store, clan and chat
-     */
+    /** Checks if element is opened. Used for store, clan and chat */
     private isOpened(element: HTMLElement) {
         return element.style.display !== "none";
     }
 
-    /**
-     * Closes all popups except..
-     */
+    /** Closes all popups except.. */
     closePopups(element?: HTMLElement) {
         const { allianceMenu, clanButton } = this.getElements();
         if (this.isOpened(allianceMenu) && element !== allianceMenu) {
@@ -363,23 +374,6 @@ const GameUI = new class GameUI {
         } else {
             chatBox.blur();
         }
-    }
-
-    private createTotalKill() {
-        const topInfoHolder = document.querySelector<HTMLDivElement>("#topInfoHolder");
-        if (topInfoHolder === null) return;
-
-        const div = document.createElement("div");
-        div.id = "totalKillCounter";
-        div.classList.add("resourceDisplay");
-        div.textContent = "0";
-        topInfoHolder.appendChild(div);
-    }
-
-    updateTotalKill() {
-        const counter = document.querySelector<HTMLDivElement>("#totalKillCounter");
-        if (counter === null) return;
-        counter.textContent = client.totalKills.toString();
     }
 
     reset() {

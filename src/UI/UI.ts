@@ -16,7 +16,7 @@ import { formatButton, formatCode, removeClass } from "../utility/Common";
 import Logger from "../utility/Logger";
 import GameUI from "./GameUI";
 import PlayerClient from "../PlayerClient";
-import createSocket from "../modules/createSocket";
+import createSocket, { altcha } from "../modules/createSocket";
 import { client, Glotus } from "..";
 
 interface IFrame {

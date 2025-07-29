@@ -1,19 +1,24 @@
 {
     "name": "glotus-client",
-    "author": "Murka",
     "version": "3.4",
-    "description": "An excellent Moomoo.io hack for a comfortable gaming experience",
-    "license": "MIT",
-    "private": true,
+    "author": "Murka",
     "module": "src/index.ts",
-    "type": "module",
-    "scripts": {
-        "host": "bun run hoster.ts",
-        "dev": "cross-env NODE_ENV=development bun build src/index.ts --outdir dist --watch --target browser",
-        "build": "cross-env NODE_ENV=production bun run build.ts",
-        "private": "cross-env NODE_ENV=production bun run privateBuild.ts",
-        "start": "concurrently \"bun run host\" \"bun run dev\""
+    "devDependencies": {
+        "@types/bun": "latest",
+        "@types/ws": "^8.18.1",
+        "concurrently": "^9.1.2",
+        "cross-env": "^7.0.3",
+        "http-proxy-agent": "^7.0.2",
+        "js-confuser": "^2.0.0",
+        "node-fetch": "^3.3.2",
+        "socks-proxy-agent": "^8.0.5",
+        "terser": "^5.40.0",
+        "type-fest": "^4.41.0"
     },
+    "peerDependencies": {
+        "typescript": "^5"
+    },
+    "description": "An excellent Moomoo.io hack for a comfortable gaming experience",
     "keywords": [
         "hack",
         "mod",
@@ -25,18 +30,17 @@
         "game",
         "browser"
     ],
-    "devDependencies": {
-        "@types/bun": "latest",
-        "concurrently": "^9.1.2",
-        "cross-env": "^7.0.3",
-        "js-confuser": "^2.0.0",
-        "terser": "^5.40.0",
-        "type-fest": "^4.41.0"
+    "license": "MIT",
+    "private": true,
+    "scripts": {
+        "host": "bun run hoster.ts",
+        "dev": "cross-env NODE_ENV=development bun build src/index.ts --outdir dist --watch --target browser",
+        "build": "cross-env NODE_ENV=production bun run build.ts",
+        "private": "cross-env NODE_ENV=production bun run privateBuild.ts",
+        "start": "concurrently \"bun run host\" \"bun run dev\""
     },
-    "peerDependencies": {
-        "typescript": "^5"
-    },
+    "type": "module",
     "dependencies": {
-        "google-closure-compiler": "^20250721.0.0"
+        "ws": "^8.18.3"
     }
 }

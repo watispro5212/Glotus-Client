@@ -21,14 +21,16 @@ if (!loadedFast) {
 Logger.test("Glotus Client initialization..");
 
 const gameToken = altcha.generate(false);
-export const client = new PlayerClient();
-window.WebSocket = new Proxy(WebSocket, {
+export const client = new PlayerClient(undefined);
+window.WebSocket = new window.Proxy(window.WebSocket, {
     construct(target, args: ConstructorParameters<typeof WebSocket>) {
         const socket = new target(...args);
-        Logger.test("Found socket! Socket initialization..");
-        client.SocketManager.init(socket);
+        if (!/localhost/.test(args[0].toString())) {
+            Logger.test("Found socket! Socket initialization..");
+            client.SocketManager.init(socket);
 
-        window.WebSocket = target;
+            window.WebSocket = target;
+        }
         return socket;
     }
 });

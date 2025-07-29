@@ -181,12 +181,12 @@ class ObjectManager {
         const item = Items[id];
         const length = this.client.myPlayer.getItemPlaceScale(id);
 
-        const hammerDamage = 75 * 1.18 * 3.3;
+        // const hammerDamage = 75 * 1.18 * 3.3;
         const angles: IAngle[] = [];
         this.grid2D.query(position.x, position.y, 1, (id: number) => {
             const object = this.objects.get(id)!;
             if (
-                !ignoreHealth && object instanceof PlayerObject && object.canBeDestroyed && object.health <= hammerDamage ||
+                !ignoreHealth && object instanceof PlayerObject && object.canBeDestroyed /* && object.health <= hammerDamage */ ||
                 ignoreID !== null && ignoreID === object.id 
             ) return;
 
@@ -194,7 +194,7 @@ class ObjectManager {
             const angle = position.angle(pos1);
             const distance = position.distance(pos1);
 
-            const a = object.placementScale + item.scale + 10;
+            const a = object.placementScale + item.scale;// + 3;
             const b = distance;
             const c = length;
             const cosArg = (b * b + c * c - a * a) / (2 * b * c);
@@ -207,7 +207,7 @@ class ObjectManager {
                 angles.push({ angle, offset });
             }
         });
-        const finalAngles = findPlacementAngles(angles).slice(0, 3);
+        const finalAngles = findPlacementAngles(angles);//.slice(0, 4);
         if (targetAngle === null) return finalAngles;
 
         // Checks if it is actually possible to use targetAngle in order to place an object

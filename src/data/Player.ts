@@ -1,6 +1,7 @@
 import PlayerClient from "../PlayerClient";
 import { Items, Projectiles, WeaponVariants } from "../constants/Items";
 import { Accessories, Hats } from "../constants/Store";
+import HatPredictor from "../modules/HatPredictor";
 import type { IReload } from "../types/Common";
 import { EDanger } from "../types/Enums";
 import { EItem, EProjectile, EWeapon, ItemType, ReloadType, WeaponType, WeaponTypeString, WeaponVariant, type TGlobalInventory, type TMelee, type TPlaceable, type TPrimary, type TSecondary } from "../types/Items";
@@ -94,9 +95,16 @@ class Player extends Entity {
     readonly dangerList: EDanger[] = [];
     danger = EDanger.NONE;
 
+    readonly hatHistory: number[] = [];
+    futureHat: number | null = 0;
+
     constructor(client: PlayerClient) {
         super(client);
         this.init();
+    }
+
+    wasTrapped() {
+        return this.trappedIn === null && this.trappedInPrev !== null;
     }
 
     private hasFound(projectile: Projectile) {
@@ -194,6 +202,13 @@ class Player extends Entity {
         this.clanName = clanName;
         this.isLeader = Boolean(isLeader);
         this.hatID = hatID;
+        this.hatHistory.push(hatID);
+        if (this.hatHistory.length > 5) {
+            this.hatHistory.shift();
+        }
+        HatPredictor.train(this.hatHistory);
+        this.futureHat = HatPredictor.predict(hatID);
+
         this.accessoryID = accessoryID;
         this.storeData[EStoreType.HAT] = hatID;
         this.storeData[EStoreType.ACCESSORY] = accessoryID;

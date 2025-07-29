@@ -16,20 +16,20 @@ class UpdateAttack {
 
     postTick(): void {
         const { ModuleHandler } = this.client;
-        const { useWeapon, forceWeapon, weapon, attacking, moveTo, prevMoveTo, sentAngle, staticModules } = ModuleHandler;
+        const { useWeapon, forceWeapon, weapon, attacking, moveTo, prevMoveTo, useItem, sentAngle, staticModules } = ModuleHandler;
         const { reloading } = staticModules;
 
         const nextWeapon = forceWeapon !== null ? forceWeapon : useWeapon;
-        if (nextWeapon !== null && nextWeapon !== weapon) {
+        if (nextWeapon !== null && (nextWeapon !== weapon || ModuleHandler.currentHolding !== nextWeapon)) {
             const isReloaded = reloading.isReloaded(weapon);
             if (isReloaded || forceWeapon !== null) {
                 ModuleHandler.whichWeapon(nextWeapon);
             }
         }
 
-        // if (useItem !== null) {
-        //     ModuleHandler.selectItem(useItem);
-        // }
+        if (useItem !== null) {
+            ModuleHandler.selectItem(useItem);
+        }
 
         if (prevMoveTo !== moveTo) {
             const angle = moveTo === "disable" ? ModuleHandler.move_dir : moveTo;
