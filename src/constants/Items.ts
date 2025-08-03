@@ -20,7 +20,8 @@ export const Weapons = [{
     damage: 25,
     range: 65,
     gather: 1,
-    speed: 300
+    speed: 300,
+    knockback: 60,
 }, {
     id: EWeapon.HAND_AXE,
     itemType: WeaponType.PRIMARY,
@@ -38,7 +39,8 @@ export const Weapons = [{
     spdMult: 1,
     range: 70,
     gather: 2,
-    speed: 400
+    speed: 400,
+    knockback: 60,
 }, {
     id: EWeapon.GREAT_AXE,
     itemType: WeaponType.PRIMARY,
@@ -58,7 +60,8 @@ export const Weapons = [{
     spdMult: 1,
     range: 75,
     gather: 4,
-    speed: 400
+    speed: 400,
+    knockback: 60,
 }, {
     id: EWeapon.SHORT_SWORD,
     itemType: WeaponType.PRIMARY,
@@ -77,7 +80,8 @@ export const Weapons = [{
     spdMult: .85,
     range: 110,
     gather: 1,
-    speed: 300
+    speed: 300,
+    knockback: 60,
 }, {
     id: EWeapon.KATANA,
     itemType: WeaponType.PRIMARY,
@@ -98,7 +102,8 @@ export const Weapons = [{
     spdMult: .8,
     range: 118,
     gather: 1,
-    speed: 300
+    speed: 300,
+    knockback: 60,
 }, {
     id: EWeapon.POLEARM,
     itemType: WeaponType.PRIMARY,
@@ -119,7 +124,8 @@ export const Weapons = [{
     spdMult: .82,
     range: 142,
     gather: 1,
-    speed: 700
+    speed: 700,
+    knockback: 100,
 }, {
     id: EWeapon.BAT,
     itemType: WeaponType.PRIMARY,
@@ -140,7 +146,8 @@ export const Weapons = [{
     spdMult: 1,
     range: 110,
     gather: 1,
-    speed: 300
+    speed: 300,
+    knockback: 204,
 }, {
     id: EWeapon.DAGGERS,
     itemType: WeaponType.PRIMARY,
@@ -162,7 +169,8 @@ export const Weapons = [{
     gather: 1,
     hitSlow: .1,
     spdMult: 1.13,
-    speed: 100
+    speed: 100,
+    knockback: 80,
 }, {
     id: EWeapon.STICK,
     itemType: WeaponType.PRIMARY,
@@ -181,7 +189,8 @@ export const Weapons = [{
     spdMult: 1,
     range: 70,
     gather: 7,
-    speed: 400
+    speed: 400,
+    knockback: 60,
 }, {
     id: EWeapon.HUNTING_BOW,
     itemType: WeaponType.SECONDARY,
@@ -205,6 +214,7 @@ export const Weapons = [{
     spdMult: .75,
     speed: 600,
     range: 1000,
+    knockback: 60,
 }, {
     id: EWeapon.GREAT_HAMMER,
     itemType: WeaponType.SECONDARY,
@@ -224,7 +234,8 @@ export const Weapons = [{
     range: 75,
     sDmg: 7.5,
     gather: 1,
-    speed: 400
+    speed: 400,
+    knockback: 60,
 }, {
     id: EWeapon.WOODEN_SHIELD,
     itemType: WeaponType.SECONDARY,
@@ -243,6 +254,7 @@ export const Weapons = [{
     spdMult: .7,
     speed: 1,
     range: 0,
+    knockback: 0,
 }, {
     id: EWeapon.CROSSBOW,
     itemType: WeaponType.SECONDARY,
@@ -270,6 +282,7 @@ export const Weapons = [{
     spdMult: .7,
     speed: 700,
     range: 1200,
+    knockback: 60,
 }, {
     id: EWeapon.REPEATER_CROSSBOW,
     itemType: WeaponType.SECONDARY,
@@ -297,6 +310,7 @@ export const Weapons = [{
     spdMult: .7,
     speed: 230,
     range: 1200,
+    knockback: 60,
 }, {
     id: EWeapon.MC_GRABBY,
     itemType: WeaponType.SECONDARY,
@@ -317,7 +331,8 @@ export const Weapons = [{
     spdMult: 1.05,
     range: 125,
     gather: 0,
-    speed: 700
+    speed: 700,
+    knockback: 100,
 }, {
     id: EWeapon.MUSKET,
     itemType: WeaponType.SECONDARY,
@@ -349,6 +364,7 @@ export const Weapons = [{
     spdMult: .6,
     speed: 1500,
     range: 1400,
+    knockback: 60,
 }] as const;
 
 /**

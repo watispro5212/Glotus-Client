@@ -1,6 +1,6 @@
 {
     "name": "glotus-client",
-    "version": "3.4",
+    "version": "3.5.1",
     "author": "Murka",
     "module": "src/index.ts",
     "devDependencies": {

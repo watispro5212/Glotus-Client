@@ -7,6 +7,7 @@ import settings from "../utility/Settings";
 import Vector from "../modules/Vector";
 import Renderer from "./Renderer";
 import { client } from "..";
+import ZoomHandler from "../modules/ZoomHandler";
 
 /**
  * Called when game bundle rendering objects
@@ -55,29 +56,34 @@ const ObjectRenderer = new class ObjectRenderer {
 
         const nearestCollider = client.EnemyManager.nearestCollider;
         if (nearestCollider === object) {
-            const scale = nearestCollider.collisionScale * 0.3;
+            const scale = nearestCollider.scale * 0.1;
             Renderer.fillCircle(ctx, x, y, scale, "#b53f6b", 0.4);
         }
 
-        const nearestEnemyObject = client.EnemyManager.nearestEnemyObject;
-        if (nearestEnemyObject === object) {
-            const scale = nearestEnemyObject.collisionScale * 0.4;
-            Renderer.fillCircle(ctx, x, y, scale, "#52ccafff", 0.5);
+        // const nearestEnemyObject = client.EnemyManager.nearestEnemyObject;
+        // if (nearestEnemyObject === object) {
+        //     const scale = nearestEnemyObject.collisionScale * 0.4;
+        //     Renderer.fillCircle(ctx, x, y, scale, "#52ccafff", 0.5);
+        // }
+
+        // const secondNearestEnemyObject = client.EnemyManager.secondNearestEnemyObject;
+        // if (secondNearestEnemyObject === object) {
+        //     const scale = secondNearestEnemyObject.collisionScale * 0.4;
+        //     Renderer.fillCircle(ctx, x, y, scale, "#b432a7ff", 0.5);
+        // }
+
+        if (object instanceof PlayerObject && object.trapActivated) {
+            const scale = object.scale * 0.3;
+            Renderer.fillCircle(ctx, x, y, scale, "#364cc9ff", 0.5);
         }
 
-        const secondNearestEnemyObject = client.EnemyManager.secondNearestEnemyObject;
-        if (secondNearestEnemyObject === object) {
-            const scale = secondNearestEnemyObject.collisionScale * 0.4;
-            Renderer.fillCircle(ctx, x, y, scale, "#b432a7ff", 0.5);
-        }
-
-        const spikeCollider = client.EnemyManager.spikeCollider;
+        const spikeCollider = client.EnemyManager.spikeCollider || client.EnemyManager.nearestSpike;
         if (spikeCollider === object) {
-            const scale = spikeCollider.collisionScale * 0.3;
-            Renderer.fillCircle(ctx, x, y, scale, "#bf3d59", 0.4);
+            const scale = spikeCollider.scale * 0.3;
+            Renderer.fillCircle(ctx, x, y, scale, "#bf3d59", 0.5);
         }
         if (object instanceof PlayerObject && object.canBeDestroyed) {
-            Renderer.fillCircle(ctx, x, y, 10, "#d22f2fff", 0.5);
+            Renderer.fillCircle(ctx, x, y, 10, "#e76c1aff", 0.7);
         }
     }
 
@@ -97,15 +103,20 @@ const ObjectRenderer = new class ObjectRenderer {
             }
             this.renderCollisions(ctx, entity, object);
             
-            if (ModuleHandler.colls.includes(object.id)) {
-                Renderer.fillCircle(ctx, entity.x, entity.y, object.placementScale, "red", 0.2);
-                Renderer.renderText(ctx, myPlayer.pos.current.distance(object.pos.current) + "", entity.x, entity.y, 12);
-            }
+            // if (ModuleHandler.colls.includes(object.id)) {
+            //     Renderer.fillCircle(ctx, entity.x, entity.y, object.placementScale, "red", 0.2);
+            //     Renderer.renderText(ctx, myPlayer.pos.current.distance(object.pos.current) + "", entity.x, entity.y, 12);
+            // }
         }
         Renderer.renderObjects.length = 0;
     }
 
+    private readonly volcanoSize = 1880 / 2;
+    private readonly volcanoPos = new Vector(14400, 14400).sub(this.volcanoSize);
+
     preRender(ctx: TCTX) {
+        Renderer.rect(ctx, this.volcanoPos, this.volcanoSize, "red", 1, 0.5);
+
         if (client.myPlayer.diedOnce) {
             const { x, y } = client.myPlayer.deathPosition;
             Renderer.cross(ctx, x, y, 50, 15, "#cc5151");

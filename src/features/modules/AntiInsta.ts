@@ -32,6 +32,11 @@ class AntiInsta {
         )
     }
 
+    private isBullTick() {
+        const { myPlayer } = this.client;
+        return myPlayer.isBullTickTime(1) && myPlayer.shameCount > 0;
+    }
+
     postTick(): void {
         if (!settings._autoheal) return;
 
@@ -44,7 +49,7 @@ class AntiInsta {
         let healingTimes: number | null = null;
 
         // AntiInsta implementation
-        if (ModuleHandler.needToHeal || this.toggleAnti) {
+        if (ModuleHandler.needToHeal && !this.isBullTick() || this.toggleAnti) {
             ModuleHandler.needToHeal = false;
             if (myPlayer.shameActive) return;
 

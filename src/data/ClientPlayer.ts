@@ -46,15 +46,7 @@ class ClientPlayer extends Player {
     wasDead = true;
     diedOnce = false;
 
-    receivedDamage: number | null = null;
-    timerCount = 0;//1000 / 9;
-
-    /**
-     * true, if my player has clown
-     */
-    shameActive = false;
-    private shameTimer = 0;
-    shameCount = 0;
+    // timerCount = 0;//1000 / 9;
 
     /**
      * A Set of teammate IDs
@@ -68,7 +60,6 @@ class ClientPlayer extends Player {
     age = 1;
     upgradeAge = 1;
     
-    poisonCount = 0;
     underTurretAttack = false;
     private readonly upgradeOrder: number[] = [];
     private upgradeIndex = 0;
@@ -236,26 +227,13 @@ class ClientPlayer extends Player {
             this.onFirstTickAfterSpawn();
         }
         
-        if (this.hatID === EHat.SHAME && !this.shameActive) {
-            this.shameActive = true;
-            this.shameTimer = 0;
-            this.shameCount = 8;
-        }
-
-        const { PlayerManager, ModuleHandler } = this.client;
-        this.shameTimer += PlayerManager.step;
-        if (this.shameTimer >= 30000 && this.shameActive) {
-            this.shameActive = false;
-            this.shameTimer = 0;
-            this.shameCount = 0;
-        }
-
         // this.timerCount += PlayerManager.step;
         // if (this.timerCount >= 1000) {
         //     this.timerCount = 0;
         //     this.poisonCount = Math.max(this.poisonCount - 1, 0);
         // }
-
+            
+        const { ModuleHandler } = this.client;
         ModuleHandler.postTick();
     }
 
@@ -264,32 +242,9 @@ class ClientPlayer extends Player {
 
         if (this.shameActive) return;
 
-        // Shame count should be changed only when healing
-        if (this.currentHealth < this.previousHealth) {
-            this.receivedDamage = Date.now();
-        } else if (this.receivedDamage !== null) {
-            const step = Date.now() - this.receivedDamage;
-            this.receivedDamage = null;
-
-            if (step <= 120) {
-                this.shameCount += 1;
-            } else {
-                this.shameCount -= 2;
-            }
-            this.shameCount = clamp(this.shameCount, 0, 7);
-        }
-
         if (health < 100) {
             const { ModuleHandler } = this.client;
             ModuleHandler.staticModules.shameReset.healthUpdate();
-            // const delay = Math.max(0, 120 - SocketManager.pong + settings._healingSpeed);
-            // const shouldReset = ModuleHandler.shameReset.healthUpdate();
-            // if (settings._autoheal || shouldReset) {
-            //     setTimeout(() => {
-            //         ModuleHandler.totalPlaces += 1;
-            //         ModuleHandler.heal(true);
-            //     }, delay);
-            // }
         }
     }
 

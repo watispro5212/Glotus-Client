@@ -6,7 +6,8 @@ import settings from "../../utility/Settings";
 class Automill {
     readonly moduleName = "autoMill";
     /** true, if module is enabled */
-    toggle = true;
+    private toggle = false;
+    private active = true;
 
     private readonly client: PlayerClient;
     tickCount = 0;
@@ -15,8 +16,12 @@ class Automill {
         this.client = client;
     }
 
+    get isActive() {
+        return this.toggle && this.active;
+    }
+
     reset() {
-        this.toggle = true;
+        this.active = true;
     }
 
     private get canAutomill() {
@@ -26,9 +31,8 @@ class Automill {
             settings._automill &&
             this.client.myPlayer.isSandbox &&
             !placedOnce &&
-            // !autoattack &&
             (!isOwner || !attacking) &&
-            this.toggle
+            this.active
         )
     }
 
@@ -38,8 +42,6 @@ class Automill {
         const position = myPlayer.getPlacePosition(myPlayer.pos.future, id, angle);
         const radius = isOwner ? 0 : Items[id].scale;
         if (!ObjectManager.canPlaceItem(id, position, radius)) return false;
-        // if (ModuleHandler.totalPlaces >= 5) return;
-        // ModuleHandler.totalPlaces += 1;
 
         const type = ItemType.WINDMILL;
         ModuleHandler.place(type, angle);
@@ -49,10 +51,16 @@ class Automill {
 
     postTick(): void {
         const { myPlayer, ModuleHandler } = this.client;
+        this.toggle = true;
 
-        if (!this.canAutomill) return;
+        if (!this.canAutomill) {
+            this.toggle = false;
+            return;
+        }
+
         if (!myPlayer.canPlace(ItemType.WINDMILL)) {
             this.toggle = false;
+            this.active = false;
             return;
         }
 

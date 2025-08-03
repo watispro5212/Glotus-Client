@@ -23,8 +23,9 @@ class SpikeTick {
 
         const reloading = ModuleHandler.staticModules.reloading;
         const primary = myPlayer.getItemByType(WeaponType.PRIMARY);
-        const isPrimary = primary === EWeapon.POLEARM;
-        const primaryReloaded = reloading.isReloaded(ReloadType.PRIMARY);
+        const isPrimary = primary !== EWeapon.STICK;
+        const primaryReloaded = reloading.isReloaded(ReloadType.PRIMARY, 1);
+        const turretReloaded = reloading.isReloaded(ReloadType.TURRET);
 
         if (this.targetEnemy !== null) {
             const pos1 = myPlayer.pos.future;
@@ -40,9 +41,9 @@ class SpikeTick {
         }
 
         const nearest = EnemyManager.enemySpikeCollider;
-        if (nearest !== null && isPrimary && primaryReloaded && reloading.isReloaded(ReloadType.TURRET)) {
-            const spear = DataHandler.getWeapon(primary);
-            const range = spear.range + nearest.hitScale - 45;
+        if (nearest !== null && isPrimary && primaryReloaded && turretReloaded) {
+            const weaponRange = DataHandler.getWeapon(primary).range;
+            const range = weaponRange + nearest.hitScale;
 
             if (myPlayer.collidingSimple(nearest, range)) {
                 ModuleHandler.moduleActive = true;

@@ -103,6 +103,7 @@ const GameUI = new class GameUI {
             <span>Places: <span id="glotusTotalPlaces"></span></span>
             <span>Total Kills: <span id="glotusTotalKills">0</span></span>
             <span>Deaths: <span id="glotusTotalDeaths">0</span></span>
+            <span>Module: <span id="glotusActiveModule">null</span></span>
         `;
         gameUI.appendChild(div);
     }
@@ -222,6 +223,13 @@ const GameUI = new class GameUI {
         const glotusTotalDeaths = document.querySelector<HTMLSpanElement>("#glotusTotalDeaths");
         if (glotusTotalDeaths !== null) {
             glotusTotalDeaths.textContent = deaths.toString();
+        }
+    }
+
+    updateActiveModule(name: string | null) {
+        const glotusActiveModule = document.querySelector<HTMLSpanElement>("#glotusActiveModule");
+        if (glotusActiveModule !== null) {
+            glotusActiveModule.textContent = name + "";
         }
     }
 

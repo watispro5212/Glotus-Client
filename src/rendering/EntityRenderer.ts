@@ -11,6 +11,7 @@ import { EDanger } from "../types/Enums";
 import { ItemType } from "../types/Items";
 import { client } from "..";
 import NotificationRenderer from "./NotificationRenderer";
+import ZoomHandler from "../modules/ZoomHandler";
 
 const colors = [["orange", "red"], ["aqua", "blue"]] as const;
 
@@ -32,23 +33,13 @@ const EntityRenderer = new class EntityRenderer {
 
     private drawPlacement(ctx: TCTX) {
         if (!settings._possiblePlacement) return;
-        const { myPlayer, EnemyManager, ObjectManager, ModuleHandler } = client;
+        const { myPlayer, ModuleHandler } = client;
         const [type, angles] = ModuleHandler.staticModules.autoPlacer.placeAngles;
         if (type === null) return;
 
         const id = myPlayer.getItemByType(type)!;
-
-        // const id = myPlayer.getItemByType(ItemType.TRAP);
         if (id === null) return;
-        // const enemy = EnemyManager.nearestEnemy;
-        // let targetAngle: number | null = null;
-        // if (enemy !== null) {
-        //     const pos1 = myPlayer.position.future;
-        //     const pos2 = enemy.position.future;
-        //     const dist = pos1.distance(pos2);
-        //     if (dist < 300) targetAngle = pos1.angle(pos2);
-        // }
-        // const angles = ObjectManager.getBestPlacementAngles(myPlayer.position.current.copy(), id, targetAngle);
+        
         const dist = myPlayer.getItemPlaceScale(id);
         const item = Items[id];
         for (let i=0;i<angles.length;i++) {
@@ -115,15 +106,6 @@ const EntityRenderer = new class EntityRenderer {
             const pos = new Vector(player.x, player.y);
             if (settings._displayPlayerAngle) {
                 Renderer.line(ctx, pos, pos.addDirection(client.myPlayer.angle, 70), "#e9adf0");
-                // const spikeSyncAngles = ModuleHandler.staticModules.spikeSync.possibleAngles;
-                // for (let i=0;i<spikeSyncAngles.length;i++) {
-                //     const angle = spikeSyncAngles[i]!;
-                //     Renderer.line(ctx, pos, pos.direction(angle, 100), i === 0 ? "#d13330" : "#307ed1", 1, 3);
-                // }
-                // const angle = EnemyManager.nearestSpikePlacerAngle;
-                // if (angle !== null) {
-                //     Renderer.line(ctx, pos, pos.direction(angle, 100), "red", 1, 3);
-                // }
             }
 
             this.drawWeaponHitbox(ctx, player);
@@ -138,16 +120,6 @@ const EntityRenderer = new class EntityRenderer {
             if (myPlayer.isTrapped) {
                 Renderer.fillCircle(ctx, pos.x, pos.y, 35, "yellow", 0.5);
             }
-
-            // const pathFinder = ModuleHandler.staticModules.pathFinder;
-            // const path = pathFinder.path;
-            // if (path.length !== 0) {
-            //     let start = myPlayer.pos.current.copy();
-            //     for (const [x, y] of path) {
-            //         Renderer.line(ctx, start, new Vector(x, y), "red", 1, 1);
-            //         start.setXY(x, y);
-            //     }
-            // }
         }
 
         this.drawEntityHP(ctx, entity);

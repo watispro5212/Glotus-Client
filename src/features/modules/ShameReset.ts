@@ -5,16 +5,15 @@ class ShameReset {
     readonly moduleName = "shameReset";
     private readonly client: PlayerClient;
 
-    private bullTick = 0;
     private tickToggle = false;
     constructor(client: PlayerClient) {
         this.client = client;
     }
 
-    private get isEquipTime() {
-        const { ModuleHandler } = this.client;
-        return (ModuleHandler.tickCount - this.bullTick) % 9 === 0; 
-    }
+    // private get isEquipTime() {
+    //     const { ModuleHandler } = this.client;
+    //     return (ModuleHandler.tickCount - this.bullTick) % 9 === 0; 
+    // }
 
     private get shouldReset() {
         const { myPlayer, ModuleHandler } = this.client;
@@ -23,7 +22,8 @@ class ShameReset {
             myPlayer.shameCount > 0 &&
             myPlayer.poisonCount === 0 &&
             !ModuleHandler.didAntiInsta &&
-            this.isEquipTime
+            myPlayer.isBullTickTime() &&
+            ModuleHandler.canBuy(EStoreType.HAT, EHat.BULL_HELMET)
         )
     }
 
@@ -37,15 +37,18 @@ class ShameReset {
     }
 
     healthUpdate() {
-        const { myPlayer, ModuleHandler } = this.client;
-        const { currentHealth, previousHealth } = myPlayer;
-        const difference = Math.abs(currentHealth - previousHealth);
-        const isDmgOverTime = difference === 5 && currentHealth < previousHealth;
-
-        if (isDmgOverTime) {
-            this.bullTick = ModuleHandler.tickCount;
+        if (this.client.myPlayer.isDmgOverTime) {
             this.tickToggle = false;
         }
+        // const { myPlayer, ModuleHandler } = this.client;
+        // const { currentHealth, previousHealth } = myPlayer;
+        // const difference = Math.abs(currentHealth - previousHealth);
+        // const isDmgOverTime = difference === 5 && currentHealth < previousHealth;
+
+        // if (isDmgOverTime) {
+        //     this.bullTick = ModuleHandler.tickCount;
+        //     this.tickToggle = false;
+        // }
     }
 }
 

@@ -81,9 +81,9 @@ class AutoPlacer {
 
         // console.log(angles.length);
         if (angles.length === 0) return;
-        // if (ModuleHandler.didAntiInsta) {
-        //     angles.length = 1;
-        // }
+        if (ModuleHandler.didAntiInsta) {
+            angles.length = 1;
+        }
         ModuleHandler.placedOnce = true;
         for (const angle of angles) {
             ModuleHandler.place(itemType, angle);

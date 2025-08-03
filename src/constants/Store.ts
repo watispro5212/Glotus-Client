@@ -355,7 +355,8 @@ export const Hats = {
             range: 700,
             rate: 2500
         },
-        spdMult: 0.7
+        spdMult: 0.7,
+        knockback: 60,
     },
     [EHat.SAMURAI_ARMOR]: {
         index: 40,

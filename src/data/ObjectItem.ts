@@ -91,6 +91,8 @@ export class PlayerObject extends ObjectItem {
     destroyingTick = 0;
     /** true, if object can be destroyed by any player on the next tick */
     canBeDestroyed = false;
+    trapActivated = false;
+    wasTeammate = false;
 
     /**
      * true, if my player saw how this item was placed

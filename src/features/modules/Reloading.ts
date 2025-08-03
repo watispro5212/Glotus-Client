@@ -20,14 +20,18 @@ class Reloading {
         return this.clientReload[this.client.ModuleHandler.weapon];
     }
 
-    updateMaxReload(reload: IReload) {
-        const { ModuleHandler, myPlayer } = this.client;
-        if (ModuleHandler.attacked) {
-            const id = myPlayer.getItemByType(ModuleHandler.weapon)!;
-            const store = ModuleHandler.getHatStore();
-            const speed = myPlayer.getWeaponSpeed(id, store.last);
-            reload.max = speed;
-        }
+    getReload(type: WeaponType | ReloadType) {
+        return this.clientReload[type];
+    }
+
+    updateMaxReload(type: WeaponType) {
+        const { myPlayer, ModuleHandler } = this.client;
+        const reload = this.getReload(type);
+        const id = myPlayer.getItemByType(type)!;
+        const store = ModuleHandler.getHatStore();
+        const speed = myPlayer.getWeaponSpeed(id, store.last);
+        reload.current = speed;
+        reload.max = speed;
     }
 
     resetReload(reload: IReload) {
@@ -35,19 +39,13 @@ class Reloading {
         reload.current = -PlayerManager.step;
     }
 
-    resetByType(type: ReloadType) {
-        const reload = this.clientReload[type];
-        this.resetReload(reload);
+    resetByType(type: WeaponType | ReloadType) {
+        this.resetReload(this.getReload(type));
     }
 
-    isReloaded(type: WeaponType | ReloadType) {
+    isReloaded(type: WeaponType | ReloadType, ticks = 0) {
         const reload = this.clientReload[type];
-        return reload.current === reload.max;
-    }
-
-    halfReloaded(type: WeaponType | ReloadType) {
-        const reload = this.clientReload[type];
-        return reload.current >= reload.max / 2;
+        return reload.current >= (reload.max - this.client.SocketManager.TICK * ticks);
     }
 
     private increaseReload(reload: IReload, step: number) {

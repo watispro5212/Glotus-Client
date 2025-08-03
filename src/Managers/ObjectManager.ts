@@ -176,7 +176,8 @@ class ObjectManager {
         id: TPlaceable,
         targetAngle: number | null = null,
         ignoreID: number | null = null,
-        ignoreHealth = false
+        ignoreHealth = false,
+        reduce = true
     ): number[] {
         const item = Items[id];
         const length = this.client.myPlayer.getItemPlaceScale(id);
@@ -194,7 +195,7 @@ class ObjectManager {
             const angle = position.angle(pos1);
             const distance = position.distance(pos1);
 
-            const a = object.placementScale + item.scale;// + 3;
+            const a = object.placementScale + item.scale + 3;
             const b = distance;
             const c = length;
             const cosArg = (b * b + c * c - a * a) / (2 * b * c);
@@ -207,7 +208,7 @@ class ObjectManager {
                 angles.push({ angle, offset });
             }
         });
-        const finalAngles = findPlacementAngles(angles);//.slice(0, 4);
+        const finalAngles = findPlacementAngles(angles).slice(0, reduce ? 3 : angles.length);
         if (targetAngle === null) return finalAngles;
 
         // Checks if it is actually possible to use targetAngle in order to place an object

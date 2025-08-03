@@ -9,7 +9,7 @@ class Placer {
     }
 
     postTick(): void {
-        const { ModuleHandler, myPlayer, isOwner } = this.client;
+        const { ModuleHandler, myPlayer } = this.client;
         const { currentType, placedOnce, healedOnce, currentAngle } = ModuleHandler;
         if (!myPlayer.canPlace(currentType)) return;
 

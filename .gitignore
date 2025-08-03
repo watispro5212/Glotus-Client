@@ -4,6 +4,8 @@ dist
 bun.lock
 private_header.txt
 loader_header.txt
+secret_header.txt
 privateBuild.ts
+secretBuild.ts
 private
 .env

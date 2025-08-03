@@ -37,6 +37,7 @@ export const defaultSettings = {
     _knockbackTickTrap: true,
     _knockbackTickHammer: true,
     _knockbackTick: true,
+    _kbDefense: true,
     _automill: true,
     _autoplacer: true,
     _autobreak: true,

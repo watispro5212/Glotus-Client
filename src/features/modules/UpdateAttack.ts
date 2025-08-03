@@ -16,7 +16,7 @@ class UpdateAttack {
 
     postTick(): void {
         const { ModuleHandler } = this.client;
-        const { useWeapon, forceWeapon, weapon, attacking, moveTo, prevMoveTo, useItem, sentAngle, staticModules } = ModuleHandler;
+        const { useWeapon, forceWeapon, weapon, attacking, useItem, sentAngle, staticModules } = ModuleHandler;
         const { reloading } = staticModules;
 
         const nextWeapon = forceWeapon !== null ? forceWeapon : useWeapon;
@@ -31,19 +31,16 @@ class UpdateAttack {
             ModuleHandler.selectItem(useItem);
         }
 
-        if (prevMoveTo !== moveTo) {
-            const angle = moveTo === "disable" ? ModuleHandler.move_dir : moveTo;
-            ModuleHandler.startMovement(angle, true);
-        }
-
         if (ModuleHandler.shouldAttack) {
             const angle = this.getAttackAngle();
             ModuleHandler.attack(angle);
             ModuleHandler.stopAttack();
             
-            const reload = reloading.currentReload;
-            reloading.updateMaxReload(reload);
-            reloading.resetReload(reload);
+            const weaponType = ModuleHandler.weapon;
+            if (ModuleHandler.attacked) {
+                reloading.updateMaxReload(weaponType);
+            }
+            reloading.resetByType(weaponType);
         } else if (!attacking && sentAngle !== ESentAngle.NONE) {
             ModuleHandler.stopAttack();
         }

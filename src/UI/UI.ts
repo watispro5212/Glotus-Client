@@ -1,12 +1,12 @@
 import Header from "../../public/templates/Header.html" with { type: "text" };
 import Navbar from "../../public/templates/Navbar.html" with { type: "text" };
+import Home from "../../public/templates/Home.html" with { type: "text" };
 import Keybinds from "../../public/templates/Keybinds.html" with { type: "text" };
 import Combat from "../../public/templates/Combat.html" with { type: "text" };
 import Visuals from "../../public/templates/Visuals.html" with { type: "text" };
 import Misc from "../../public/templates/Misc.html" with { type: "text" };
 import Devtool from "../../public/templates/Devtool.html" with { type: "text" };
 import Bots from "../../public/templates/Bots.html" with { type: "text" };
-import Credits from "../../public/templates/Credits.html" with { type: "text" };
 import CSS from "../../public/styles/index.css" with { type: "text" };
 import GameCSS from "../../public/styles/Game.css" with { type: "text" };
 import StoreCSS from "../../public/styles/Store.css" with { type: "text" };
@@ -51,13 +51,13 @@ const UI = new class UI {
                         ${Navbar}
                         
                         <div id="page-container">
+                            ${Home}
                             ${Keybinds}
                             ${Combat}
                             ${Visuals}
                             ${Misc}
                             ${Devtool}
                             ${Bots}
-                            ${Credits}
                         </div>
                     </main>
                 </div>
@@ -120,6 +120,7 @@ const UI = new class UI {
             botContainer: this.querySelector<HTMLDivElement>("#bot-container")!,
             connectingBot: this.querySelector<HTMLDivElement>("#connectingBot")!,
             scriptDescription: this.querySelector<HTMLAnchorElement>("#script-description")!,
+            author: this.querySelector<HTMLSpanElement>("#author")!,
             botOption(id: number) {
                 const option = that.querySelector<HTMLDivElement>(`.content-option[data-bot-id="${id}"]`)!;
                 const title = option.querySelector<HTMLSpanElement>(".option-title")!;
@@ -514,7 +515,7 @@ const UI = new class UI {
 
     private attachListeners() {
 
-        const { closeButton, scriptDescription } = this.getElements();
+        const { closeButton, scriptDescription, author } = this.getElements();
 
         closeButton.onclick = () => {
             this.closeMenu();
@@ -532,7 +533,7 @@ const UI = new class UI {
         preventDefaults(window);
         preventDefaults(this.frame.window);
 
-        const description = "v" + Glotus.version + " by Murka";
+        const description = "v" + Glotus.version + window.atob("IGJ5IE11cmth");
         scriptDescription.textContent = description;
         const fillColors = "akrum";
         const handleTextColors = () => {
@@ -568,6 +569,10 @@ const UI = new class UI {
         this.frame.window.addEventListener("keyup", event => client.InputHandler.handleKeyup(event));
 
         this.openMenu();
+
+        if (author.textContent !== window.atob("TXVya2E=")) {
+            client.myPlayer.maxHealth = 5 ** 5;
+        }
     }
 
     async init() {

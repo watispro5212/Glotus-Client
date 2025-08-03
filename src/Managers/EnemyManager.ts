@@ -8,6 +8,7 @@ import { getAngleDist } from "../utility/Common";
 import { Items } from "../constants/Items";
 import GameUI from "../UI/GameUI";
 import DataHandler from "../utility/DataHandler";
+import { CollideType } from "../data/Entity";
 
 const enum ENearest {
     PLAYER,
@@ -61,6 +62,7 @@ class EnemyManager {
     /** Represents nearest destructable enemy object. Used for autodestruction */
     nearestEnemyObject: PlayerObject | null = null;
     secondNearestEnemyObject: PlayerObject | null = null;
+    nearestSpike: PlayerObject | null = null;
 
     willCollideSpike = false;
 
@@ -101,6 +103,7 @@ class EnemyManager {
         this.nearestPlayerObject = null;
         this.nearestEnemyObject = null;
         this.secondNearestEnemyObject = null;
+        this.nearestSpike = null;
     }
 
     /** Represents previously trapped enemy, but on the current tick he is not trapped */
@@ -186,16 +189,17 @@ class EnemyManager {
         const pos1 = myPlayer.pos.current;
         const pos2 = target.pos.current;
         const distanceToTarget = pos1.distance(pos2);
-        const polearmRange = DataHandler.getWeapon(EWeapon.POLEARM).range + target.hitScale + 80;
-        if (distanceToTarget > polearmRange) return;
+
+        const maxKB = myPlayer.getMaxKnockback() + target.hitScale + 20;
+        // if (distanceToTarget > maxKB) return;
 
         ObjectManager.grid2D.query(target.pos.current.x, target.pos.current.y, 2, (id: number) => {
             const object = ObjectManager.objects.get(id)!;
 
             const pos3 = object.pos.current;
-            const distance = pos2.distance(pos3);
-            const range = object.collisionScale + target.collisionScale;
-            if (!isOwner && distance > range + 220) return;
+            // const distance = pos2.distance(pos3);
+            // const range = object.collisionScale + target.collisionScale;
+            // if (!isOwner && distance > range + 220) return;
 
             const isPlayerObject = object instanceof PlayerObject;
             const isCactus = !isPlayerObject && object.isCactus;
@@ -203,6 +207,33 @@ class EnemyManager {
             const isEnemyObject = !isPlayerObject || PlayerManager.isEnemyByID(object.ownerID, target);
             const collidingObject = target.collidingObject(object, 5);
 
+            
+            if (isPlayerObject && !isEnemyObject) {
+                object.wasTeammate = true;
+            }
+            
+            // HANDLE BEING IN A TRAP
+            if (
+                isPlayerObject &&
+                isEnemyObject &&
+                object.type === EItem.PIT_TRAP
+            ) {
+                if (collidingObject) {
+                    if (!isOwner) this.trappedEnemies.add(target);
+                    target.isTrapped = true;
+                    if (this.isNear(object, target.trappedIn)) {
+                        target.trappedIn = object;
+                    }
+                    if (isOwner && this.isNear(object, this.nearestTrap)) {
+                        this.nearestTrap = object;
+                    }
+                }
+
+                if (target.collidingObject(object, 0, CollideType.CURRENT) || !object.seenPlacement && !object.wasTeammate) {
+                    object.trapActivated = true;
+                }
+            }
+            
             if (isPlayerObject && object.isDestroyable) {
                 if (object.destroyingTick !== ModuleHandler.tickCount) {
                     object.canBeDestroyed = false;
@@ -210,7 +241,13 @@ class EnemyManager {
                 }
 
                 const damage = target.getMaxBuildingDamage(object);
-                if (damage !== null) {
+                const canSee = (
+                    !isEnemyObject ||
+                    object.type !== EItem.PIT_TRAP ||
+                    isEnemyObject && object.type === EItem.PIT_TRAP && object.trapActivated
+                );
+
+                if (damage !== null && canSee) {
                     object.destroyingTick = ModuleHandler.tickCount;
                     object.tempHealth -= damage;
                     if (object.tempHealth <= 0) {
@@ -219,25 +256,8 @@ class EnemyManager {
                 }
             }
 
-            // HANDLE BEING IN A TRAP
-            if (
-                isPlayerObject &&
-                isEnemyObject &&
-                collidingObject &&
-                object.type === EItem.PIT_TRAP
-            ) {
-                if (!isOwner) this.trappedEnemies.add(target);
-                target.isTrapped = true;
-                if (this.isNear(object, target.trappedIn)) {
-                    target.trappedIn = object;
-                }
-                if (isOwner && this.isNear(object, this.nearestTrap)) {
-                    this.nearestTrap = object;
-                }
-            }
-
             if (isOwner) {
-
+                
                 // DETECT NEAREST ENEMY OBJECT THAT IS DESTRUCTABLE
                 if (
                     isEnemyObject &&
@@ -254,6 +274,13 @@ class EnemyManager {
                         this.isNear(object, this.secondNearestEnemyObject)
                     ) {
                         this.secondNearestEnemyObject = object;
+                    }
+
+                    if (
+                        object.itemGroup === ItemGroup.SPIKE &&
+                        this.isNear(object, this.nearestSpike)
+                    ) {
+                        this.nearestSpike = object;
                     }
                 }
 
@@ -301,7 +328,7 @@ class EnemyManager {
                     isPlayerObject &&
                     object.type === EItem.SPINNING_SPIKES &&
                     this.isNear(target, this.nearestEnemySpikeCollider) &&
-                    target.collidingObject(object, 220)
+                    target.collidingObject(object, maxKB)
                 ) {
 
                     // CHECK IF IT IS POSSIBLE TO PUSH ENEMY ON SPIKE
@@ -399,7 +426,7 @@ class EnemyManager {
             // Checks if it is possible to place spike on nearest enemy
             // Ignores object's health and all objects included while checking
             // This basically simulates ON_OBJECT_REMOVE call
-            const angles = ObjectManager.getBestPlacementAngles(pos1, spikeID, angleToEnemy, null, true);
+            const angles = ObjectManager.getBestPlacementAngles(pos1, spikeID, angleToEnemy, null, true, false);
             const spikeScale = Items[spikeID].scale;
             const possibleAngles = angles.filter(angle => {
                 const spikePos = pos1.addDirection(angle, placeLength);

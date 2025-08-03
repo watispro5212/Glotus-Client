@@ -11,6 +11,12 @@ interface IPos {
     readonly future: Vector;
 }
 
+export const enum CollideType {
+    CURRENT = 0b001,
+    CURRENT_FUTURE = 0b011,
+    ALL = 0b111,
+}
+
 /**
  * Abstract entity class. Represents players and animals
  */
@@ -65,14 +71,14 @@ abstract class Entity {
         )
     }
 
-    collidingObject(object: TObject, addRadius = 0, checkPrevious = true) {
+    collidingObject(object: TObject, addRadius = 0, checkType = CollideType.CURRENT_FUTURE) {
         const { previous: a0, current: a1, future: a2 } = this.pos;
         const b0 = object.pos.current;
         const radius = this.collisionScale + object.collisionScale + addRadius;
         return (
-            checkPrevious && a0.distance(b0) <= radius ||
-            a1.distance(b0) <= radius ||
-            a2.distance(b0) <= radius
+            checkType & 0b100 && a0.distance(b0) <= radius ||
+            checkType & 0b010 && a1.distance(b0) <= radius ||
+            checkType & 0b001 && a2.distance(b0) <= radius
         )
     }
     
@@ -109,14 +115,14 @@ abstract class Entity {
         )
     }
 
-    checkCollidingObject(object: PlayerObject | Resource, itemGroup: ItemGroup, addRadius = 0, checkEnemy = false, checkPrevious = true) {
+    checkCollidingObject(object: PlayerObject | Resource, itemGroup: ItemGroup, addRadius = 0, checkEnemy = false, collideType = CollideType.ALL) {
         const { ObjectManager } = this.client;
         const matchItem = object instanceof PlayerObject && object.itemGroup === itemGroup;
         const isCactus = object instanceof Resource && itemGroup === ItemGroup.SPIKE && object.isCactus;
 
         if (matchItem || isCactus) {
             if (checkEnemy && !ObjectManager.isEnemyObject(object)) return false;
-            if (this.collidingObject(object, addRadius, checkPrevious)) {
+            if (this.collidingObject(object, addRadius, collideType)) {
                 return true;
             }
         }
@@ -128,11 +134,11 @@ abstract class Entity {
      * @param addRadius Adds this amount to the item radius
      * @param checkEnemy true, if you want to check if colliding enemy object. Works only for myPlayer
      */
-    checkCollision(itemGroup: ItemGroup, addRadius = 0, checkEnemy = false, checkPrevious = true): boolean {
+    checkCollision(itemGroup: ItemGroup, addRadius = 0, checkEnemy = false, collideType = CollideType.ALL): boolean {
         const { ObjectManager } = this.client;
         return ObjectManager.grid2D.query(this.pos.current.x, this.pos.current.y, 1, (id: number) => {
             const object = ObjectManager.objects.get(id)!;
-            if (this.checkCollidingObject(object, itemGroup, addRadius, checkEnemy, checkPrevious)) {
+            if (this.checkCollidingObject(object, itemGroup, addRadius, checkEnemy, collideType)) {
                 return true;
             }
         })

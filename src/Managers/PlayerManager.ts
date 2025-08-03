@@ -47,9 +47,7 @@ class PlayerManager {
 
     start = Date.now();
 
-    /**
-     * A time between current and previous `MOVE_UPDATE` packet
-     */
+    /** A time between current and previous `MOVE_UPDATE` packet */
     step = 0;
 
     private readonly client: PlayerClient;

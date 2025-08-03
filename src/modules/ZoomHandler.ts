@@ -1,7 +1,11 @@
+import { clamp, lerp } from './../utility/Common';
 import { isActiveInput } from "../utility/Common";
 import Hooker from "../utility/Hooker";
-import Logger from "../utility/Logger";
 
+function smoothstep(t: number) {
+    t = Math.max(0, Math.min(1, t));
+    return t * t * (3 - 2 * t);
+}
 const resizeEvent = new Event("resize");
 const ZoomHandler = new class ZoomHandler {
     readonly scale = {
@@ -18,8 +22,6 @@ const ZoomHandler = new class ZoomHandler {
             h: Hooker.linker(1080)
         } as const
     };
-    private wheels = 3;
-    private readonly scaleFactor = 250;
 
     getScale() {
         const dpr = 1;//window.devicePixelRatio;
@@ -29,19 +31,7 @@ const ZoomHandler = new class ZoomHandler {
         ) * dpr;
     }
 
-    /**
-     * Returns minimum possible width and height scale
-     */
-    private getMinScale(scale: number) {
-        const { w, h } = this.scale.Default;
-        const min = Math.min(w, h);
-        const count = Math.floor(min / scale);
-        return {
-            w: w - scale * count,
-            h: h - scale * count,
-        }
-    }
-
+    tempScale = 1;
     handler(event: WheelEvent) {
         if (
             !(event.target instanceof HTMLCanvasElement) ||
@@ -49,21 +39,25 @@ const ZoomHandler = new class ZoomHandler {
             isActiveInput()
         ) return;
 
-        const { Default, current, smooth } = this.scale;
+        const { Default, current } = this.scale;
 
-        // When scale is default, make some gap so user could find it easily
-        if (
-            Default.w === current.w && Default.h === current.h &&
-            (this.wheels = (this.wheels + 1) % 4) !== 0
-        ) return;
+        if (event.deltaY < 0) {
+            this.tempScale *= 1.1;
+        } else {
+            this.tempScale /= 1.1;
+        }
+        this.tempScale = clamp(this.tempScale, 0.1, 22);
+        const zoom = this.tempScale;
+        current.w = Default.w * zoom;
+        current.h = Default.h * zoom;
+    }
 
-        const { w, h } = this.getMinScale(this.scaleFactor);
-        const zoom = Math.sign(event.deltaY) * -this.scaleFactor;
-        current.w = Math.max(w, current.w + zoom);
-        current.h = Math.max(h, current.h + zoom);
-        
-        smooth.w[0] = current.w;
-        smooth.h[0] = current.h;
+    smoothUpdate() {
+
+        const { current, smooth } = this.scale;
+        const blend = 0.09;
+        smooth.w[0] = lerp(smooth.w[0], current.w, blend);
+        smooth.h[0] = lerp(smooth.h[0], current.h, blend);
         window.dispatchEvent(resizeEvent);
     }
 }

@@ -6,7 +6,7 @@ import type { IReload } from "../types/Common";
 import { EDanger } from "../types/Enums";
 import { EItem, EProjectile, EWeapon, ItemType, ReloadType, WeaponType, WeaponTypeString, WeaponVariant, type TGlobalInventory, type TMelee, type TPlaceable, type TPrimary, type TSecondary } from "../types/Items";
 import { EAccessory, EHat, EStoreType } from "../types/Store";
-import { removeFast } from "../utility/Common";
+import { clamp, removeFast } from "../utility/Common";
 import DataHandler from "../utility/DataHandler";
 import Logger from "../utility/Logger";
 import Entity from "./Entity";
@@ -32,7 +32,10 @@ class Player extends Entity {
 
     readonly storeData: [number, number] = [0, 0];
     hatID: EHat = 0;
+    prevHat: EHat = 0;
     accessoryID: EAccessory = 0;
+
+    usesTurret = false;
 
     private totalStorePrice = 0;
     readonly storeList = [
@@ -97,6 +100,16 @@ class Player extends Entity {
 
     readonly hatHistory: number[] = [];
     futureHat: number | null = 0;
+
+    /** true, if player has clown */
+    shameActive = false;
+    shameTimer = 0;
+    shameCount = 0;
+    receivedDamage: number | null = null;
+    bullTick = 0;
+    poisonCount = 0;
+    isDmgOverTime = false;
+    tickCount = 0;
 
     constructor(client: PlayerClient) {
         super(client);
@@ -174,6 +187,10 @@ class Player extends Entity {
         return this.hatID !== EHat.EMP_HELMET;
     }
 
+    isBullTickTime(adjust = 0) {
+        return (this.tickCount - this.bullTick - adjust) % 9 === 0; 
+    }
+
     update(
         id: number,
         x: number,
@@ -188,6 +205,7 @@ class Player extends Entity {
         accessoryID: EAccessory,
         isSkull: 1 | 0
     ) {
+        this.tickCount += 1;
         this.id = id;
 
         this.pos.previous.setVec(this.pos.current);
@@ -201,13 +219,24 @@ class Player extends Entity {
         this.variant.current = weaponVariant;
         this.clanName = clanName;
         this.isLeader = Boolean(isLeader);
+        this.prevHat = this.hatID;
         this.hatID = hatID;
+        if (
+            this.prevHat === EHat.BULL_HELMET &&
+            hatID === EHat.TURRET_GEAR
+        ) {
+            this.usesTurret = true;
+        }
+
         this.hatHistory.push(hatID);
-        if (this.hatHistory.length > 5) {
+        if (this.hatHistory.length > 4) {
             this.hatHistory.shift();
         }
         HatPredictor.train(this.hatHistory);
         this.futureHat = HatPredictor.predict(hatID);
+        if (this.usesTurret && hatID === EHat.BULL_HELMET) {
+            this.futureHat = EHat.TURRET_GEAR;
+        }
 
         this.accessoryID = accessoryID;
         this.storeData[EStoreType.HAT] = hatID;
@@ -225,12 +254,62 @@ class Player extends Entity {
         this.predictItems();
         this.predictWeapons();
         this.updateReloads();
+
+        this.isDmgOverTime = false;
+        if (this.hatID === EHat.SHAME && !this.shameActive) {
+            this.shameActive = true;
+            this.shameTimer = 0;
+            this.shameCount = 8;
+        }
+
+        const { PlayerManager } = this.client;
+        this.shameTimer += PlayerManager.step;
+        if (this.shameTimer >= 30000 && this.shameActive) {
+            this.shameActive = false;
+            this.shameTimer = 0;
+            this.shameCount = 0;
+        }
+
+        if (this.isBullTickTime()) {
+            if (this.shameCount > 0) {
+                this.futureHat = EHat.BULL_HELMET;
+            }
+
+            this.poisonCount = Math.max(this.poisonCount - 1, 0);
+        }
     }
 
     updateHealth(health: number) {
         this.previousHealth = this.currentHealth;
         this.currentHealth = health;
         this.tempHealth = health;
+
+        if (this.shameActive) return;
+        
+        // Shame count should be changed only when healing
+        if (this.currentHealth < this.previousHealth) {
+            this.receivedDamage = Date.now();
+        } else if (this.receivedDamage !== null) {
+            const step = Date.now() - this.receivedDamage;
+            this.receivedDamage = null;
+
+            if (step <= 120) {
+                this.shameCount += 1;
+            } else {
+                this.shameCount -= 2;
+            }
+            this.shameCount = clamp(this.shameCount, 0, 7);
+        }
+
+        const { currentHealth, previousHealth } = this;
+        const difference = Math.abs(currentHealth - previousHealth);
+        const diffDmg = difference === 5 || difference === 2 || difference === 4;
+        const isDmgOverTime = diffDmg && currentHealth < previousHealth;
+        this.isDmgOverTime = isDmgOverTime;
+
+        if (isDmgOverTime) {
+            this.bullTick = this.tickCount;
+        }
     }
 
     private predictItems() {
@@ -545,6 +624,20 @@ class Player extends Entity {
         return 0;
     }
 
+    getMaxKnockback() {
+        let knockback = 60;
+
+        const { primary, secondary } = this.weapon;
+        if (primary !== null) {
+            knockback += DataHandler.getWeapon(primary).knockback;
+        }
+
+        if (secondary !== null) {
+            knockback += DataHandler.getWeapon(secondary).knockback;
+        }
+        return knockback;
+    }
+
     getItemPlaceScale(itemID: TPlaceable) {
         const item = Items[itemID];
         return this.scale + item.scale + item.placeOffset;
@@ -571,12 +664,11 @@ class Player extends Entity {
         const distance = pos2.distance(straightSpikePos);
         if (distance > range) return 0;
 
-        const angles = ObjectManager.getBestPlacementAngles(pos1, spikeID, angleToMyPlayer);
+        const angles = ObjectManager.getBestPlacementAngles(pos1, spikeID, angleToMyPlayer, null, false, false);
         for (const angle of angles) {
             const spikePos = pos1.addDirection(angle, placeLength);
             const distance = pos2.distance(spikePos);
             if (distance <= range) {
-                // this.potentialDamage += spike.damage;
                 return spike.damage;
             }
         }
@@ -591,8 +683,8 @@ class Player extends Entity {
         const primaryDamage = this.getMaxWeaponDamage(primary, lookingShield);
         const secondaryDamage = this.getMaxWeaponDamage(secondary, lookingShield);
 
-        const addRange = this.isTrapped ? 0 : 70;
-        const boostRange = this.usingBoost && !this.isTrapped ? 350 : addRange;
+        const addRange = this.isTrapped ? 0 : 65;
+        const boostRange = this.usingBoost && !this.isTrapped ? 400 : addRange;
         const primaryRange = this.getWeaponRange(primary) + boostRange;
         const secondaryRange = this.getWeaponRange(secondary) + addRange;
         const turretRange = 700 + addRange;

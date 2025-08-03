@@ -1,5 +1,7 @@
 import Config from "../../constants/Config";
+import type { PlayerObject } from "../../data/ObjectItem";
 import PlayerClient from "../../PlayerClient";
+import type { WeaponType } from "../../types/Items";
 import { EHat } from "../../types/Store";
 import { findMiddleAngle, getAngleDist } from "../../utility/Common";
 import settings from "../../utility/Settings";
@@ -20,16 +22,26 @@ class Autobreak {
         const secondNearestEnemyObject = EnemyManager.secondNearestEnemyObject;
         const nearestEnemyObject = EnemyManager.nearestEnemyObject;
         const nearestTrap = EnemyManager.nearestTrap;
-        const nearestTarget = nearestTrap || nearestEnemyObject;
+        const nearestSpike = EnemyManager.nearestSpike;
+        let nearestTarget = nearestTrap || nearestEnemyObject;
         if (nearestTarget === null) return;
 
-        const type = myPlayer.getBestDestroyingWeapon(nearestTarget);
+        const type = myPlayer.getBestDestroyingWeapon();
         if (type === null) return;
-
+        
         const pos1 = myPlayer.pos.current;
+        const weaponRange = myPlayer.getWeaponRangeByType(type);
+        if (nearestTrap !== null && nearestSpike !== null) {
+            const pos2 = nearestSpike.pos.current;
+            const distance = pos1.distance(pos2);
+            const range = weaponRange + nearestSpike.hitScale;
+            if (distance <= range) {
+                nearestTarget = nearestSpike;
+            }
+        }
+
         const pos2 = nearestTarget.pos.current;
         const distance = pos1.distance(pos2);
-        const weaponRange = myPlayer.getWeaponRangeByType(type);
         const range = weaponRange + nearestTarget.hitScale;
         if (nearestTarget === nearestEnemyObject && distance > range) {
             return;

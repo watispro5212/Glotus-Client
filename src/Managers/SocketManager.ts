@@ -300,7 +300,6 @@ class SocketManager {
             }
 
             default: {
-                // console.log(temp);
                 break;
             }
         }

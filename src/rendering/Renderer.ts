@@ -4,20 +4,25 @@ import settings from "../utility/Settings";
 import Vector from "../modules/Vector";
 import { type TCTX } from "../types/Common";
 import { type IRenderEntity, type IRenderObject } from "../types/RenderTargets";
-import { WeaponVariants, Weapons } from "../constants/Items";
+import { WeaponVariants } from "../constants/Items";
 import Player from "../data/Player";
 import { clamp, getTargetValue, setTargetValue } from "../utility/Common";
 import Animal from "../data/Animal";
 import { Notify } from "./NotificationRenderer";
 import { client } from "..";
 import DataHandler from "../utility/DataHandler";
-import Logger from '../utility/Logger';
+import ZoomHandler from '../modules/ZoomHandler';
 
 const Renderer = new class Renderer {
     readonly renderObjects: IRenderObject[] = [];
 
-    rect(ctx: TCTX, pos: Vector, scale: number, color: string, lineWidth = 4) {
+    preRender() {
+        ZoomHandler.smoothUpdate();
+    }
+
+    rect(ctx: TCTX, pos: Vector, scale: number, color: string, lineWidth = 4, alpha = 1) {
         ctx.save();
+        ctx.globalAlpha = alpha;
         ctx.strokeStyle = color;
         ctx.lineWidth = lineWidth;
         ctx.beginPath();

@@ -37,9 +37,9 @@ import AutoSync from "./modules/AutoSync";
 import GameUI from "../UI/GameUI";
 import AutoBuy from "./modules/AutoBuy";
 import AutoGrind from "./modules/AutoGrind";
-import PathFinder from "./modules/PathFinder";
 import VelocityTick from "./modules/VelocityTick";
 import KBDefense from "./modules/KBDefense";
+import ToolHammerSpearInsta from "./modules/ToolHammerSpearInsta";
 
 interface IStore {
     readonly utility: Map<number, boolean>;
@@ -63,15 +63,12 @@ type TModuleList = [
     AutoBuy,
 
     DefaultHat,
-    DefaultAcc,
-    SafeWalk,
     AntiInsta,
     ShameReset,
-    PathFinder,
     
     Reloading,
+    DefaultAcc,
     AutoSync,
-    VelocityTick,
     SpikeSyncHammer,
     SpikeSync,
     SpikeTick,
@@ -79,12 +76,15 @@ type TModuleList = [
     KnockbackTickHammer,
     KnockbackTick,
     KBDefense,
+    VelocityTick,
+    ToolHammerSpearInsta,
     Autobreak,
     UseFastest,
     UseDestroying,
     UseAttacking,
     UtilityHat,
-
+    
+    SafeWalk,
     AutoPlacer,
     Placer,
     Automill,
@@ -158,7 +158,7 @@ class ModuleHandler {
     canHitEntity = false;
 
     /** true, if some of combat or defensive modules are active */
-    moduleActive = false;
+    moduleActive: boolean = false;
     useAngle: number | null = null;
     useWeapon: WeaponType | null = null;
     useItem: ItemType | null = null;
@@ -198,15 +198,12 @@ class ModuleHandler {
             autoBuy: new AutoBuy(client),
 
             defaultHat: new DefaultHat(client),
-            defaultAcc: new DefaultAcc(client),
-            safeWalk: new SafeWalk(client),
             antiInsta: new AntiInsta(client),
             shameReset: new ShameReset(client),
-            pathFinder: new PathFinder(client),
             
             reloading: new Reloading(client),
+            defaultAcc: new DefaultAcc(client),
             autoSync: new AutoSync(client),
-            velocityTick: new VelocityTick(client),
             spikeSyncHammer: new SpikeSyncHammer(client),
             spikeSync: new SpikeSync(client),
             spikeTick: new SpikeTick(client),
@@ -214,12 +211,15 @@ class ModuleHandler {
             knockbackTick: new KnockbackTick(client),
             knockbackTickHammer: new KnockbackTickHammer(client),
             kbDefense: new KBDefense(client),
+            velocityTick: new VelocityTick(client),
+            toolHammerSpearInsta: new ToolHammerSpearInsta(client),
             autoBreak: new Autobreak(client),
             useFastest: new UseFastest(client),
             useDestroying: new UseDestroying(client),
             useAttacking: new UseAttacking(client),
             utilityHat: new UtilityHat(client),
             
+            safeWalk: new SafeWalk(client),
             autoPlacer: new AutoPlacer(client),
             placer: new Placer(client),
             autoMill: new Automill(client),
@@ -243,15 +243,12 @@ class ModuleHandler {
             this.staticModules.autoBuy,
 
             this.staticModules.defaultHat,
-            this.staticModules.defaultAcc,
-            this.staticModules.safeWalk,
             this.staticModules.antiInsta,
             this.staticModules.shameReset,
-            this.staticModules.pathFinder,
             
             this.staticModules.reloading,
+            this.staticModules.defaultAcc,
             this.staticModules.autoSync,
-            this.staticModules.velocityTick,
             this.staticModules.spikeSyncHammer,
             this.staticModules.spikeSync,
             this.staticModules.spikeTick,
@@ -259,12 +256,15 @@ class ModuleHandler {
             this.staticModules.knockbackTickHammer,
             this.staticModules.knockbackTick,
             this.staticModules.kbDefense,
+            this.staticModules.velocityTick,
+            this.staticModules.toolHammerSpearInsta,
             this.staticModules.autoBreak,
             this.staticModules.useFastest,
             this.staticModules.useDestroying,
             this.staticModules.useAttacking,
             this.staticModules.utilityHat,
             
+            this.staticModules.safeWalk,
             this.staticModules.autoPlacer,
             this.staticModules.placer,
             this.staticModules.autoMill,
@@ -356,6 +356,12 @@ class ModuleHandler {
     upgradeItem(id: number) {
         this.client.PacketManager.upgradeItem(id);
         this.client.myPlayer.upgradeItem(id);
+
+        if (DataHandler.isWeapon(id)) {
+            const type = DataHandler.getWeapon(id).type;
+            const { reloading } = this.staticModules;
+            reloading.updateMaxReload(type);
+        }
     }
 
     startMovement(angle: number | null = this.move_dir, ignore = false) {
@@ -366,8 +372,8 @@ class ModuleHandler {
 
         const { safeWalk } = this.staticModules;
         if (
-            safeWalk.willGetHit(angle, 45) ||
-            !ignore && this.moveTo !== "disable"
+            safeWalk.willGetHit(angle, 45)/*  ||
+            !ignore && this.moveTo !== "disable" */
         ) return false;
 
         this.client.PacketManager.move(angle);
@@ -534,6 +540,7 @@ class ModuleHandler {
     targetSpeed = 0.3;
     circleRadius = 400;
     
+    activeModule: string | null = null;
     postTick() {
         const rotationSpeed = this.targetSpeed / this.circleRadius;
         this.circleOffset += rotationSpeed;
@@ -545,6 +552,7 @@ class ModuleHandler {
         // });
         // this.colls = ids;
 
+        this.activeModule = null;
         this.tickCount += 1;
         this.sentAngle = ESentAngle.NONE;
         this.sentHatEquip = false;
@@ -574,13 +582,18 @@ class ModuleHandler {
         }
 
         for (const module of this.modules) {
+            const prevg = this.moduleActive;
             module.postTick();
+            if (!prevg && this.moduleActive) {
+                this.activeModule = module.moduleName;
+            }
         }
         this.attackingState = this.attacking;
         if (isOwner) {
             this.client.InputHandler.postTick();
             GameUI.updateFastQ(this.didAntiInsta);
             GameUI.updateTotalPlaces(this.totalPlaces);
+            GameUI.updateActiveModule(this.activeModule);
         }
     }
 }
