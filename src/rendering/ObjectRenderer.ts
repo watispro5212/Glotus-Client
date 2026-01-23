@@ -8,6 +8,7 @@ import Vector from "../modules/Vector";
 import Renderer from "./Renderer";
 import { client } from "..";
 import ZoomHandler from "../modules/ZoomHandler";
+import { DeadPlayerHandler } from "../modules/DeadPlayer";
 
 /**
  * Called when game bundle rendering objects
@@ -15,7 +16,7 @@ import ZoomHandler from "../modules/ZoomHandler";
 const ObjectRenderer = new class ObjectRenderer {
     private healthBar(ctx: TCTX, entity: IRenderObject, object: PlayerObject): number {
         if (!(settings._itemHealthBar &&
-            // object.seenPlacement &&
+            object.seenPlacement &&
             object.isDestroyable
         )) return 0;
 
@@ -39,7 +40,7 @@ const ObjectRenderer = new class ObjectRenderer {
     private renderWindmill(entity: IRenderObject) {
         const item = Items[entity.id]!;
         if (item.itemType === ItemType.WINDMILL) {
-            entity.turnSpeed = settings._windmillRotation ? item.turnSpeed : 0;
+            entity.turnSpeed = 0;
         }
     }
 
@@ -47,18 +48,17 @@ const ObjectRenderer = new class ObjectRenderer {
         const x = entity.x + entity.xWiggle;
         const y = entity.y + entity.yWiggle;
         if (settings._collisionHitbox) {
-            Renderer.circle(ctx, x, y, object.collisionScale, "#c7fff2", 1, 1);
-            Renderer.rect(ctx, new Vector(x, y), object.collisionScale, "#ecffbd", 1);
+            Renderer.circle(ctx, x, y, object.collisionScale, "#c7fff2", 0.5, 1);
+            Renderer.rect(ctx, new Vector(x, y), object.collisionScale, "#ecffbd", 1, 0.5);
         }
-        if (settings._weaponHitbox) Renderer.circle(ctx, x, y, object.hitScale, "#3f4ec4", 1, 1);
-        // if (settings._placementHitbox) Renderer.circle(ctx, x, y, object.placementScale, "#13d16f", 1, 1);
-        if (settings._placementHitbox) Renderer.circle(ctx, x, y, object.placementScale, "#73b9ba", 1, 1);
+        if (settings._weaponHitbox) Renderer.circle(ctx, x, y, object.hitScale, "#3f4ec4", 0.5, 1);
+        if (settings._placementHitbox) Renderer.circle(ctx, x, y, object.placementScale, "#73b9ba", 0.5, 1);
 
-        const nearestCollider = client.EnemyManager.nearestCollider;
-        if (nearestCollider === object) {
-            const scale = nearestCollider.scale * 0.1;
-            Renderer.fillCircle(ctx, x, y, scale, "#b53f6b", 0.4);
-        }
+        // const nearestCollider = client.EnemyManager.nearestCollider;
+        // if (nearestCollider === object) {
+        //     const scale = nearestCollider.scale * 0.1;
+        //     Renderer.fillCircle(ctx, x, y, scale, "#b53f6b", 0.4);
+        // }
 
         // const nearestEnemyObject = client.EnemyManager.nearestEnemyObject;
         // if (nearestEnemyObject === object) {
@@ -72,19 +72,27 @@ const ObjectRenderer = new class ObjectRenderer {
         //     Renderer.fillCircle(ctx, x, y, scale, "#b432a7ff", 0.5);
         // }
 
-        if (object instanceof PlayerObject && object.trapActivated) {
-            const scale = object.scale * 0.3;
-            Renderer.fillCircle(ctx, x, y, scale, "#364cc9ff", 0.5);
-        }
+        // if (object instanceof PlayerObject && object.trapActivated) {
+        //     const scale = object.scale * 0.3;
+        //     Renderer.fillCircle(ctx, x, y, scale, "#364cc9ff", 0.3);
+        // }
 
-        const spikeCollider = client.EnemyManager.spikeCollider || client.EnemyManager.nearestSpike;
+        const spikeCollider = client.EnemyManager.spikeCollider;
+        // console.log(spikeCollider)
         if (spikeCollider === object) {
             const scale = spikeCollider.scale * 0.3;
-            Renderer.fillCircle(ctx, x, y, scale, "#bf3d59", 0.5);
+            Renderer.fillCircle(ctx, x, y, scale, "#bf3d59", 0.6);
         }
+        
         if (object instanceof PlayerObject && object.canBeDestroyed) {
-            Renderer.fillCircle(ctx, x, y, 10, "#e76c1aff", 0.7);
+            Renderer.fillCircle(ctx, x, y, 10, "#f88a41ff", 0.3);
         }
+        
+        // const nearestLowHPObject = client.EnemyManager.nearestLowHPObject;
+        // if (nearestLowHPObject === object) {
+        //     Renderer.fillCircle(ctx, x, y, 12, "red", 1);
+        // }
+
     }
 
     render(ctx: TCTX) {
@@ -111,16 +119,21 @@ const ObjectRenderer = new class ObjectRenderer {
         Renderer.renderObjects.length = 0;
     }
 
-    private readonly volcanoSize = 1880 / 2;
-    private readonly volcanoPos = new Vector(14400, 14400).sub(this.volcanoSize);
+    private readonly volcanoBoxSize = 1880 / 2;
+    private readonly volcanoAggressionRadius = 1440;
+    private readonly volcanoBoxPos = new Vector(14400, 14400).sub(this.volcanoBoxSize);
+    private readonly volcanoPos = new Vector(13960, 13960);
 
     preRender(ctx: TCTX) {
-        Renderer.rect(ctx, this.volcanoPos, this.volcanoSize, "red", 1, 0.5);
+        Renderer.rect(ctx, this.volcanoBoxPos, this.volcanoBoxSize, "red", 1, 0.5);
+        Renderer.circle(ctx, this.volcanoPos.x, this.volcanoPos.y, this.volcanoAggressionRadius, "red", 1, 0.4);
 
         if (client.myPlayer.diedOnce) {
             const { x, y } = client.myPlayer.deathPosition;
             Renderer.cross(ctx, x, y, 50, 15, "#cc5151");
         }
+
+        DeadPlayerHandler.update(ctx);
     }
 }
 

@@ -21,6 +21,7 @@ class Regexer {
      * Total amount of hooks applied
      */
     hookCount = 0;
+    hookAttempts = 0;
     private readonly ANY_LETTER = "(?:[^\\x00-\\x7F-]|\\$|\\w)";
     private readonly NumberSystem = [
         { radix: 2, prefix: "0b0*" },
@@ -65,6 +66,7 @@ class Regexer {
 
     /** Formats regular expression */
     private format(name: string, inputRegex: TRegex, flags?: string): RegExp {
+        this.hookAttempts++;
 
         let regex = "";
         if (Array.isArray(inputRegex)) {
@@ -77,8 +79,11 @@ class Regexer {
 
         regex = this.parseVariables(regex);
         const expression = new RegExp(regex, flags);
-        if (!expression.test(this.code)) Logger.error("Failed to find: " + name);
-        this.hookCount++;
+        if (!expression.test(this.code)) {
+            Logger.error("Failed to find: " + name);
+        } else {
+            this.hookCount++;
+        }
         return expression;
     }
 
@@ -119,6 +124,10 @@ class Regexer {
 
     prepend(name: string, regex: TRegex, substr: string) {
         this.template(name, regex, substr, (match) => match.index || 0);
+    }
+
+    wrap(left: string, right: string) {
+        this.code = left + this.code + right;
     }
     // insert(name: string, regex: TRegex, substr: string) {
     //     const expression = this.format(name, regex);

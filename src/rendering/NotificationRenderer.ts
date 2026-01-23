@@ -9,7 +9,7 @@ export class Notify {
     readonly y: number;
     private readonly timeout = {
         value: 0,
-        max: 1500
+        max: 2000
     }
 
     constructor(x: number, y: number) {
@@ -34,7 +34,7 @@ export class Notify {
 }
 
 const NotificationRenderer = new class NotificationRenderer {
-    private readonly notifications = new Set<Notify>();
+    readonly notifications = new Set<Notify>();
 
     remove(notify: Notify) {
         this.notifications.delete(notify);

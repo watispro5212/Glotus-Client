@@ -1,41 +1,46 @@
 import { isProd } from "..";
+import GameUI from "../UI/GameUI";
 
 export default class Logger {
     static readonly staticLog = console.log;
     static readonly staticError = console.error;
     static readonly staticWarn = console.warn;
-    static log(...args: any) {
+    static log(msg: any) {
+        GameUI.addCacheMessage(["log", msg]);
         if (isProd) return;
-        this.staticLog(...args);
+        this.staticLog(msg);
     }
 
-    static error(...args: any) {
+    static error(msg: any) {
+        GameUI.addCacheMessage(["error", msg]);
         if (isProd) return;
-        this.staticError(...args);
+        this.staticError(msg);
     }
 
-    static warn(...args: any) {
+    static warn(msg: any) {
+        GameUI.addCacheMessage(["warn", msg]);
         if (isProd) return;
-        this.staticWarn(...args);
+        this.staticWarn(msg);
     }
 
-    static test(...args: any) {
+    static test(msg: any) {
+        GameUI.addCacheMessage(["log", msg]);
         if (isProd) return;
-        this.log(...args);
+        this.staticLog(msg);
     }
     
-    private static readonly timers: Map<string, number> = new Map;
+    // private static readonly timers: Map<string, number> = new Map;
     
-    static start(label: string) {
-        if (isProd) return;
-        this.timers.set(label, performance.now());
-    }
+    // static start(label: string) {
+    //     if (isProd) return;
+    //     this.timers.set(label, performance.now());
+    // }
 
-    static end(label: string, ...args: any[]) {
-        if (isProd) return;
-        if (this.timers.has(label)) {
-            this.log(`${label}: ${performance.now() - this.timers.get(label)!}`, ...args);
-        }
-        this.timers.delete(label);
-    }
+    // static end(label: string, msg: any) {
+    //     if (isProd) return;
+    //     if (this.timers.has(label)) {
+    //         this.log(`${label}: ${performance.now() - this.timers.get(label)!}`, msg);
+    //     }
+    //     this.timers.delete(label);
+    // }
 }

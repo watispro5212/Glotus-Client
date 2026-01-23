@@ -10,14 +10,14 @@ import Bots from "../../public/templates/Bots.html" with { type: "text" };
 import CSS from "../../public/styles/index.css" with { type: "text" };
 import GameCSS from "../../public/styles/Game.css" with { type: "text" };
 import StoreCSS from "../../public/styles/Store.css" with { type: "text" };
-import settings, { defaultSettings, SaveSettings, type ISettings } from "../utility/Settings";
+import settings, { defaultSettings, resetSettings, SaveSettings, type ISettings } from "../utility/Settings";
 import type { KeysOfType } from "../types/Common";
 import { formatButton, formatCode, removeClass } from "../utility/Common";
 import Logger from "../utility/Logger";
-import GameUI from "./GameUI";
 import PlayerClient from "../PlayerClient";
-import createSocket, { altcha } from "../modules/createSocket";
+import createSocket from "../modules/createSocket";
 import { client, Glotus } from "..";
+import GameUI from "./GameUI";
 
 interface IFrame {
     readonly target: HTMLIFrameElement;
@@ -27,13 +27,19 @@ interface IFrame {
 
 const UI = new class UI {
     private frame!: IFrame;
-    activeHotkeyInput: HTMLButtonElement | null = null;
+    private activeHotkeyInput: HTMLButtonElement | null = null;
+    private activeInput: HTMLInputElement | null = null;
     private toggleTimeout: ReturnType<typeof setTimeout> | undefined;
     private menuOpened = false;
     private menuLoaded = false;
+    private menuScale = 1;
 
     get isMenuOpened() {
         return this.menuOpened;
+    }
+
+    isActiveButton() {
+        return this.activeHotkeyInput || this.activeInput
     }
 
     /**
@@ -43,7 +49,7 @@ const UI = new class UI {
         return `
             <!DOCTYPE html>
             <style>${CSS}</style>
-            <div id="menu-container">
+            <div id="menu-container" class="transparent">
                 <div id="menu-wrapper">
                     ${Header}
 
@@ -109,9 +115,11 @@ const UI = new class UI {
         return {
             menuContainer: this.querySelector<HTMLDivElement>("#menu-container")!,
             menuWrapper: this.querySelector<HTMLDivElement>("#menu-wrapper")!,
+            pageContainer: this.querySelector<HTMLDivElement>("#page-container")!,
             hotkeyInputs: this.querySelectorAll<HTMLButtonElement>(".hotkeyInput[id]")!,
             checkboxes: this.querySelectorAll<HTMLInputElement>("input[type='checkbox'][id]")!,
             colorPickers: this.querySelectorAll<HTMLInputElement>("input[type='color'][id]")!,
+            textInputs: this.querySelectorAll<HTMLInputElement>("input[type='text'][id]")!,
             sliders: this.querySelectorAll<HTMLInputElement>("input[type='range'][id]")!,
             closeButton: this.querySelector<SVGSVGElement>("#close-button")!,
             openMenuButtons: this.querySelectorAll<HTMLButtonElement>(".open-menu[data-id]")!,
@@ -121,6 +129,9 @@ const UI = new class UI {
             connectingBot: this.querySelector<HTMLDivElement>("#connectingBot")!,
             scriptDescription: this.querySelector<HTMLAnchorElement>("#script-description")!,
             author: this.querySelector<HTMLSpanElement>("#author")!,
+            optionDescriptions: this.querySelectorAll<HTMLSpanElement>(".option-description")!,
+            addBot: this.querySelector<HTMLButtonElement>("#add-bot")!,
+            resetSettings: this.querySelector<HTMLButtonElement>("#resetSettings")!,
             botOption(id: number) {
                 const option = that.querySelector<HTMLDivElement>(`.content-option[data-bot-id="${id}"]`)!;
                 const title = option.querySelector<HTMLSpanElement>(".option-title")!;
@@ -134,9 +145,23 @@ const UI = new class UI {
         } as const;
     }
 
+    updateStats(id: string, value: any) {
+        const stats = this.querySelector<HTMLSpanElement>(`#${id}`);
+        if (stats == null) throw new Error(`updateStats Error: can't find an element with ID: '${id}'`);
+        
+        stats.textContent = value;
+        
+        if (id in settings) {
+            // @ts-ignore
+            settings[id] = value;
+            SaveSettings();
+        }
+    }
+
     private handleResize() {
         const { menuContainer } = this.getElements();
         const scale = Math.min(0.9, Math.min(window.innerWidth / 1280, window.innerHeight / 720));
+        this.menuScale = scale;
         menuContainer.style.transform = `translate(-50%, -50%) scale(${scale})`;
     }
 
@@ -239,15 +264,25 @@ const UI = new class UI {
     }
 
     private handleCheckboxToggle(id: KeysOfType<ISettings, boolean>, checked: boolean) {
-        checked;
         switch (id) {
-            case "_itemCounter":
-                GameUI.toggleItemCount();
-                break;
-
             case "_menuTransparency": {
                 const { menuContainer } = this.getElements();
                 menuContainer.classList.toggle("transparent");
+                break;
+            }
+
+            case "_hideHUD": {
+                const { gameUI } = GameUI.getElements();
+                if (checked) {
+                    gameUI.classList.add("hidden");
+                } else {
+                    gameUI.classList.remove("hidden");
+                }
+                break;
+            }
+
+            case "_chatLog": {
+                GameUI.toggleChatLog();
                 break;
             }
         }
@@ -264,6 +299,7 @@ const UI = new class UI {
             }
 
             checkbox.checked = settings[id];
+            this.handleCheckboxToggle(id, checkbox.checked);
             checkbox.onchange = () => {
                 if (id in settings) {
                     settings[id] = checkbox.checked;
@@ -314,41 +350,104 @@ const UI = new class UI {
     }
 
     private attachSliders() {
-        // const { sliders } = this.getElements();
-        // for (const slider of sliders) {
-        //     const id = slider.id as KeysOfType<ISettings, number>;
+        const { sliders } = this.getElements();
+        for (const slider of sliders) {
+            const id = slider.id as KeysOfType<ISettings, number>;
 
-        //     if (!(id in settings)) {
-        //         Logger.error(`attachSliders Error: Property "${id}" does not exist in settings`);
-        //         continue;
-        //     }
+            if (!(id in settings)) {
+                Logger.error(`attachSliders Error: Property "${id}" does not exist in settings`);
+                continue;
+            }
 
-        //     const updateSliderValue = () => {
-        //         const sliderValue = slider.previousElementSibling;
-        //         if (sliderValue instanceof this.frame.window.HTMLSpanElement) {
-        //             sliderValue.textContent = slider.value;
-        //         }
-        //     }
+            const updateSliderValue = () => {
+                const sliderValue = slider.previousElementSibling;
+                if (sliderValue instanceof this.frame.window.HTMLSpanElement) {
+                    sliderValue.textContent = slider.value;
+                }
+            }
 
-        //     slider.value = settings[id].toString();
-        //     updateSliderValue();
+            slider.value = settings[id].toString();
+            updateSliderValue();
 
-        //     slider.oninput = () => {
-        //         if (id in settings) {
-        //             settings[id] = Number(slider.value);
-        //             SaveSettings();
-        //             updateSliderValue();
-        //         } else {
-        //             Logger.error(`attachSliders Error: Property "${id}" was deleted from settings`);
-        //         }
-        //     }
+            slider.oninput = () => {
+                if (id in settings) {
+                    settings[id] = Number(slider.value);
+                    SaveSettings();
+                    updateSliderValue();
+                } else {
+                    Logger.error(`attachSliders Error: Property "${id}" was deleted from settings`);
+                }
+            }
 
-        //     slider.onchange = () => slider.blur();
-        // }
+            slider.onchange = () => slider.blur();
+        }
+    }
+
+    private attachTextInputs() {
+        const { textInputs } = this.getElements();
+
+        for (const input of textInputs) {
+            const id = input.id as KeysOfType<ISettings, string>;
+
+            if (!(id in settings)) {
+                Logger.error(`attachTextInputs Error: Property "${id}" does not exist in settings`);
+                continue;
+            }
+
+            input.value = settings[id];
+            input.oninput = () => {
+                input.value = input.value.replace(/[^\x20-\x7E]/g, "");//.replace(/^\s+/, "");
+            }
+
+            input.onfocus = () => {
+                this.activeInput = input;
+            }
+
+            input.onblur = () => {
+                this.activeInput = null;
+            }
+
+            input.onchange = () => {
+                if (id in settings) {
+                    const value = input.value;//.trim();
+                    settings[id] = value;
+                    input.value = value;
+                    SaveSettings();
+                } else {
+                    Logger.error(`attachTextInputs Error: Property "${id}" was deleted from settings`);
+                }
+            }
+        }
+    }
+
+    private attachDescriptions() {
+        const { optionDescriptions, menuWrapper } = this.getElements();
+        for (const description of optionDescriptions) {
+            const parent = description.parentElement!;
+            parent.onmouseenter = () => {
+                description.classList.add("description-show");
+            }
+            parent.onmouseleave = () => {
+                description.classList.remove("description-show");
+            }
+            parent.onmousemove = (event: MouseEvent) => {
+                const target = event.target as HTMLElement;
+                if (target !== null && target.className !== "content-option" && target.className !== "option-title") {
+                    description.classList.remove("description-show");
+                    return;
+                }
+                description.classList.add("description-show");
+                const bounds = menuWrapper.getBoundingClientRect();
+                const x = (event.clientX - bounds.left + 10) / this.menuScale;
+                const y = (event.clientY - bounds.top + 10) / this.menuScale;
+                description.style.left = x + "px";
+                description.style.top = y + "px";
+            }
+        }
     }
 
     private createBotOption(player: PlayerClient) {
-        const { botContainer, botOption } = this.getElements();
+        const { botContainer, botOption, pageContainer } = this.getElements();
         const html = `
             <div class="content-option" data-bot-id="${player.id}">
                 <span class="option-title"></span>
@@ -366,6 +465,7 @@ const UI = new class UI {
         const div = document.createElement("div");
         div.innerHTML = html;
         botContainer.appendChild(div.firstElementChild!);
+        pageContainer.scrollTop = pageContainer.scrollHeight;
 
         const option = botOption(player.id);
         option.disconnect.onclick = () => {
@@ -407,15 +507,25 @@ const UI = new class UI {
         }
     }
 
+    createBot() {
+        const { addBot } = this.getElements();
+        addBot.click();
+    }
+
     private handleBotCreation(button: HTMLButtonElement) {
 
         let id = 0;
         button.onclick = async () => {
             const ws = client.SocketManager.socket;
             if (ws === null) return;
+
             this.addBotConnecting();
             const socket = await createSocket(ws.url);
 
+            socket.addEventListener("close", () => {
+                this.removeBotConnecting();
+            });
+            
             socket.onopen = () => {
                 const player = new PlayerClient(client);
 
@@ -432,16 +542,23 @@ const UI = new class UI {
 
                 socket.addEventListener("connected", onconnect);
 
-                socket.addEventListener("error", (err) => console.log(err));
-                socket.addEventListener("close", (err) => {
+                const handleClose = () => {
                     socket.removeEventListener("connected", onconnect);
                     client.clients.delete(player);
                     client.clientIDList.delete(player.myPlayer.id);
                     client.pendingJoins.delete(player.myPlayer.id);
                     this.deleteBotOption(player);
                     this.removeBotConnecting();
-                })
+                }
+                socket.addEventListener("error", handleClose);
+                socket.addEventListener("close", handleClose);
             }
+        }
+    }
+
+    private handleResetSettings(button: HTMLButtonElement) {
+        button.onclick = () => {
+            resetSettings();
         }
     }
 
@@ -452,6 +569,11 @@ const UI = new class UI {
             switch (button.id) {
                 case "add-bot": {
                     this.handleBotCreation(button);
+                    break;
+                }
+
+                case "resetSettings": {
+                    this.handleResetSettings(button);
                     break;
                 }
             }
@@ -575,25 +697,38 @@ const UI = new class UI {
         }
     }
 
+    resetFrame() {
+        this.frame.target.remove();
+        this.init();
+    }
+
     async init() {
-        this.frame = await this.createFrame();
+        try {
+            this.frame = await this.createFrame();
 
-        this.attachListeners();
-        this.attachHotkeyInputs();
-        this.checkForRepeats();
-        this.attachCheckboxes();
-        this.attachColorPickers();
-        this.attachSliders();
-        this.attachButtons();
-        this.attachOpenMenu();
-        this.createRipple(".open-menu");
+            this.attachListeners();
+            this.attachHotkeyInputs();
+            this.checkForRepeats();
+            this.attachCheckboxes();
+            this.attachColorPickers();
+            this.attachSliders();
+            this.attachTextInputs();
+            this.attachDescriptions();
+            this.attachButtons();
+            this.attachOpenMenu();
+            this.createRipple(".open-menu");
+            client.StatsManager.init();
 
-        const { menuContainer } = this.getElements();
-        if (settings._menuTransparency) {
-            menuContainer.classList.add("transparent");
+            const { menuContainer } = this.getElements();
+            if (settings._menuTransparency) {
+                menuContainer.classList.add("transparent");
+            }
+            this.menuLoaded = true;
+            this.frame.window.focus();
+            Logger.test("Successfully injected iframe menu..");
+        } catch(err) {
+            Logger.error("Failed to inject iframe.. " + err);
         }
-        this.menuLoaded = true;
-        this.frame.window.focus();
     }
 }
 

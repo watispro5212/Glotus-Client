@@ -1,19 +1,14 @@
 {
     "name": "glotus-client",
-    "version": "3.5.1",
+    "version": "5.3",
     "author": "Murka",
     "module": "src/index.ts",
     "devDependencies": {
         "@types/bun": "latest",
-        "@types/ws": "^8.18.1",
         "concurrently": "^9.1.2",
         "cross-env": "^7.0.3",
-        "http-proxy-agent": "^7.0.2",
         "js-confuser": "^2.0.0",
-        "node-fetch": "^3.3.2",
-        "socks-proxy-agent": "^8.0.5",
-        "terser": "^5.40.0",
-        "type-fest": "^4.41.0"
+        "terser": "^5.40.0"
     },
     "peerDependencies": {
         "typescript": "^5"
@@ -36,11 +31,9 @@
         "host": "bun run hoster.ts",
         "dev": "cross-env NODE_ENV=development bun build src/index.ts --outdir dist --watch --target browser",
         "build": "cross-env NODE_ENV=production bun run build.ts",
+        "start": "concurrently \"bun run host\" \"bun run dev\"",
         "private": "cross-env NODE_ENV=production bun run privateBuild.ts",
-        "start": "concurrently \"bun run host\" \"bun run dev\""
+        "commit-private": "cd private && git add . && git commit -am \"Update private files\" && git push origin main"
     },
-    "type": "module",
-    "dependencies": {
-        "ws": "^8.18.3"
-    }
+    "type": "module"
 }

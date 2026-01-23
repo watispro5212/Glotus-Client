@@ -1,4 +1,4 @@
-import { fixTo } from './../utility/Common';
+import { fixTo, getAngle } from './../utility/Common';
 import Config from "../constants/Config";
 import settings from "../utility/Settings";
 import Vector from "../modules/Vector";
@@ -8,16 +8,139 @@ import { WeaponVariants } from "../constants/Items";
 import Player from "../data/Player";
 import { clamp, getTargetValue, setTargetValue } from "../utility/Common";
 import Animal from "../data/Animal";
-import { Notify } from "./NotificationRenderer";
-import { client } from "..";
+import NotificationRenderer, { Notify } from "./NotificationRenderer";
+import { client, Glotus } from "..";
 import DataHandler from "../utility/DataHandler";
 import ZoomHandler from '../modules/ZoomHandler';
+import GameUI from '../UI/GameUI';
+
+const renderText = (ctx: any, text: string, size = 25, posx = 10, posy = 9) => {
+    ctx.save();
+    ctx.font = `700 ${size}px sans-serif`;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    const scale = ZoomHandler.getScale();
+    ctx.scale(scale, scale);
+    ctx.fillStyle = "#eaeaea";
+    ctx.strokeStyle = "#1f2029";
+    ctx.lineWidth = 8;
+    ctx.globalAlpha = 0.6;
+    ctx.letterSpacing = "6px";
+    ctx.lineJoin = "round";
+    ctx.strokeText(text, posx, posy);
+    ctx.fillText(text, posx, posy);
+    ctx.restore();
+}
 
 const Renderer = new class Renderer {
     readonly renderObjects: IRenderObject[] = [];
+    private readonly totalTimes: number[] = [];
+    private lastLogTime = performance.now();
 
     preRender() {
         ZoomHandler.smoothUpdate();
+    }
+
+    postRender() {
+        const now = performance.now();
+        while (this.totalTimes.length > 0 && this.totalTimes[0]! <= now - 1000) {
+            this.totalTimes.shift();
+        }
+
+        this.totalTimes.push(now);
+        const fps = this.totalTimes.length;
+        if (now - this.lastLogTime >= 1000) {
+            GameUI.updateFPS(fps);
+            this.lastLogTime = now;
+        }
+
+        const canvas = document.querySelector<HTMLCanvasElement>("#gameCanvas")!;
+        const ctx = canvas.getContext("2d")!;
+        renderText(ctx, atob("R2xvdHVz") + ` v${Glotus.version}`);
+        renderText(ctx, "by Murka", 15, 15, 36);
+    }
+
+    mapPreRender(ctx: TCTX) {
+        ctx.save();
+        ctx.globalAlpha = 0.6;
+
+        const width = ctx.canvas.width;
+        const height = ctx.canvas.height;
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(0, 0, width, Config.snowBiomeTop / Config.mapScale * height);
+
+        // RENDER DESERT BIOME
+        ctx.fillStyle = "#dbc666";
+        ctx.fillRect(0, 12000 / Config.mapScale * height, width, height);
+
+        // RENDER RIVER
+        ctx.fillStyle = "#91b2db";
+        const startY = (Config.mapScale / 2 - Config.riverWidth / 2) / Config.mapScale * height;
+        ctx.fillRect(0, startY, width, Config.riverWidth / Config.mapScale * height);
+
+        const { ModuleHandler, myPlayer } = client;
+        ctx.globalAlpha = 1;
+        const markSize = 8;
+        if (ModuleHandler.followPath) {
+            const pos = ModuleHandler.endTarget.copy().div(Config.mapScale).mult(width);
+            ctx.fillStyle = "#c2383d";
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, markSize, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        if (myPlayer.teleported) {
+            const pos = myPlayer.teleportPos.copy().div(Config.mapScale).mult(width);
+            ctx.fillStyle = "#d76edb";
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, markSize, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        ctx.fillStyle = settings._notificationTracersColor;
+        const notifications = NotificationRenderer.notifications;
+        for (const notify of notifications) {
+            const x = notify.x / Config.mapScale * width;
+            const y = notify.y / Config.mapScale * width;
+            ctx.beginPath();
+            ctx.arc(x, y, markSize * 1.5, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+
+    drawNorthArrow(ctx: TCTX, x: number, y: number, angle: number) {
+        const size = 35;
+        ctx.save();
+        ctx.globalAlpha = 0.7;
+        ctx.fillStyle = "#883131";
+        ctx.translate(x, y);
+        
+        ctx.rotate(angle + Math.PI / 2);
+        ctx.beginPath();
+        ctx.moveTo(0, -size / 2);
+        ctx.lineTo(size / 3, size / 2);
+        ctx.lineTo(0, size / 3);
+        ctx.lineTo(-size / 3, size / 2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+    
+    private rotation = 0;
+    private readonly arrowPart = 2 * Math.PI / 3;
+    drawTarget(ctx: TCTX, entity: IRenderEntity) {
+        const len = entity.scale + 30;
+        this.rotation = (this.rotation + 0.01) % 6.28;
+        ctx.save();
+        ctx.translate(-client.myPlayer.offset.x, -client.myPlayer.offset.y);
+        ctx.translate(entity.x, entity.y);
+        ctx.rotate(this.rotation);
+        this.drawNorthArrow(ctx, len * Math.cos(this.arrowPart * 1), len * Math.sin(this.arrowPart * 1), -1.04);
+        this.drawNorthArrow(ctx, len * Math.cos(this.arrowPart * 2), len * Math.sin(this.arrowPart * 2), 1.04);
+        this.drawNorthArrow(ctx, len * Math.cos(this.arrowPart * 3), len * Math.sin(this.arrowPart * 3), 3.14);
+        ctx.restore();
     }
 
     rect(ctx: TCTX, pos: Vector, scale: number, color: string, lineWidth = 4, alpha = 1) {
@@ -177,15 +300,11 @@ const Renderer = new class Renderer {
         const pos1 = new Vector(player.x, player.y);
         const pos2 = new Vector(entity.x, entity.y);
 
-        if (settings._arrows) {
-            const w = 8;
-            const distance = Math.min(100 + w * 2, pos1.distance(pos2) - w * 2);
-            const angle = pos1.angle(pos2);
-            const pos = pos1.addDirection(angle, distance);
-            this.arrow(ctx, w, pos.x, pos.y, angle, color);
-        } else {
-            this.line(ctx, pos1, pos2, color, 0.75);
-        }
+        const w = 8;
+        const distance = Math.min(125 + w * 2, pos1.distance(pos2) - w * 2);
+        const angle = pos1.angle(pos2);
+        const pos = pos1.addDirection(angle, distance);
+        this.arrow(ctx, w, pos.x, pos.y, angle, color);
     }
 
     renderDistance(ctx: TCTX, entity: IRenderEntity, player: IRenderEntity) {
@@ -207,7 +326,7 @@ const Renderer = new class Renderer {
         // ID of the owner
         // if ID is undefined, it means object is a resource
         const id = object.owner?.sid;
-        if (id === undefined) return null;
+        if (typeof id !== "number") return null;
         if (
             settings._itemMarkers &&
             client.myPlayer.isMyPlayerByID(id)
@@ -233,10 +352,10 @@ const Renderer = new class Renderer {
         const y = object.y + object.yWiggle - client.myPlayer.offset.y;
         ctx.save();
         ctx.strokeStyle = "#3b3b3b";
-        ctx.lineWidth = 4;
+        ctx.lineWidth = 3;
         ctx.fillStyle = color;
         ctx.beginPath();
-        ctx.arc(x, y, 10, 0, 2 * Math.PI);
+        ctx.arc(x, y, 9, 0, 2 * Math.PI);
         ctx.fill();
         ctx.stroke();
         ctx.closePath();
@@ -312,7 +431,7 @@ const Renderer = new class Renderer {
         let height = 0;
         if (player instanceof Player) {
 
-            const [ primary, secondary, turret ] = player.reload;
+            const [primary, secondary, turret] = player.reload;
 
             // Weapon XP Bar
             if (player === myPlayer && settings._weaponXPBar) {
@@ -346,9 +465,9 @@ const Renderer = new class Renderer {
 
         const target = player || animal;
         if (target) {
-            const container = getTargetValue(window, "config");
+            const container = getTargetValue(Glotus, "config");
             setTargetValue(container, "nameY", this.getNameY(target));
-            
+
             const { currentHealth, maxHealth } = target;
             const health = animal ? maxHealth : 100;
             const color = PlayerManager.isEnemyTarget(myPlayer, target) ? "#cc5151" : "#8ecc51";
@@ -398,9 +517,9 @@ const Renderer = new class Renderer {
     ): number {
         const x = object.x + object.xWiggle - client.myPlayer.offset.x;
         const y = object.y + object.yWiggle - client.myPlayer.offset.y;
-        const height = Config.barHeight * 0.7;
+        const height = Config.barHeight * 0.5;
         const defaultScale = 10 + height / 2;
-        const scale = defaultScale + 3 + offset;
+        const scale = defaultScale + 1 + offset;
         ctx.save();
         ctx.translate(x, y);
         ctx.rotate(angle);

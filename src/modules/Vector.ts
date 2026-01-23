@@ -40,26 +40,28 @@ class Vector {
     }
 
     div(scalar: number) {
-        this.x /= scalar;
-        this.y /= scalar;
+        const inv = 1 / scalar;
+        this.x *= inv;
+        this.y *= inv;
         return this;
     }
 
     get length() {
-        return Math.sqrt(this.x * this.x + this.y * this.y);
+        return Math.hypot(this.x, this.y);
     }
 
     normalizeVec() {
-        return this.length > 0 ? this.div(this.length) : this;
+        const len = this.length;
+        if (len > 0) {
+            const inv = 1 / len;
+            this.x *= inv;
+            this.y *= inv;
+        }
+        return this;
     }
 
     dot(vec: Vector) {
         return this.x * vec.x + this.y * vec.y;
-    }
-
-    proj(vec: Vector) {
-        const k = this.dot(vec) / vec.dot(vec);
-        return vec.copy().mult(k);
     }
 
     setXY(x: number, y: number) {
@@ -80,17 +82,26 @@ class Vector {
         return new Vector(this.x, this.y);
     }
 
+    distanceDefault(vec: Vector) {
+        const dx = this.x - vec.x;
+        const dy = this.y - vec.y;
+        return dx * dx + dy * dy;
+    }
+
     distance(vec: Vector) {
-        return this.copy().sub(vec).length;
+        const dx = this.x - vec.x;
+        const dy = this.y - vec.y;
+        return Math.hypot(dx, dy);
     }
 
     angle(vec: Vector) {
-        const copy = vec.copy().sub(this);
-        return Math.atan2(copy.y, copy.x);
+        return Math.atan2(vec.y - this.y, vec.x - this.x);
     }
 
     addDirection(angle: number, length: number) {
-        return this.copy().add(Vector.fromAngle(angle, length));
+        const x = this.x + Math.cos(angle) * length;
+        const y = this.y + Math.sin(angle) * length;
+        return new Vector(x, y);
     }
 
     isEqual(vec: Vector) {

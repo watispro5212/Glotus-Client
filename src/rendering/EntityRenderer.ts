@@ -5,13 +5,11 @@ import DataHandler from "../utility/DataHandler";
 import { Items, Weapons } from "../constants/Items";
 import Vector from "../modules/Vector";
 import settings from "../utility/Settings";
-import { EHat } from "../types/Store";
 import Animals, { EAnimal } from "../constants/Animals";
 import { EDanger } from "../types/Enums";
-import { ItemType } from "../types/Items";
 import { client } from "..";
 import NotificationRenderer from "./NotificationRenderer";
-import ZoomHandler from "../modules/ZoomHandler";
+import { getAngle } from "../utility/Common";
 
 const colors = [["orange", "red"], ["aqua", "blue"]] as const;
 
@@ -23,19 +21,19 @@ const EntityRenderer = new class EntityRenderer {
     private drawWeaponHitbox(ctx: TCTX, player: IRenderEntity) {
         if (!settings._weaponHitbox) return;
 
-        const { myPlayer, ModuleHandler } = client;
-        const current = myPlayer.getItemByType(ModuleHandler.weapon);
+        const { myPlayer } = client;
+        const current = myPlayer.weapon.current;
         if (DataHandler.isMelee(current)) {
             const weapon = DataHandler.getWeapon(current);
-            Renderer.circle(ctx, player.x, player.y, weapon.range, "#f5cb42", 1, 1);
+            Renderer.circle(ctx, player.x, player.y, weapon.range, "#f5cb42", 0.5, 1);
         }
     }
 
     private drawPlacement(ctx: TCTX) {
         if (!settings._possiblePlacement) return;
         const { myPlayer, ModuleHandler } = client;
-        const [type, angles] = ModuleHandler.staticModules.autoPlacer.placeAngles;
-        if (type === null) return;
+        const [ type, angles ] = ModuleHandler.placeAngles;
+        if (type === null || angles === null) return;
 
         const id = myPlayer.getItemByType(type)!;
         if (id === null) return;
@@ -45,16 +43,11 @@ const EntityRenderer = new class EntityRenderer {
         for (let i=0;i<angles.length;i++) {
             const angle = angles[i]!;
             const pos = myPlayer.pos.current.addDirection(angle, dist);
-            Renderer.circle(ctx, pos.x, pos.y, item.scale, "#80edf2", 0.6, 1);
+            Renderer.circle(ctx, pos.x, pos.y, item.scale, "#80edf2", 0.4, 1);
         }
     }
 
     private drawEntityHP(ctx: TCTX, entity: IRenderEntity) {
-        if (entity.isPlayer) {
-            if (settings._turretHitbox && client.myPlayer.hatID === EHat.TURRET_GEAR) {
-                Renderer.circle(ctx, entity.x, entity.y, 700, "#3e2773", 1, 1);
-            }
-        }
         Renderer.renderBar(ctx, entity);
         Renderer.renderHP(ctx, entity);
     }
@@ -66,17 +59,16 @@ const EntityRenderer = new class EntityRenderer {
         const type = entity.isPlayer ? PlayerManager.playerData : PlayerManager.animalData;
         const target = type.get(entity.sid);
         if (target !== undefined) {
-            Renderer.circle(ctx, entity.x, entity.y, target.hitScale, "#3f4ec4", 1, 1);
+            Renderer.circle(ctx, entity.x, entity.y, target.hitScale, "#3f4ec4", 0.5, 1);
         }
 
         if (entity.isAI && entity.index === EAnimal.MOOSTAFA) {
             const moostafa = Animals[EAnimal.MOOSTAFA];
-            Renderer.circle(ctx, entity.x, entity.y, moostafa.hitRange, "#f5cb42", 1, 1);
+            Renderer.circle(ctx, entity.x, entity.y, moostafa.hitRange, "#f5cb42", 0.5, 1);
         }
     }
 
     private drawDanger(ctx: TCTX, entity: IRenderEntity) {
-        if (!settings._entityDanger) return;
 
         const { PlayerManager } = client;
         if (entity.isPlayer) {
@@ -89,9 +81,11 @@ const EntityRenderer = new class EntityRenderer {
         }
 
         if (entity.isAI) {
-            const animal = PlayerManager.animalData.get(entity.sid)!;
-            const color = animal.isDanger ? "red" : "green";
-            Renderer.fillCircle(ctx, entity.x, entity.y, animal.attackRange, color, 0.3);
+            const animal = PlayerManager.animalData.get(entity.sid);
+            if (animal) {
+                const color = animal.isDanger ? "red" : "green";
+                Renderer.fillCircle(ctx, entity.x, entity.y, animal.attackRange, color, 0.3);
+            }
         }
     }
 
@@ -100,7 +94,7 @@ const EntityRenderer = new class EntityRenderer {
         this.step = now - this.start;
         this.start = now;
         
-        const { myPlayer, EnemyManager, ModuleHandler } = client;
+        const { myPlayer, EnemyManager, ModuleHandler, ObjectManager, InputHandler } = client;
         const isMyPlayer = entity === player;
         if (isMyPlayer) {
             const pos = new Vector(player.x, player.y);
@@ -111,20 +105,32 @@ const EntityRenderer = new class EntityRenderer {
             this.drawWeaponHitbox(ctx, player);
             this.drawPlacement(ctx);
 
-            // const secondary = myPlayer.weapon.current;
-            // const enemy = EnemyManager.nearestEnemy;
-            // if (settings._projectileHitbox && DataHandler.isShootable(secondary) && enemy) {
-            //     Renderer.circle(ctx, entity.x, entity.y, 700, "#3e2773", 1, 1);
-            // }
-
             if (myPlayer.isTrapped) {
                 Renderer.fillCircle(ctx, pos.x, pos.y, 35, "yellow", 0.5);
             }
+
+            const { pushPos } = ModuleHandler.staticModules.autoPush;
+            const nearestPushSpike = client.EnemyManager.nearestPushSpike;
+            if (pushPos !== null && nearestPushSpike !== null) {
+                Renderer.line(ctx, pos, pushPos, "white", 0.6, 1);
+                Renderer.line(ctx, pushPos, nearestPushSpike.pos.current, "white", 0.6, 1);
+            }
+
+            // const nearestObject = EnemyManager.nearestPlayerObject;
+            // if (nearestObject !== null) {
+            //     const pos1 = myPlayer.pos.current;
+            //     const pos2 = nearestObject.pos.current;
+            //     const distance = pos1.distance(pos2);
+            //     const angle = pos1.angle(pos2);
+            //     const offset = Math.asin((2 * nearestObject.scale) / (2 * distance));
+            //     const lookingAt = getAngleDist(angle, myPlayer.angle) <= offset;
+            //     Renderer.fillCircle(ctx, pos.x, pos.y, 10, lookingAt ? "red" : "white", 1);
+            // }
         }
 
         this.drawEntityHP(ctx, entity);
         if (settings._collisionHitbox) {
-            Renderer.circle(ctx, entity.x, entity.y, entity.scale, "#c7fff2", 1, 1);
+            Renderer.circle(ctx, entity.x, entity.y, entity.scale, "#c7fff2", 0.5, 1);
         }
 
         if (!isMyPlayer) {
@@ -152,10 +158,42 @@ const EntityRenderer = new class EntityRenderer {
             ) {
                 Renderer.fillCircle(ctx, entity.x, entity.y, 10, "#691313");
             }
+
+            // const nearestEnemyPush = EnemyManager.nearestEnemyPush;
+            // if (
+            //     nearestEnemyPush &&
+            //     !entity.isAI &&
+            //     entity.sid === nearestEnemyPush.id
+            // ) {
+            //     Renderer.fillCircle(ctx, entity.x, entity.y, 10, "red");
+            // }
         }
 
         if (isMyPlayer) {
             NotificationRenderer.render(ctx, player);
+        }
+
+        const instakillTarget = InputHandler.instakillTarget;
+        if (entity.isPlayer && instakillTarget !== null && entity.sid === instakillTarget.id) {
+            Renderer.drawTarget(ctx, entity);
+
+            const { bowInsta } = ModuleHandler.staticModules;
+            if (bowInsta.active) {
+                Renderer.circle(ctx, entity.x, entity.y, bowInsta.distMin, "#eda0ee", 0.4, 1);
+                Renderer.circle(ctx, entity.x, entity.y, bowInsta.distMax, "#eda0ee", 0.4, 1);
+            }
+        }
+
+        const { target: velTickTarget, minKB, maxKB } = ModuleHandler.staticModules.velocityTick;
+        if (entity.isPlayer && velTickTarget !== null && entity.sid === velTickTarget.id) {
+            const diff = Math.abs(maxKB - minKB);
+            const length = minKB + (maxKB - minKB) / 2;
+            const angle = getAngle(entity.x, entity.y, player.x, player.y);
+            const posX = entity.x + Math.cos(angle) * length;
+            const posY = entity.y + Math.sin(angle) * length;
+            Renderer.circle(ctx, posX, posY, diff, "#e25176", 0.5, 1);
+            // Renderer.circle(ctx, entity.x, entity.y, minKB, "#eda0ee", 0.4, 1);
+            // Renderer.circle(ctx, entity.x, entity.y, maxKB, "#eda0ee", 0.4, 1);
         }
     }
 }

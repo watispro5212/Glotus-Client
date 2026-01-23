@@ -13,6 +13,7 @@ import ModuleHandler from "./features/ModuleHandler";
 class PlayerClient {
     id = -1;
     connectSuccess = false;
+    clientID: string | null = null;
     readonly owner: PlayerClient;
     readonly SocketManager: SocketManager;
     readonly ObjectManager: ObjectManager;
@@ -53,10 +54,20 @@ class PlayerClient {
         return this.owner === this;
     }
 
+    isBotByID(id: number) {
+        return this.clientIDList.has(id);
+    }
+
     disconnect() {
         const socket = this.SocketManager.socket;
         if (socket !== null) {
             socket.close();
+        }
+    }
+
+    removeBots() {
+        for (const client of this.clients) {
+            client.disconnect();
         }
     }
 

@@ -19,11 +19,13 @@ class Projectile {
      * 1 if projectile can move above some buildings
      */
     readonly onPlatform: 1 | 0;
-    readonly id: number;
+    id: number;
     readonly isTurret: boolean;
     readonly scale: typeof Projectiles[number]["scale"];
     readonly maxRange: number;
+    readonly damage: typeof Projectiles[number]["damage"];
     owner: Player | null = null;
+    life = 9;
 
     constructor(
         angle: number,
@@ -43,11 +45,16 @@ class Projectile {
         this.id = id;
         this.scale = Projectiles[type].scale;
         this.maxRange = maxRange || 0;
+        this.damage = Projectiles[type].damage;
     }
 
     formatFromCurrent(pos: Vector, increase: boolean) {
         if (this.isTurret) return pos;
         return pos.addDirection(this.angle, increase ? 70 : -70);
+    }
+
+    shouldRemove() {
+        return this.life <= 0;
     }
 }
 

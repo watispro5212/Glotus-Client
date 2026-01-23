@@ -1,4 +1,5 @@
 import { isProd } from "..";
+import Logger from "../utility/Logger";
 import formatCode from "./formatCode";
 
 const Injector = new class Injector {
@@ -31,6 +32,7 @@ const Injector = new class Injector {
     private waitForBody(callback: () => void) {
         if (document.readyState !== "loading") {
             callback();
+            Logger.test("Page already loaded, instant inject..");
             return;
         }
         document.addEventListener("readystatechange", () => {

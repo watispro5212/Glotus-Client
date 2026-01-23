@@ -87,6 +87,9 @@ const StoreHandler = new class StoreHandler {
         const div = document.createElement("div");
         div.innerHTML = html;
 
+        const img = div.querySelector<HTMLImageElement>(".storeHat")!;
+        img.src = `./img/${src.join("_")}.png`;
+
         const equipButton = div.querySelector<HTMLDivElement>(".equipButton")!;
         equipButton.onmousedown = () => {
             client.ModuleHandler.equip(type, id, true, true);
@@ -98,7 +101,7 @@ const StoreHandler = new class StoreHandler {
     private fillStore(type: EStoreType) {
         const { itemHolder } = GameUI.getElements();
         itemHolder.innerHTML = "";
-        const items = settings._storeItems[type];
+        const items = settings._storeItems[type]!;
 
         for (const id of items) {
             const item = DataHandler.getStoreItem(type, id);

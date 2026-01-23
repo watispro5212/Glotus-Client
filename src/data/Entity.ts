@@ -13,6 +13,8 @@ interface IPos {
 
 export const enum CollideType {
     CURRENT = 0b001,
+    FUTURE = 0b010,
+    PREV = 0b100,
     CURRENT_FUTURE = 0b011,
     ALL = 0b111,
 }
@@ -71,20 +73,20 @@ abstract class Entity {
         )
     }
 
-    collidingObject(object: TObject, addRadius = 0, checkType = CollideType.CURRENT_FUTURE) {
+    collidingObject(object: TObject, addRadius = 0, checkType = CollideType.CURRENT_FUTURE): boolean {
         const { previous: a0, current: a1, future: a2 } = this.pos;
         const b0 = object.pos.current;
         const radius = this.collisionScale + object.collisionScale + addRadius;
         return (
-            checkType & 0b100 && a0.distance(b0) <= radius ||
-            checkType & 0b010 && a1.distance(b0) <= radius ||
-            checkType & 0b001 && a2.distance(b0) <= radius
+            !!(checkType & 0b100) && a0.distance(b0) <= radius ||
+            !!(checkType & 0b010) && a1.distance(b0) <= radius ||
+            !!(checkType & 0b001) && a2.distance(b0) <= radius
         )
     }
     
     /** checks if entities collide with each other using their current position and given range */
-    collidingSimple(entity: Entity | PlayerObject, range: number) {
-        const pos1 = this.pos.current;
+    collidingSimple(entity: Entity | PlayerObject, range: number, tempPos = this.pos.current) {
+        const pos1 = tempPos;
         const pos2 = entity.pos.current;
         return pos1.distance(pos2) <= range;
     }
@@ -115,43 +117,34 @@ abstract class Entity {
         )
     }
 
-    checkCollidingObject(object: PlayerObject | Resource, itemGroup: ItemGroup, addRadius = 0, checkEnemy = false, collideType = CollideType.ALL) {
-        const { ObjectManager } = this.client;
-        const matchItem = object instanceof PlayerObject && object.itemGroup === itemGroup;
-        const isCactus = object instanceof Resource && itemGroup === ItemGroup.SPIKE && object.isCactus;
+    // checkCollidingObject(object: PlayerObject | Resource, itemGroup: ItemGroup, addRadius = 0, checkEnemy = false, collideType = CollideType.ALL) {
+    //     const { ObjectManager } = this.client;
+    //     const matchItem = object instanceof PlayerObject && object.itemGroup === itemGroup;
+    //     const isCactus = object instanceof Resource && itemGroup === ItemGroup.SPIKE && object.isCactus;
 
-        if (matchItem || isCactus) {
-            if (checkEnemy && !ObjectManager.isEnemyObject(object)) return false;
-            if (this.collidingObject(object, addRadius, collideType)) {
-                return true;
-            }
-        }
-        return false;
-    }
-    /**
-     * true, if entity is colliding an item
-     * @param itemGroup type of item, that can be placed
-     * @param addRadius Adds this amount to the item radius
-     * @param checkEnemy true, if you want to check if colliding enemy object. Works only for myPlayer
-     */
-    checkCollision(itemGroup: ItemGroup, addRadius = 0, checkEnemy = false, collideType = CollideType.ALL): boolean {
-        const { ObjectManager } = this.client;
-        return ObjectManager.grid2D.query(this.pos.current.x, this.pos.current.y, 1, (id: number) => {
-            const object = ObjectManager.objects.get(id)!;
-            if (this.checkCollidingObject(object, itemGroup, addRadius, checkEnemy, collideType)) {
-                return true;
-            }
-        })
-        // const objects = ObjectManager.retrieveObjects(this.pos.current, 1);
-
-        // for (const objectID of objects) {
-        //     const object = ObjectManager.objects.get(objectID)!;
-        //     if (this.checkCollidingObject(object, itemGroup, addRadius, checkEnemy, checkPrevious)) {
-        //         return true;
-        //     }
-        // }
-        // return false;
-    }
+    //     if (matchItem || isCactus) {
+    //         if (checkEnemy && !ObjectManager.isEnemyObject(object)) return false;
+    //         if (this.collidingObject(object, addRadius, collideType)) {
+    //             return true;
+    //         }
+    //     }
+    //     return false;
+    // }
+    // /**
+    //  * true, if entity is colliding an item
+    //  * @param itemGroup type of item, that can be placed
+    //  * @param addRadius Adds this amount to the item radius
+    //  * @param checkEnemy true, if you want to check if colliding enemy object. Works only for myPlayer
+    //  */
+    // checkCollision(itemGroup: ItemGroup, addRadius = 0, checkEnemy = false, collideType = CollideType.ALL): boolean {
+    //     const { ObjectManager } = this.client;
+    //     return ObjectManager.grid2D.query(this.pos.current.x, this.pos.current.y, 1, (id: number) => {
+    //         const object = ObjectManager.objects.get(id)!;
+    //         if (this.checkCollidingObject(object, itemGroup, addRadius, checkEnemy, collideType)) {
+    //             return true;
+    //         }
+    //     })
+    // }
 
     runningAwayFrom(entity: Entity, angle: number | null): boolean {
 

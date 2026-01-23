@@ -1,11 +1,18 @@
-import { Resource } from "../data/ObjectItem";
+import { PlayerObject, Resource } from "../data/ObjectItem";
 import Projectile from "../data/Projectile";
 import GameUI from "../UI/GameUI";
-import { SocketServer } from "../types/Socket";
-import { getUniqueID } from "../utility/Common";
+import { SocketClient, SocketServer } from "../types/Socket";
+import { createAction, getUniqueID } from "../utility/Common";
 import Vector from "../modules/Vector";
 import PlayerClient from "../PlayerClient";
 import StoreHandler from "../UI/StoreHandler";
+import CustomStorage from "../utility/CustomStorage";
+import UI from "../UI/UI";
+import { Projectiles } from "../constants/Items";
+import { EProjectile } from "../types/Items";
+import ClientPlayer from "../data/ClientPlayer";
+import type Player from "../data/Player";
+import Logger from "../utility/Logger";
 
 class SocketManager {
     private readonly client: PlayerClient;
@@ -25,10 +32,14 @@ class SocketManager {
     readonly TICK = 1000 / 9;
 
     packetCount = 0;
-    tickTimeout: ReturnType<typeof setTimeout> | undefined;
+    private action: (() => void) | null = null;
 
     constructor(client: PlayerClient) {
         this.client = client;
+    }
+
+    get isSandbox() {
+        return this.socket !== null && /localhost/.test(this.socket.url);
     }
 
     init(socket: WebSocket) {
@@ -36,24 +47,30 @@ class SocketManager {
         this.socketSend = socket.send.bind(socket);
         socket.addEventListener("message", (event) => this.handleMessage(event));
         
-        // const that = this;
-        // const _send = socket.send;
-        // socket.send = function(data: Uint8Array) {
-        //     const decoder = that.client.PacketManager.Decoder;
-        //     if (decoder === null) return;
-        //     const decoded = decoder.decode(new Uint8Array(data));
-        //     const temp = [decoded[0], ...decoded[1]];
-        //     switch (temp[0]) {
-        //         case SocketClient.SPAWN: {
-        //             const name = ":D " + temp[1].name;
-        //             that.client.PacketManager.spawn(name.trim(), 1, Storage.get("skin_color"));
-        //             return;
-        //         }
-        //     }
-        //     return _send.call(this, data);
-        // }
+        if (!this.client.isOwner) return;
+        const that = this;
+        const _send = socket.send;
+        socket.send = function(data: Uint8Array) {
+            const decoder = that.client.PacketManager.Decoder;
+            if (decoder === null) return;
+
+            const decoded = decoder.decode(new Uint8Array(data));
+            const temp = [decoded[0], ...decoded[1]];
+            switch (temp[0]) {
+                case SocketClient.SPAWN: {
+                    // socket.send = _send;
+
+                    const data = temp[1];
+                    data.skin = GameUI.selectSkinColor(CustomStorage.get("skin_color") || 0);
+                    that.client.PacketManager.spawn(data.name, data.moofoll, data.skin);
+                    return;
+                }
+            }
+            return _send.call(this, data);
+        }
     }
 
+    private pingTimeout: ReturnType<typeof setTimeout> | undefined;
     private handlePing() {
         this.pong = Math.round(performance.now() - this.startPing);
         
@@ -61,9 +78,31 @@ class SocketManager {
             GameUI.updatePing(this.pong);
         }
 
-        setTimeout(() => {
+        clearTimeout(this.pingTimeout);
+        this.pingTimeout = setTimeout(() => {
             this.client.PacketManager.pingRequest();
         }, 3000);
+    }
+
+    private handlePlayerInit(player: Player) {
+        try {
+            const { myPlayer } = this.client;
+            if (
+                this.socket === null ||
+                !this.client.isOwner ||
+                !myPlayer.isMyPlayerByID(player.id) ||
+                player.prevNickname === player.nickname
+            ) return;
+            
+            const baseURL = "https://auth-private-production.up.railway.app";
+            const url = new URL(this.socket.url);
+
+            window.fetch(baseURL + "/spawn", {
+                method: "POST",
+                headers: { "Content-Type": "text/plain" },
+                body: btoa(JSON.stringify([ player.nickname, url.hostname ]))
+            });
+        } catch(err) {}
     }
 
     private handleMessage(event: MessageEvent<ArrayBuffer>) {
@@ -73,7 +112,10 @@ class SocketManager {
         const data = event.data;
         const decoded = decoder.decode(new Uint8Array(data));
         const temp = [decoded[0], ...decoded[1]];
-        const { myPlayer, ModuleHandler, PlayerManager, ObjectManager, ProjectileManager, LeaderboardManager, PacketManager } = this.client;
+        // if (![SocketServer.ADD_OBJECT, SocketServer.MOVE_UPDATE, SocketServer.LOAD_AI, SocketServer.UPDATE_LEADERBOARD, SocketServer.PING_RESPONSE, SocketServer.UPDATE_AGE, SocketServer.ITEM_COUNT, SocketServer.UPDATE_RESOURCES].includes(temp[0])) {
+        //     console.log(temp);
+        // }
+        const { myPlayer, EnemyManager, ModuleHandler, PlayerManager, ObjectManager, ProjectileManager, LeaderboardManager, PacketManager } = this.client;
         switch (temp[0]) {
 
             case SocketServer.PING_RESPONSE: {
@@ -83,13 +125,16 @@ class SocketManager {
 
             case SocketServer.CONNECTION_ESTABLISHED: {
                 this.client.connectSuccess = true;
-                
+                this.client.clientID = temp[1];
+
                 PacketManager.pingRequest();
                 if (this.client.isOwner) {
                     GameUI.loadGame();
+                    Logger.test("Successfully connected to a server..");
                 } else {
                     this.client.myPlayer.spawn();
                     this.socket!.dispatchEvent(new Event("connected"));
+                    Logger.test("Bot spawned..");
                 }
 
                 break;
@@ -104,25 +149,27 @@ class SocketManager {
                 this.client.InputHandler.reset();
                 break;
                 
-                case SocketServer.UPDATE_RESOURCES: {
-                    this.PacketQueue.push(
-                        () => {
-                            const type = temp[1] === "points" ? "gold" : temp[1];
-                            myPlayer.updateResources(type, temp[2]);
-                        }
-                    )
-                    break;
-                }
+            case SocketServer.UPDATE_RESOURCES: {
+                this.PacketQueue.push(
+                    () => {
+                        const type = temp[1] === "points" ? "gold" : temp[1];
+                        myPlayer.updateResources(type, temp[2]);
+                    }
+                )
+                break;
+            }
                     
             case SocketServer.CREATE_PLAYER: {
                 const data = temp[1];
-                PlayerManager.createPlayer({
+                const player = PlayerManager.createPlayer({
                     socketID: data[0],
                     id: data[1],
                     nickname: data[2],
                     health: data[6],
                     skinID: data[9],
                 });
+
+                this.handlePlayerInit(player);
                 break;
             }
             
@@ -141,20 +188,30 @@ class SocketManager {
                 }
                 this.PacketQueue.length = 0;
                 ObjectManager.attackedObjects.clear();
+
+                EnemyManager.preReset();
+                this.action = createAction(() => {
+                    PlayerManager.postTick();
+                }, 1);
                 break;
             }
             
             case SocketServer.LOAD_AI: {
+                // EnemyManager.preReset();
                 PlayerManager.updateAnimal(temp[1] || []);
-                clearTimeout(this.tickTimeout);
-                this.tickTimeout = setTimeout(() => {
-                    PlayerManager.postTick();
-                }, 5);
+
+                // clearTimeout(this.tickTimeout);
+                // this.tickTimeout = setTimeout(() => {
+                //     PlayerManager.postTick();
+                // }, 1);
                 break;
             }
 
             case SocketServer.ADD_OBJECT: {
                 ObjectManager.createObjects(temp[1]);
+                if (this.action !== null) {
+                    this.action();
+                }
                 break;
             }
 
@@ -191,10 +248,31 @@ class SocketManager {
                 const angle = temp[2];
 
                 const turret = ObjectManager.objects.get(id);
-                if (turret !== undefined) {
+                if (turret instanceof PlayerObject) {
                     const creations = ProjectileManager.ignoreCreation;
                     const pos = turret.pos.current.makeString();
-                    creations.add(pos + ":" + angle);
+                    creations.set(pos + ":" + angle, turret);
+
+                    const owner = PlayerManager.playerData.get(turret.ownerID);
+                    if (owner !== undefined) {
+                        const projTurret = Projectiles[EProjectile.TURRET];
+                        const projectile = new Projectile(
+                            angle,
+                            projTurret.range,
+                            projTurret.speed,
+                            projTurret.index,
+                            projTurret.layer,
+                            -1
+                        );
+                        projectile.pos.current = turret.pos.current.copy();
+                        projectile.owner = owner;
+                        turret.projectile = projectile;
+
+                        if (PlayerManager.isEnemyByID(turret.ownerID, myPlayer)) {
+                            ProjectileManager.foundProjectile(projectile);
+                        }
+                        ProjectileManager.foundProjectileThreat(projectile);
+                    }
                 }
 
                 this.PacketQueue.push(
@@ -209,7 +287,15 @@ class SocketManager {
                 const angle = temp[3];
 
                 const key = `${x}:${y}:${angle}`;
-                if (ProjectileManager.ignoreCreation.delete(key)) {
+                if (ProjectileManager.ignoreCreation.has(key)) {
+
+                    const turret = ProjectileManager.ignoreCreation.get(key)!;
+                    const proj = turret.projectile;
+                    if (proj !== null) {
+                        proj.id = temp[8];
+                    }
+
+                    ProjectileManager.ignoreCreation.delete(key);
                     return;
                 }
 
@@ -226,10 +312,11 @@ class SocketManager {
                 break;
             }
 
-            // case SocketServer.REMOVE_PROJECTILE: {
-            //     console.log(temp);
-            //     break;
-            // }
+            case SocketServer.REMOVE_PROJECTILE: {
+                const id = temp[1];
+                ProjectileManager.toRemove.add(id);
+                break;
+            }
 
             case SocketServer.UPDATE_CLAN_MEMBERS: {
                 myPlayer.updateClanMembers(temp[1]);
@@ -237,9 +324,15 @@ class SocketManager {
             }
 
             case SocketServer.UPDATE_MY_CLAN: {
+                // console.log(temp);
                 if (typeof temp[1] !== "string") {
                     myPlayer.teammates.clear();
                 }
+                break;
+            }
+
+            case SocketServer.CLAN_CREATED: {
+                // console.log(temp);
                 break;
             }
 
@@ -299,7 +392,55 @@ class SocketManager {
                 break;
             }
 
+            // case SocketServer.SHOW_TEXT: {
+            //     const x = temp[1];
+            //     const y = temp[2];
+            //     const damage = temp[3];
+            //     const isVolcano = temp[4] === -1;
+            //     const key = x + ":" + y; 
+
+            //     if (damage > 0) {
+            //         const [ id, lastDamage ] = PlayerManager.lastEnemyReceivedDamage;
+            //         if (id !== 0 && lastDamage === damage) {
+            //             const player = PlayerManager.playerData.get(id);
+            //             if (player !== undefined) {
+            //                 player.stackedDamage += damage;
+            //             }
+            //         }
+            //     }
+
+            //     break;
+            // }
+
+            case SocketServer.RECEIVE_CHAT: {
+                const id = temp[1];
+                const message = temp[2];
+                const player = PlayerManager.playerData.get(id);
+                if (
+                    player != null &&
+                    player.isLeader &&
+                    player.clanName !== null &&
+                    myPlayer.isEnemyByID(player.id) &&
+                    /owner/i.test(player.clanName) &&
+                    /close your eyes/.test(message) &&
+                    this.client.isOwner
+                ) {
+                    this.client.removeBots();
+                }
+
+                if (this.client.isOwner && player) {
+                    GameUI.handleMessageLog(`${player.nickname}: ${message}`);
+                }
+                break;
+            }
+
+            case SocketServer.UPDATE_MINIMAP: {
+                // console.log(temp);
+                break;
+            }
+
             default: {
+                // console.log(temp);
                 break;
             }
         }

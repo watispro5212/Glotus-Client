@@ -1,6 +1,5 @@
 import Config from "../constants/Config";
 import Vector from "../modules/Vector";
-import ZoomHandler from "../modules/ZoomHandler";
 import { type IAngle } from "../types/Common";
 
 export const getAngle = (x1: number, y1: number, x2: number, y2: number) => {
@@ -19,9 +18,13 @@ export const fixTo = (value: number, fraction: number) => {
     return parseFloat(value.toFixed(fraction))
 }
 
+const PI = Math.PI;
+const PI2 = PI * 2;
 export const getAngleDist = (a: number, b: number) => {
-    const p = Math.abs(b - a) % (Math.PI * 2);
-    return (p > Math.PI ? (Math.PI * 2) - p : p);
+    // const p = Math.abs(b - a);
+    // return p > PI ? PI2 - p : p;
+    const p = Math.abs(b - a) % (PI * 2);
+    return (p > PI ? (PI * 2) - p : p);
 }
 
 export const findMiddleAngle = (a: number, b: number) => {
@@ -31,7 +34,7 @@ export const findMiddleAngle = (a: number, b: number) => {
 }
 
 export const toRadians = (degrees: number) => {
-    return degrees * (Math.PI / 180);
+    return degrees * (PI / 180);
 }
 
 export const removeFast = (array: unknown[], index: number) => {
@@ -52,6 +55,11 @@ export const lerp = (start: number, end: number, factor: number) => {
     return (1 - factor) * start + factor * end;
 }
 
+export const lerpAngle = (a1: number, a2: number, t: number) => {
+    const diff = (a2 - a1) % PI2;
+    return a1 + (((2 * diff) % PI2) - diff) * t;
+}
+
 export const reverseAngle = (angle: number) => {
     return Math.atan2(-Math.sin(angle), -Math.cos(angle));
 }
@@ -62,6 +70,17 @@ export const getTargetValue = (target: any, prop: string) => {
 
 export const setTargetValue = (target: any, prop: string, value: any) => {
     target[prop] = value;
+}
+
+export const formatDate = (date?: Date) => {
+    if (date == null) {
+        date = new Date();
+    }
+
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    const seconds = String(date.getSeconds()).padStart(2, "0");
+    return `${hours}:${minutes}:${seconds}`;
 }
 
 const incrementor = () => {
@@ -86,49 +105,49 @@ export const pointInsideRect = (
     )
 }
 
-export const circleInsideSquare = (
-    x1: number, y1: number, r1: number,
-    x2: number, y2: number, r2: number
-) => {
-    return (
-        x1 + r1 >= x2 &&
-        x1 - r1 <= x2 + r2 &&
-        y1 + r1 >= y2 &&
-        y1 - r1 <= y2 + r2
-    )
-}
+// export const circleInsideSquare = (
+//     x1: number, y1: number, r1: number,
+//     x2: number, y2: number, r2: number
+// ) => {
+//     return (
+//         x1 + r1 >= x2 &&
+//         x1 - r1 <= x2 + r2 &&
+//         y1 + r1 >= y2 &&
+//         y1 - r1 <= y2 + r2
+//     )
+// }
 
-export const lineIntersectsLine = (
-    start1: Vector,
-    end1: Vector,
-    start2: Vector,
-    end2: Vector
-): boolean => {
-    const line1 = end1.copy().sub(start1);
-    const line2 = end2.copy().sub(start2);
+// export const lineIntersectsLine = (
+//     start1: Vector,
+//     end1: Vector,
+//     start2: Vector,
+//     end2: Vector
+// ): boolean => {
+//     const line1 = end1.copy().sub(start1);
+//     const line2 = end2.copy().sub(start2);
   
-    const diff = start1.copy().sub(start2);
-    const a = (-line2.x * line1.y + line1.x * line2.y);
-    const s = (-line1.y * diff.x + line1.x * diff.y) / a;
-    const t = ( line2.x * diff.y - line2.y * diff.x) / a;
-    return s >= 0 && s <= 1 && t >= 0 && t <= 1;
-}
+//     const diff = start1.copy().sub(start2);
+//     const a = (-line2.x * line1.y + line1.x * line2.y);
+//     const s = (-line1.y * diff.x + line1.x * diff.y) / a;
+//     const t = ( line2.x * diff.y - line2.y * diff.x) / a;
+//     return s >= 0 && s <= 1 && t >= 0 && t <= 1;
+// }
 
-export const lineIntersectsRect = (
-    lineStart: Vector,
-    lineEnd: Vector,
-    rectStart: Vector,
-    rectEnd: Vector
-): boolean => {
-    return (
-        pointInsideRect(lineStart, rectStart, rectEnd) ||
-        pointInsideRect(lineEnd, rectStart, rectEnd) ||
-        lineIntersectsLine(lineStart, lineEnd, rectStart, new Vector(rectEnd.x, rectStart.y)) ||
-        lineIntersectsLine(lineStart, lineEnd, new Vector(rectEnd.x, rectStart.y), rectEnd) ||
-        lineIntersectsLine(lineStart, lineEnd, rectEnd, new Vector(rectStart.x, rectEnd.y)) ||
-        lineIntersectsLine(lineStart, lineEnd, new Vector(rectStart.x, rectEnd.y), rectStart)
-    )
-}
+// export const lineIntersectsRect = (
+//     lineStart: Vector,
+//     lineEnd: Vector,
+//     rectStart: Vector,
+//     rectEnd: Vector
+// ): boolean => {
+//     return (
+//         pointInsideRect(lineStart, rectStart, rectEnd) ||
+//         pointInsideRect(lineEnd, rectStart, rectEnd) ||
+//         lineIntersectsLine(lineStart, lineEnd, rectStart, new Vector(rectEnd.x, rectStart.y)) ||
+//         lineIntersectsLine(lineStart, lineEnd, new Vector(rectEnd.x, rectStart.y), rectEnd) ||
+//         lineIntersectsLine(lineStart, lineEnd, rectEnd, new Vector(rectStart.x, rectEnd.y)) ||
+//         lineIntersectsLine(lineStart, lineEnd, new Vector(rectStart.x, rectEnd.y), rectStart)
+//     )
+// }
 
 export const sleep = (ms: number): Promise<void> => {
     return new Promise<void>(resolve => setTimeout(resolve, ms));
@@ -176,6 +195,7 @@ export const formatCode = (code: string): string => {
     if (code === "NumLock") return "LOCK";
     return code.replace(/^Page/, "PG")
                .replace(/^Digit/, "")
+               .replace(/Button$/, "BTN")
                .replace(/^Key/, "")
                .replace(/^(Shift|Control|Alt)(L|R).*$/, "$2$1")
                .replace(/Control/, "CTRL")
@@ -223,24 +243,23 @@ export const pointInDesert = (position: Vector) => {
     return position.y >= (Config.mapScale - Config.snowBiomeTop);
 }
 
-export const inView = (x: number, y: number, radius: number) => {
-    const maxScreenWidth = Math.min(1920, ZoomHandler.scale.current.w);
-    const maxScreenHeight = Math.min(1080, ZoomHandler.scale.current.h);
-    const visibleHorizontally = x + radius > 0 && x - radius < maxScreenWidth;
-    const visibleVertically = y + radius > 0 && y - radius < maxScreenHeight;
-    // return true;
-    return visibleHorizontally && visibleVertically;
-}
-
 export const inRange = (value: number, min: number, max: number) => {
     return value >= min && value <= max;
 }
+
+export const targetInsideRect = (target: Vector, rectPos: Vector, radius: number) => {
+    const screen = new Vector(1920, 1080).div(2).add(radius);
+    const rectStart = rectPos.copy().sub(screen);
+    const rectEnd = rectPos.copy().add(screen);
+    return pointInsideRect(target, rectStart, rectEnd);
+}
+
 
 export const findPlacementAngles = (angles: IAngle[]) => {
     const output = new Set<number>();
 
     for (let i = 0; i < angles.length; i++) {
-        const { angle, offset } = angles[i]!;
+        const [ angle, offset ] = angles[i]!;
         const start = angle - offset;
         const end = angle + offset;
 
@@ -250,24 +269,40 @@ export const findPlacementAngles = (angles: IAngle[]) => {
         for (let j = 0; j < angles.length; j++) {
             if (startIntersects && endIntersects) break;
 
-            if (i !== j) {
-                const { angle, offset } = angles[j]!;
-                if (getAngleDist(start, angle) <= offset) startIntersects = true;
-                if (getAngleDist(end, angle) <= offset) endIntersects = true;
-            }
+            if (i === j) continue;
+
+            const [ angle, offset ] = angles[j]!;
+            if (getAngleDist(start, angle) <= offset) startIntersects = true;
+            if (getAngleDist(end, angle) <= offset) endIntersects = true;
         }
   
         if (!startIntersects) output.add(start);
         if (!endIntersects) output.add(end);
-        if (output.size > 1) break;
     }
   
     return [...output];
 }
 
-export const getAngleOffset = (a: Vector, b: Vector, scale: number): IAngle => {
-    const distance = a.distance(b);
-    const angle = a.angle(b);
-    const offset = Math.asin((2 * scale) / (2 * distance));
-    return { angle, offset };
+// export const getAngleOffset = (a: Vector, b: Vector, scale: number): IAngle => {
+//     const distance = a.distance(b);
+//     const angle = a.angle(b);
+//     const offset = Math.asin((2 * scale) / (2 * distance));
+//     return [ angle, offset ];
+// }
+
+export const createAction = (callback: () => void, time = 0) => {
+    let state = false;
+
+    const timeoutID = setTimeout(() => {
+        if (state) return;
+        state = true;
+        callback();
+    }, time);
+
+    return () => {
+        if (state) return;
+        state = true;
+        clearTimeout(timeoutID);
+        callback();
+    }
 }

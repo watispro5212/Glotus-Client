@@ -16,15 +16,9 @@ class LeaderboardManager {
         );
 
         this.list.add(owner);
-
-        owner.totalGold = gold;
-        owner.inLeaderboard = true;
     }
 
     update(data: any[]) {
-        for (const player of this.list) {
-            player.inLeaderboard = false;
-        }
         this.list.clear();
 
         for (let i=0;i<data.length;i+=3) {

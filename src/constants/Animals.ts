@@ -214,7 +214,7 @@ const Animals = [{
     dontRun: !0,
     hitScare: 50,
     dmg: 20,
-    killScore: 5e3,
+    killScore: 5000,
     health: 5e3,
     spawnDelay: 1e5,
     weightM: .45,

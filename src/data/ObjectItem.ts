@@ -3,6 +3,8 @@ import Vector from "../modules/Vector";
 import { EResourceType } from "../types/Enums";
 import { EItem, ItemGroup, type TPlaceable } from "../types/Items";
 import { pointInDesert } from "../utility/Common";
+import DataHandler from "../utility/DataHandler";
+import type Projectile from "./Projectile";
 
 /**
  * Represents resources and player objects
@@ -67,6 +69,11 @@ export class Resource extends ObjectItem {
     get isCactus() {
         return this.type === EResourceType.FOOD && pointInDesert(this.pos.current);
     }
+
+    getDamage() {
+        if (this.isCactus) return 35;
+        return 0;
+    }
 }
 
 export class PlayerObject extends ObjectItem {
@@ -100,6 +107,8 @@ export class PlayerObject extends ObjectItem {
     seenPlacement = false;
     readonly layer: number;
     readonly itemGroup: ItemGroup;
+    projectile: Projectile | null = null;
+
     constructor(
         id: number,
         x: number,
@@ -121,7 +130,7 @@ export class PlayerObject extends ObjectItem {
         this.isDestroyable = this.maxHealth !== Infinity;
 
         if (item.id === EItem.TURRET) {
-            this.reload = item.shootRate;
+            this.reload = Math.ceil(item.shootRate / 111);
             this.maxReload = this.reload;
         }
         this.layer = ItemGroups[item.itemGroup].layer;
@@ -140,6 +149,18 @@ export class PlayerObject extends ObjectItem {
         const item = Items[this.type];
         if (item.id === EItem.BLOCKER) return item.blocker;
         return this.scale;
+    }
+
+    get isSpike() {
+        return this.itemGroup === ItemGroup.SPIKE;
+    }
+
+    getDamage() {
+        if (this.isSpike) {
+            const type = this.type as (EItem.SPIKES | EItem.GREATER_SPIKES | EItem.POISON_SPIKES | EItem.SPINNING_SPIKES);
+            return DataHandler.getItem(type).damage;
+        }
+        return 0;
     }
 }
 

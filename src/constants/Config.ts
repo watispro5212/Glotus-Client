@@ -49,6 +49,7 @@ const Config = {
 
     // BIOME DATA:
     snowBiomeTop: 2400,
+    desertBiomeTop: 2400,
     snowSpeed: 0.75,
 
     // DATA:

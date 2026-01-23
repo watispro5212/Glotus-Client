@@ -53,26 +53,26 @@ const DataHandler = new class DataHandler {
     }
 
     isPrimary(id: EWeapon | null): id is TPrimary {
-        return id !== null && this.getWeapon(id).itemType === WeaponType.PRIMARY;
+        return id != null && this.getWeapon(id).itemType === WeaponType.PRIMARY;
     }
 
     isSecondary(id: EWeapon | null): id is TSecondary {
-        return id !== null && this.getWeapon(id).itemType === WeaponType.SECONDARY;
+        return id != null && this.getWeapon(id).itemType === WeaponType.SECONDARY;
     }
 
     isMelee(id: EWeapon | null): id is TMelee {
-        return id !== null && "damage" in this.getWeapon(id);
+        return id != null && "damage" in this.getWeapon(id);
     }
 
     isAttackable(id: EWeapon | null): id is TAttackable {
-        return id !== null && "range" in this.getWeapon(id);
+        return id != null && "range" in this.getWeapon(id);
     }
 
     /**
      * Checks if weapon can shoot
      */
     isShootable(id: EWeapon | null): id is TShootable {
-        return id !== null && "projectile" in this.getWeapon(id);
+        return id != null && "projectile" in this.getWeapon(id);
     }
 
     isPlaceable(id: EItem | -1): id is TPlaceable {
@@ -88,6 +88,10 @@ const DataHandler = new class DataHandler {
      */
     isDestroyable(id: TPlaceable): id is TDestroyable {
         return "health" in Items[id];
+    }
+
+    canMoveOnTop(id: TPlaceable) {
+        return "ignoreCollision" in Items[id];
     }
 }
 

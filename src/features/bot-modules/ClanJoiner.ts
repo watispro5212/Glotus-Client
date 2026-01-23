@@ -24,7 +24,7 @@ class ClanJoiner {
         }
         if (ownerClan === null || myClan === ownerClan || !PlayerManager.clanExist(ownerClan)) return;
 
-        if (this.joinCount === 5) {
+        if (this.joinCount === 3) {
             this.joinCount = 0;
 
             if (myClan !== null) {

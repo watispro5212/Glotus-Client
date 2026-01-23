@@ -1,0 +1,62 @@
+<div class="menu-page" data-id="5">
+    <div class="page-title">Bots</div>
+    <p class="page-description">Create bots, control them and dominate the entire server</p>
+
+    <!-- Controller -->
+    <div class="section">
+        <div class="section-title">Controller</div>
+
+        <div class="section-content">
+            <div class="content-option">
+                <span class="option-title">Follow cursor</span>
+                <label class="switch-checkbox">
+                    <input id="_followCursor" type="checkbox"></input>
+                    <span></span>
+                </label>
+                <span class="option-description">Bots are going to follow your cursor instead of character</span>
+            </div>
+
+            <div class="content-option">
+                <span class="option-title">Stop movement radius</span>
+                <label class="slider">
+                    <span class="slider-value"></span>
+                    <input id="_movementRadius" type="range" step="25" min="25" max="250">
+                </label>
+                <span class="option-description">Bots will stop movement at this radius</span>
+            </div>
+
+            <div class="content-option">
+                <span class="option-title">Circle formation</span>
+                <label class="switch-checkbox">
+                    <input id="_circleFormation" type="checkbox"></input>
+                    <span></span>
+                </label>
+                <span class="option-description">Bots will form a circle around you</span>
+            </div>
+
+            <div class="content-option">
+                <span class="option-title">Circle rotation</span>
+                <label class="switch-checkbox">
+                    <input id="_circleRotation" type="checkbox"></input>
+                    <span></span>
+                </label>
+                <span class="option-description">Bots will move in a circular way around you</span>
+            </div>
+
+            <div class="content-option">
+                <span class="option-title">Circle radius</span>
+                <label class="slider">
+                    <span class="slider-value"></span>
+                    <input id="_circleRadius" type="range" step="25" min="50" max="600">
+                </label>
+            </div>
+        </div>
+
+        <div id="bot-container" class="section-content"></div>
+
+        <div class="content-option centered">
+            <button id="add-bot" class="option-button">Add Bot</button>
+        </div>
+    </div>
+
+</div>

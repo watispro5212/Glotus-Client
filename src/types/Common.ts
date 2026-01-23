@@ -9,20 +9,23 @@ export type TCTX = CanvasRenderingContext2D;
 export type TTarget = Player | Animal | TObject;
 
 export interface IReload {
+    previous: number;
     current: number;
     max: number;
 }
 
 export type TResource = "food" | "wood" | "stone" | "gold" | "kills";
 
-export interface IAngle {
+// export interface IAngle {
 
-    /** Current target angle */
-    readonly angle: number;
+//     /** Current target angle */
+//     readonly angle: number;
 
-    /** The angle offset that leads to creation of angleStart and angleEnd */
-    readonly offset: number;
-}
+//     /** The angle offset that leads to creation of angleStart and angleEnd */
+//     readonly offset: number;
+// }
+
+export type IAngle = readonly [angle: number, offset: number];
 
 export interface IPlaceOptions {
     readonly angle?: number;

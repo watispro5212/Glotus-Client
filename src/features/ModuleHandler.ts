@@ -3,43 +3,59 @@ import { EAttack, ESentAngle } from "../types/Enums";
 import { ItemType, ReloadType, WeaponType} from "../types/Items";
 import { EHat, EStoreType } from "../types/Store";
 import DataHandler from "../utility/DataHandler";
-import AntiInsta from "./modules/AntiInsta";
-import AutoPlacer from "./modules/AutoPlacer";
-import Autohat from "./modules/Autohat";
-import Automill from "./modules/Automill";
-import Placer from "./modules/Placer";
-import ShameReset from "./modules/ShameReset";
-import UpdateAngle from "./modules/UpdateAngle";
-import UpdateAttack from "./modules/UpdateAttack";
-import ClanJoiner from "./bot-modules/ClanJoiner";
-import Movement from "./bot-modules/Movement";
-import AutoAccept from "./modules/AutoAccept";
-import TempData from "./bot-modules/TempData";
-import Reloading from "./modules/Reloading";
-import Autobreak from "./modules/Autobreak";
-import SpikeTick from "./modules/SpikeTick";
-import PreAttack from "./modules/PreAttack";
-import UseFastest from "./modules/UseFastest";
-import SafeWalk from "./modules/SafeWalk";
-import DefaultHat from "./modules/DefaultHat";
-import DefaultAcc from "./modules/DefaultAcc";
-import UtilityHat from "./modules/UtilityHat";
-import UseDestroying from "./modules/UseDestroying";
-import UseAttacking from "./modules/UseAttacking";
-import SpikeSync from "./modules/SpikeSync";
-import KnockbackTick from "./modules/KnockbackTick";
-import KnockbackTickHammer from "./modules/KnockbackTickHammer";
-import SpikeSyncHammer from "./modules/SpikeSyncHammer";
-import KnockbackTickTrap from "./modules/KnockbackTickTrap";
 import { reverseAngle } from "../utility/Common";
 import Vector from "../modules/Vector";
-import AutoSync from "./modules/AutoSync";
+import TempData from "./bot-modules/TempData";
+import Movement from "./bot-modules/Movement";
 import GameUI from "../UI/GameUI";
-import AutoBuy from "./modules/AutoBuy";
-import AutoGrind from "./modules/AutoGrind";
-import VelocityTick from "./modules/VelocityTick";
-import KBDefense from "./modules/KBDefense";
-import ToolHammerSpearInsta from "./modules/ToolHammerSpearInsta";
+import ClanJoiner from "./bot-modules/ClanJoiner";
+import Autobreak from "./modules/combat/Autobreak";
+import AutoPlacer from "./modules/combat/AutoPlacer";
+import AutoSync from "./modules/combat/AutoSync";
+import Instakill from "./modules/combat/Instakill";
+import AntiRetrap from "./modules/combat/AntiRetrap";
+import KnockbackTick from "./modules/combat/KnockbackTick";
+import KnockbackTickHammer from "./modules/combat/KnockbackTickHammer";
+import KnockbackTickTrap from "./modules/combat/KnockbackTickTrap";
+import SpikeSync from "./modules/combat/SpikeSync";
+import SpikeSyncHammer from "./modules/combat/SpikeSyncHammer";
+import SpikeTick from "./modules/combat/SpikeTick";
+import ToolHammerSpearInsta from "./modules/combat/ToolHammerSpearInsta";
+import VelocityTick from "./modules/combat/VelocityTick";
+import Placer from "./modules/controls/Placer";
+import PreAttack from "./modules/controls/PreAttack";
+import Reloading from "./modules/controls/Reloading";
+import UpdateAngle from "./modules/controls/UpdateAngle";
+import UpdateAttack from "./modules/controls/UpdateAttack";
+import UseAttacking from "./modules/controls/UseAttacking";
+import UseDestroying from "./modules/controls/UseDestroying";
+import UseFastest from "./modules/controls/UseFastest";
+import UtilityHat from "./modules/controls/UtilityHat";
+import AntiInsta from "./modules/defense/AntiInsta";
+import Autohat from "./modules/defense/Autohat";
+import DefaultAcc from "./modules/defense/DefaultAcc";
+import DefaultHat from "./modules/defense/DefaultHat";
+import SafeWalk from "./modules/defense/SafeWalk";
+import ShameReset from "./modules/defense/ShameReset";
+import AutoAccept from "./modules/utility/AutoAccept";
+import AutoBuy from "./modules/utility/AutoBuy";
+import AutoGrind from "./modules/utility/AutoGrind";
+import Automill from "./modules/utility/Automill";
+import AutoSteal from "./modules/utility/AutoSteal";
+import AutoPush from "./modules/combat/AutoPush";
+import ReverseInstakill from "./modules/combat/ReverseInstakill";
+import BowInsta from "./modules/combat/BowInsta";
+import PlacementDefense from "./modules/defense/PlacementDefense";
+import settings from "../utility/Settings";
+import TurretSteal from "./modules/combat/TurretSteal";
+import KillChat from "./modules/utility/KillChat";
+import SwordKatanaInsta from "./modules/combat/SwordKatanaInsta";
+import SpikeGearInsta from "./modules/combat/SpikeGearInsta";
+import TeammateSpikeTrap from "./modules/combat/TeammateSpikeTrap";
+import SpikeTrap from "./modules/combat/SpikeTrap";
+import TurretSync from "./modules/combat/TurretSync";
+import DashMovement from "./modules/controls/DashMovement";
+import KBTickHammerV2 from "./modules/combat/KBTickHammerV2";
 
 interface IStore {
     readonly utility: Map<number, boolean>;
@@ -63,8 +79,6 @@ type TModuleList = [
     AutoBuy,
 
     DefaultHat,
-    AntiInsta,
-    ShameReset,
     
     Reloading,
     DefaultAcc,
@@ -74,18 +88,34 @@ type TModuleList = [
     SpikeTick,
     KnockbackTickTrap,
     KnockbackTickHammer,
+    KBTickHammerV2,
     KnockbackTick,
-    KBDefense,
+    AntiRetrap,
+    AutoPush,
     VelocityTick,
+    SpikeTrap,
+    TeammateSpikeTrap,
+    TurretSync,
     ToolHammerSpearInsta,
+    SwordKatanaInsta,
+    BowInsta,
+    Instakill,
+    ReverseInstakill,
     Autobreak,
+    AutoSteal,
+    TurretSteal,
+    SpikeGearInsta,
     UseFastest,
     UseDestroying,
     UseAttacking,
     UtilityHat,
     
+    AntiInsta,
+    ShameReset,
     SafeWalk,
+    PlacementDefense,
     AutoPlacer,
+    DashMovement,
     Placer,
     Automill,
     AutoGrind,
@@ -95,6 +125,7 @@ type TModuleList = [
 
     UpdateAttack,
     UpdateAngle,
+    KillChat,
 ]
 
 type TupleToObject<T extends { moduleName: string }[]> = {
@@ -165,6 +196,7 @@ class ModuleHandler {
     forceWeapon: WeaponType | null = null;
     useHat: number | null = null;
     forceHat: number | null = null;
+    shouldEquipSoldier = false;
     useAcc: number | null = null;
     previousWeapon: WeaponType | null = null;
 
@@ -185,6 +217,8 @@ class ModuleHandler {
         sentAngle: 0,
     }
 
+    readonly placeAngles: [Exclude<ItemType, ItemType.FOOD> | null, number[]] = [null, []];
+
 
     constructor(client: PlayerClient) {
         this.client = client;
@@ -198,8 +232,6 @@ class ModuleHandler {
             autoBuy: new AutoBuy(client),
 
             defaultHat: new DefaultHat(client),
-            antiInsta: new AntiInsta(client),
-            shameReset: new ShameReset(client),
             
             reloading: new Reloading(client),
             defaultAcc: new DefaultAcc(client),
@@ -210,16 +242,32 @@ class ModuleHandler {
             knockbackTickTrap: new KnockbackTickTrap(client),
             knockbackTick: new KnockbackTick(client),
             knockbackTickHammer: new KnockbackTickHammer(client),
-            kbDefense: new KBDefense(client),
+            kbTickHammerV2: new KBTickHammerV2(client),
+            antiRetrap: new AntiRetrap(client),
+            autoPush: new AutoPush(client),
             velocityTick: new VelocityTick(client),
+            spikeTrap: new SpikeTrap(client),
+            teammateSpikeTrap: new TeammateSpikeTrap(client),
+            turretSync: new TurretSync(client),
             toolHammerSpearInsta: new ToolHammerSpearInsta(client),
+            swordKatanaInsta: new SwordKatanaInsta(client),
+            bowInsta: new BowInsta(client),
+            instakill: new Instakill(client),
+            reverseInstakill: new ReverseInstakill(client),
             autoBreak: new Autobreak(client),
+            autoSteal: new AutoSteal(client),
+            turretSteal: new TurretSteal(client),
+            spikeGearInsta: new SpikeGearInsta(client),
             useFastest: new UseFastest(client),
             useDestroying: new UseDestroying(client),
             useAttacking: new UseAttacking(client),
             utilityHat: new UtilityHat(client),
             
+            antiInsta: new AntiInsta(client),
+            shameReset: new ShameReset(client),
             safeWalk: new SafeWalk(client),
+            placementDefense: new PlacementDefense(client),
+            dashMovement: new DashMovement(client),
             autoPlacer: new AutoPlacer(client),
             placer: new Placer(client),
             autoMill: new Automill(client),
@@ -230,6 +278,7 @@ class ModuleHandler {
         
             updateAttack: new UpdateAttack(client),
             updateAngle: new UpdateAngle(client),
+            killChat: new KillChat(client),
         };
 
         this.botModules = [
@@ -243,8 +292,6 @@ class ModuleHandler {
             this.staticModules.autoBuy,
 
             this.staticModules.defaultHat,
-            this.staticModules.antiInsta,
-            this.staticModules.shameReset,
             
             this.staticModules.reloading,
             this.staticModules.defaultAcc,
@@ -254,27 +301,44 @@ class ModuleHandler {
             this.staticModules.spikeTick,
             this.staticModules.knockbackTickTrap,
             this.staticModules.knockbackTickHammer,
+            this.staticModules.kbTickHammerV2,
             this.staticModules.knockbackTick,
-            this.staticModules.kbDefense,
+            this.staticModules.antiRetrap,
+            this.staticModules.autoPush,
             this.staticModules.velocityTick,
+            this.staticModules.spikeTrap,
+            this.staticModules.teammateSpikeTrap,
+            this.staticModules.turretSync,
             this.staticModules.toolHammerSpearInsta,
+            this.staticModules.swordKatanaInsta,
+            this.staticModules.bowInsta,
+            this.staticModules.instakill,
+            this.staticModules.reverseInstakill,
             this.staticModules.autoBreak,
+            this.staticModules.autoSteal,
+            this.staticModules.turretSteal,
+            this.staticModules.spikeGearInsta,
             this.staticModules.useFastest,
             this.staticModules.useDestroying,
             this.staticModules.useAttacking,
             this.staticModules.utilityHat,
             
+            this.staticModules.antiInsta,
+            this.staticModules.shameReset,
             this.staticModules.safeWalk,
+            this.staticModules.placementDefense,
             this.staticModules.autoPlacer,
+            this.staticModules.dashMovement,
             this.staticModules.placer,
             this.staticModules.autoMill,
             this.staticModules.autoGrind,
-
+            
             this.staticModules.preAttack,
             this.staticModules.autoHat,
 
             this.staticModules.updateAttack,
             this.staticModules.updateAngle,
+            this.staticModules.killChat,
         ];
         this.reset();
     }
@@ -324,12 +388,13 @@ class ModuleHandler {
         return this.currentHolding <= WeaponType.SECONDARY;
     }
 
-    get isForcedHat() {
-        return this.forceHat !== null;
-    }
-
     get isMoving() {
         return this.move_dir !== null;
+    }
+
+    setForceHat(hat: number | null) {
+        if (this.forceHat !== null && hat !== null) return;
+        this.forceHat = hat;
     }
 
     getHatStore() {
@@ -353,7 +418,11 @@ class ModuleHandler {
         this.sentAngle = priority;
     }
 
-    upgradeItem(id: number) {
+    upgradeItem(id: number, isItem = false) {
+        if (isItem) {
+            id += 16;
+        }
+        
         this.client.PacketManager.upgradeItem(id);
         this.client.myPlayer.upgradeItem(id);
 
@@ -368,12 +437,14 @@ class ModuleHandler {
         if (!ignore) {
             this.move_dir = angle;
             this.reverse_move_dir = angle === null ? null : reverseAngle(angle);
+            if (this.moveTo !== "disable") return;
         }
 
+        const { EnemyManager } = this.client;
         const { safeWalk } = this.staticModules;
         if (
-            safeWalk.willGetHit(angle, 45)/*  ||
-            !ignore && this.moveTo !== "disable" */
+            safeWalk.willGetHit(angle, 45, EnemyManager.nearestCollider) ||
+            safeWalk.willGetHit(angle, 45, EnemyManager.secondNearestCollider)
         ) return false;
 
         this.client.PacketManager.move(angle);
@@ -394,7 +465,7 @@ class ModuleHandler {
         // @ts-ignore
         const price = store[id].price;
         const bought = this.bought[type];
-        return bought.has(id) || this.client.myPlayer.tempGold >= price;
+        return bought.has(id) || this.client.myPlayer.tempGold >= price && this.client.myPlayer.isSandbox;
     }
 
     /** Buys a hat or accessory and returns true if it was successful */
@@ -420,13 +491,17 @@ class ModuleHandler {
             return true;
         }
         
-        if (!bought.has(id) && myPlayer.tempGold >= price) {
-            // bought.add(id);
+        if (!bought.has(id) && myPlayer.tempGold >= price && (myPlayer.isSandbox || force)) {
             PacketManager.buy(type, id);
             myPlayer.tempGold -= price;
             return false;
         }
         return bought.has(id);
+    }
+
+    hasStoreItem(type: EStoreType, id: number) {
+        const store = this.bought[type];
+        return store.has(id);
     }
     
     /** Buys and equips a hat or accessory */
@@ -478,7 +553,12 @@ class ModuleHandler {
     }
 
     selectItem(type: ItemType) {
-        const item = this.client.myPlayer.getItemByType(type)!;
+        const { myPlayer } = this.client;
+        const item = myPlayer.getItemByType(type)!;
+        if (myPlayer.currentItem !== -1) {
+            myPlayer.currentItem = -1;
+            this.whichWeapon();
+        }
         this.client.PacketManager.selectItemByID(item, false);
         this.currentHolding = type;
     }
@@ -500,16 +580,11 @@ class ModuleHandler {
     }
 
     toggleAutoattack(state = !this.autoattack) {
-        const { PacketManager, isOwner, clients } = this.client;
-        if (this.attackingState !== EAttack.DISABLED) return;
+        // const { PacketManager } = this.client;
+        // if (this.attackingState !== EAttack.DISABLED) return;
         this.autoattack = state;
-        PacketManager.autoAttack();
-
-        // if (isOwner) {
-        //     for (const client of clients) {
-        //         client.ModuleHandler.toggleAutoattack(state);
-        //     }
-        // }
+        this.attacking = state ? EAttack.ATTACK : EAttack.DISABLED;
+        // PacketManager.autoAttack();
     }
 
     whichWeapon(type: WeaponType = this.weapon) {
@@ -534,24 +609,20 @@ class ModuleHandler {
         this.whichWeapon();
     }
 
-    colls: number[] = [];
-
     circleOffset = 0;
-    targetSpeed = 0.3;
-    circleRadius = 400;
+    targetSpeed = 65;
     
     activeModule: string | null = null;
     postTick() {
-        const rotationSpeed = this.targetSpeed / this.circleRadius;
-        this.circleOffset += rotationSpeed;
-        const { isOwner, ObjectManager, myPlayer } = this.client;
-        // const { x, y } = myPlayer.pos.current;
-        // const ids: number[] = [];
-        // ObjectManager.grid2D.query(x, y, 2, (id: number) => {
-        //     ids.push(id);
-        // });
-        // this.colls = ids;
+        if (settings._circleRotation && this.move_dir === null) {
+            const rotationSpeed = this.targetSpeed / settings._circleRadius;
+            this.circleOffset = (this.circleOffset + rotationSpeed) % (Math.PI * 2);
+        }
 
+        const { isOwner } = this.client;
+
+        this.placeAngles[0] = null;
+        this.placeAngles[1].length = 0;
         this.activeModule = null;
         this.tickCount += 1;
         this.sentAngle = ESentAngle.NONE;
@@ -569,6 +640,7 @@ class ModuleHandler {
         this.forceWeapon = null;
         this.useHat = null;
         this.forceHat = null;
+        this.shouldEquipSoldier = false;
         this.useAcc = null;
         this.useAngle = null;
         this.shouldAttack = false;
@@ -592,8 +664,9 @@ class ModuleHandler {
         if (isOwner) {
             this.client.InputHandler.postTick();
             GameUI.updateFastQ(this.didAntiInsta);
-            GameUI.updateTotalPlaces(this.totalPlaces);
-            GameUI.updateActiveModule(this.activeModule);
+            GameUI.updatePlaces(this.totalPlaces);
+            GameUI.updateActiveModule(this.activeModule + `, ${this.tickCount}`);
+            GameUI.updateEquipHat(`${this.store[EStoreType.HAT].last},  ${this.shouldEquipSoldier}`);
         }
     }
 }

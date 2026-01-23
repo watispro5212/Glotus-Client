@@ -1,0 +1,31 @@
+// ==UserScript==
+// @name            ! Glotus Client [Moomoo.io]
+// @author          Murka
+// @description     An excellent Moomoo.io hack for a comfortable gaming experience
+// @icon            https://imagizer.imageshack.com/img924/3497/SedB2D.png
+// @version         {SCRIPT_VERSION}
+// @match           *://moomoo.io/
+// @match           *://moomoo.io/?server*
+// @match           *://*.moomoo.io/
+// @match           *://*.moomoo.io/?server*
+// @run-at          document-start
+// @grant           none
+// @license         MIT
+// @namespace       https://github.com/Murka007/Glotus-client
+// @downloadURL     https://update.greasyfork.org/scripts/540039/%21%20Glotus%20Client%20%5BMoomooio%5D.user.js
+// @updateURL       https://update.greasyfork.org/scripts/540039/%21%20Glotus%20Client%20%5BMoomooio%5D.meta.js
+// ==/UserScript==
+/* jshint esversion:6 */
+
+/*
+    Author: Murka
+    Github: https://github.com/Murka007/Glotus-client
+    Greasyfork: https://greasyfork.org/users/919633
+    Discord: https://discord.gg/cPRFdcZkeD
+
+    {ADDITIONAL_INFO}
+*/
+
+(function() {
+{CODE}
+})();

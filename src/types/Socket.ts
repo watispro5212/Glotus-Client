@@ -18,15 +18,15 @@ export const enum SocketServer {
     MY_PLAYER_DEATH          = "P",
     REMOVE_OBJECT            = "Q",
     REMOVE_ALL_OBJECTS       = "R",
-    ITEM_COUNT               = "S",
+    ITEM_COUNT               = "S", 
     UPDATE_AGE               = "T",
     NEW_UPGRADE              = "U",
     UPDATE_ITEMS             = "V",
     CREATE_PROJECTILE        = "X",
     REMOVE_PROJECTILE        = "Y",
     SHUTDOWN_SERVER          = "Z",
-    ADD_ALLIANCE             = "g",
-    REMOVE_ALLIANCE          = "1",
+    CLAN_CREATED             = "g",
+    CLAN_DELETED             = "1",
     PLAYER_CLAN_JOIN_REQUEST = "2",
     UPDATE_MY_CLAN           = "3",
     UPDATE_CLAN_MEMBERS      = "4",
@@ -37,8 +37,6 @@ export const enum SocketServer {
     PING_MAP                 = "9",
     PING_RESPONSE            = "0",
 
-    CLAN_CREATED             = "g",
-    CLAN_DELETED             = "1",
 }
 
 export const enum SocketClient { 

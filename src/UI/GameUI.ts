@@ -2,10 +2,9 @@ import { client, Glotus } from "..";
 import Config from "../constants/Config";
 import { Items } from "../constants/Items";
 import { ItemGroup } from "../types/Items";
-import { getTargetValue } from "../utility/Common";
-import { blockProperty } from "../utility/Hooker";
-import settings from "../utility/Settings";
+import { formatDate, getTargetValue } from "../utility/Common";
 import CustomStorage from "../utility/CustomStorage";
+import settings from "../utility/Settings";
 import StoreHandler from "./StoreHandler";
 
 const GameUI = new class GameUI {
@@ -40,16 +39,18 @@ const GameUI = new class GameUI {
             nativeResolution: querySelector<HTMLInputElement>("#nativeResolution")!,
             showPing: querySelector<HTMLInputElement>("#showPing")!,
             mapDisplay: querySelector<HTMLCanvasElement>("#mapDisplay")!,
+            chatLog: querySelector<HTMLDivElement>("#chatLog")!,
         } as const;
     }
 
-    private selectSkinColor(skin: number) {
+    selectSkinColor(skin: number) {
         const skinValue = skin === 10 ? "toString" : skin;
         CustomStorage.set("skin_color", skinValue);
         const selectSkin = getTargetValue(window, "selectSkinColor");
         if (selectSkin !== undefined) {
             selectSkin(skinValue);
         }
+        return skinValue;
     }
 
     private createSkinColors() {
@@ -100,10 +101,15 @@ const GameUI = new class GameUI {
             <span>FPS: <span id="glotusFPS"></span></span>
             <span>PACKETS: <span id="glotusPackets"></span></span>
             <span>FastQ: <span id="glotusFastQ">false</span></span>
-            <span>Places: <span id="glotusTotalPlaces"></span></span>
+            <span>Places: <span id="glotusPlaces">0</span></span>
             <span>Total Kills: <span id="glotusTotalKills">0</span></span>
             <span>Deaths: <span id="glotusTotalDeaths">0</span></span>
             <span>Module: <span id="glotusActiveModule">null</span></span>
+            <span>SpikeDmg: <span id="glotusSpikeDamage"></span></span>
+            <span>PotDmg: <span id="glotusPotentialDamage"></span></span>
+            <span>Danger: <span id="glotusDangerState"></span></span>
+            <span>Hat: <span id="glotusEquipHat">0</span></span>
+            <span>CollideSpike: <span id="glotusCollideSpike"></span></span>
         `;
         gameUI.appendChild(div);
     }
@@ -121,9 +127,6 @@ const GameUI = new class GameUI {
                 const group = item.itemGroup;
                 const span = document.createElement("span");
                 span.classList.add("itemCounter");
-                if (!settings._itemCounter) {
-                    span.classList.add("hidden");
-                }
                 span.setAttribute("data-id", group + "");
 
                 const { count, limit } = client.myPlayer.getItemCount(group);
@@ -149,14 +152,6 @@ const GameUI = new class GameUI {
         }
     }
 
-    /** When user switches option in the menu. It toggles item count */
-    toggleItemCount() {
-        const items = document.querySelectorAll<HTMLSpanElement>(`span.itemCounter[data-id]`);
-        for (const item of items) {
-            item.classList.toggle("hidden");
-        }
-    }
-
     /** Updates item count of items in inventory */
     updateItemCount(group: ItemGroup) {
         const items = document.querySelectorAll<HTMLSpanElement>(`span.itemCounter[data-id='${group}']`);
@@ -178,58 +173,93 @@ const GameUI = new class GameUI {
     }
 
     updatePing(ping: number) {
-        const glotusPing = document.querySelector<HTMLSpanElement>("#glotusPing");
-        if (glotusPing !== null) {
-            glotusPing.textContent = ping.toString();
+        const span = document.querySelector<HTMLSpanElement>("#glotusPing");
+        if (span !== null) {
+            span.textContent = ping.toString();
         }
     }
 
     updateFPS(fps: number) {
-        const glotusFPS = document.querySelector<HTMLSpanElement>("#glotusFPS");
-        if (glotusFPS !== null) {
-            glotusFPS.textContent = fps.toString();
+        const span = document.querySelector<HTMLSpanElement>("#glotusFPS");
+        if (span !== null) {
+            span.textContent = fps.toString();
         }
     }
 
     updatePackets(packets: number) {
-        const glotusPackets = document.querySelector<HTMLSpanElement>("#glotusPackets");
-        if (glotusPackets !== null) {
-            glotusPackets.textContent = packets.toString();
+        const span = document.querySelector<HTMLSpanElement>("#glotusPackets");
+        if (span !== null) {
+            span.textContent = packets.toString();
         }
     }
 
     updateFastQ(state: boolean) {
-        const glotusFastQ = document.querySelector<HTMLSpanElement>("#glotusFastQ");
-        if (glotusFastQ !== null) {
-            glotusFastQ.textContent = state.toString();
+        const span = document.querySelector<HTMLSpanElement>("#glotusFastQ");
+        if (span !== null) {
+            span.textContent = state.toString();
         }
     }
 
-    updateTotalPlaces(count: number) {
-        const glotusTotalPlaces = document.querySelector<HTMLSpanElement>("#glotusTotalPlaces");
-        if (glotusTotalPlaces !== null) {
-            glotusTotalPlaces.textContent = count.toString();
-        }
+    updatePlaces(count: number) {
+        // const span = document.querySelector<HTMLSpanElement>("#glotusPlaces");
+        // if (span !== null) {
+            //  span.textContent = count.toString();
+        // }
     }
 
     updateTotalKills(kills: number) {
-        const glotusTotalKills = document.querySelector<HTMLSpanElement>("#glotusTotalKills");
-        if (glotusTotalKills !== null) {
-            glotusTotalKills.textContent = kills.toString();
+        const span = document.querySelector<HTMLSpanElement>("#glotusTotalKills");
+        if (span !== null) {
+            span.textContent = kills.toString();
         }
     }
 
     updateTotalDeaths(deaths: number) {
-        const glotusTotalDeaths = document.querySelector<HTMLSpanElement>("#glotusTotalDeaths");
-        if (glotusTotalDeaths !== null) {
-            glotusTotalDeaths.textContent = deaths.toString();
+        const span = document.querySelector<HTMLSpanElement>("#glotusTotalDeaths");
+        if (span !== null) {
+            span.textContent = deaths.toString();
         }
     }
 
     updateActiveModule(name: string | null) {
-        const glotusActiveModule = document.querySelector<HTMLSpanElement>("#glotusActiveModule");
-        if (glotusActiveModule !== null) {
-            glotusActiveModule.textContent = name + "";
+        const span = document.querySelector<HTMLSpanElement>("#glotusActiveModule");
+        if (span !== null) {
+            span.textContent = name + "";
+        }
+    }
+
+    updateSpikeDamage(state: number) {
+        const span = document.querySelector<HTMLSpanElement>("#glotusSpikeDamage");
+        if (span !== null) {
+            span.textContent = state + "";
+        }
+    }
+
+    updatePotentialDamage(state: string) {
+        const span = document.querySelector<HTMLSpanElement>("#glotusPotentialDamage");
+        if (span !== null) {
+            span.textContent = state + "";
+        }
+    }
+
+    updateCollideSpike(state: boolean) {
+        const span = document.querySelector<HTMLSpanElement>("#glotusCollideSpike");
+        if (span !== null) {
+            span.textContent = state + "";
+        }
+    }
+
+    updateDangerState(state: string) {
+        const span = document.querySelector<HTMLSpanElement>("#glotusDangerState");
+        if (span !== null) {
+            span.textContent = state + "";
+        }
+    }
+
+    updateEquipHat(state: string) {
+        const span = document.querySelector<HTMLSpanElement>("#glotusEquipHat");
+        if (span !== null) {
+            span.textContent = state + "";
         }
     }
 
@@ -245,11 +275,21 @@ const GameUI = new class GameUI {
         if (!nativeResolution.checked) nativeResolution.click();
         this.selectSkinColor(CustomStorage.get("skin_color") || 0);
 
-        const _enterGame = enterGame.onclick;
-        enterGame.onclick = function() {
+        const enterGameButton = enterGame as any;
+        let _enterGame = enterGameButton.onclick;
+        enterGameButton.onclick = function() {
+            delete enterGameButton.onclick;
+
             Glotus.startGame();
-            enterGame.onclick = _enterGame;
+            enterGameButton.onclick = _enterGame;
         }
+
+        Object.defineProperty(enterGameButton, "onclick", {
+            set(callback) {
+                _enterGame = callback;
+            },
+            configurable: true
+        });
     }
 
     loadGame() {
@@ -271,7 +311,7 @@ const GameUI = new class GameUI {
         }
 
         const _mapClick = mapDisplay.onclick!;
-        mapDisplay.onclick = function(event: MouseEvent) {
+        mapDisplay.onclick = function(event: PointerEvent) {
             const bounds = mapDisplay.getBoundingClientRect();
             const scale = 14400 / bounds.width;
             const posX = (event.clientX - bounds.left) * scale;
@@ -280,6 +320,8 @@ const GameUI = new class GameUI {
             client.ModuleHandler.followPath = true;
             _mapClick.call(this, event);
         }
+
+        this.createChatLog();
     }
 
     /** Checks if element is opened. Used for store, clan and chat */
@@ -392,6 +434,77 @@ const GameUI = new class GameUI {
         const { clanButton } = this.getElements();
         this.reset();
         clanButton.click();
+    }
+
+    readonly logCache: ["log" | "warn" | "error", any][] = [];
+    private chatLog: HTMLDivElement | null = null;
+    addLogMessage(cache: any) {
+        const [ type, message ] = cache;
+        const div = document.createElement("div");
+        div.className = "logMessage";
+        div.innerHTML = `
+            <span class="darken">${formatDate()}</span>
+            <span class="messageContent ${type}"></span>
+        `;
+        div.querySelector(".messageContent")!.textContent = message;
+
+        const messageContainer = document.querySelector<HTMLDivElement>("#messageContainer");
+        if (messageContainer !== null) {
+            messageContainer.appendChild(div);
+            messageContainer.scrollTop = messageContainer.scrollHeight;
+        }
+    }
+
+    addCacheMessage(cache: ["log" | "warn" | "error", any]) {
+        if (this.chatLog === null) {
+            this.logCache.push(cache);
+        } else {
+            this.addLogMessage(cache);
+        }
+    }
+
+    createChatLog() {
+        if (this.chatLog !== null) return;
+
+        const container = document.createElement("div");
+        container.id = "chatLog";
+        container.innerHTML = `
+            <h1 id="chatLogHeader">DevTools Chat Log</h1>
+            <div id="messageContainer"></div>
+        `
+
+        document.body.appendChild(container);
+
+        this.chatLog = container;
+
+        for (const log of this.logCache) {
+            this.addLogMessage(log);
+        }
+    }
+
+    toggleChatLog() {
+        if (this.chatLog === null) {
+            this.createChatLog();
+        }
+
+        if (settings._chatLog) {
+            this.chatLog!.classList.remove("hidden");
+        } else {
+            this.chatLog!.classList.add("hidden");
+        }
+    }
+
+    private readonly lastMessages: string[] = [];
+    handleMessageLog(message: string) {
+        message = message.trim().replace(/\s+/g, " ");
+        if (this.lastMessages.length > 3) {
+            this.lastMessages.shift();
+        }
+
+        if (this.lastMessages.includes(message)) return;
+        this.lastMessages.push(message);
+
+        this.addLogMessage(["log", message]);
     }
 }
 

@@ -1,6 +1,5 @@
 import type Vector from "../../modules/Vector";
 import PlayerClient from "../../PlayerClient";
-import { toRadians } from "../../utility/Common";
 import settings from "../../utility/Settings";
 
 class Movement {
@@ -12,48 +11,52 @@ class Movement {
         this.client = client;
     }
 
-    private getPosition() {
-        const { ModuleHandler } = this.client;
-        if (settings._followCursor) {
-            return ModuleHandler.lookTarget;
-        }
-        return ModuleHandler.followTarget;
+    private getMovePosition() {
+        return this.client.owner.InputHandler.getMovePosition();
+    }
+
+    private circlePosition(vec: Vector) {
+        const totalBots = this.client.owner.clients.size;
+        if (totalBots === 0) return vec;
+
+        const { circleOffset } = this.client.owner.ModuleHandler;
+        const botIndex = this.client.owner.getClientIndex(this.client);
+        const angle = (2 * Math.PI * botIndex) / totalBots + circleOffset;
+        return vec.addDirection(angle, settings._circleRadius);
     }
 
     private getActualPosition() {
-        const { myPlayer, InputHandler } = this.client.owner;
-        if (settings._followCursor) {
-            return InputHandler.cursorPosition();
+        const pos = this.getMovePosition();
+        if (settings._circleFormation) {
+            return this.circlePosition(pos);
         }
-        return myPlayer.pos.future;
+
+        return pos;
     }
 
-    // private circlePosition(vec: Vector) {
-    //     const totalBots = this.client.owner.clients.size;
-    //     if (totalBots === 0) return vec;
+    private someColliding(pos: Vector, radius: number) {
+        const { myPlayer } = this.client;
 
-    //     const { circleOffset, circleRadius } = this.client.owner.ModuleHandler;
-    //     const botIndex = this.client.owner.getClientIndex(this.client);
-    //     const angle = (2 * Math.PI * botIndex) / totalBots + circleOffset;
-    //     return vec.addDirection(angle, circleRadius);
-    // }
+        const { previous, current } = myPlayer.pos;
+        return (
+            previous.distance(pos) <= radius ||
+            current.distance(pos) <= radius
+        )
+    }
 
     postTick(): void {
         const { InputHandler } = this.client.owner;
         const { myPlayer, ModuleHandler } = this.client;
         const pos1 = myPlayer.pos.current;
         const walkPos = this.getActualPosition();
-        // const orig = this.getActualPosition();
-        // const walkPos = this.circlePosition(orig);
-        // const lookPos = ModuleHandler.lookTarget;
         const lookPos = InputHandler.cursorPosition();
-        const distance = pos1.distance(walkPos);
-        const walkTo = pos1.angle(walkPos);
+        // const distance = pos1.distance(walkPos);
         const lookAt = pos1.angle(lookPos);
         ModuleHandler.currentAngle = lookAt;
-
-        // if (distance > 130) {
-        if (distance > 65) {
+        
+        // if (distance > settings._movementRadius) {
+        if (!this.someColliding(walkPos, settings._movementRadius)) {
+            const walkTo = pos1.angle(walkPos);
             this.isStopped = !ModuleHandler.startMovement(walkTo);
         } else if (!this.isStopped) {
             this.isStopped = true;

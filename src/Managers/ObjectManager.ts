@@ -1,9 +1,10 @@
+import { reverseAngle } from './../utility/Common';
 import { Items } from "../constants/Items";
 import { PlayerObject, Resource, type TObject } from "../data/ObjectItem";
 import Player from "../data/Player";
 import Vector from "../modules/Vector";
-import { EItem, EWeapon, type TPlaceable } from "../types/Items";
-import { findPlacementAngles, getAngleDist, inView, pointInRiver } from "../utility/Common";
+import { EItem, EWeapon, ItemGroup, ItemType, type TPlaceable } from "../types/Items";
+import { findMiddleAngle, findPlacementAngles, getAngleDist, pointInRiver, targetInsideRect } from "../utility/Common";
 import type { IAngle } from "../types/Common";
 import PlayerClient from "../PlayerClient";
 import settings from "../utility/Settings";
@@ -11,6 +12,33 @@ import NotificationRenderer from "../rendering/NotificationRenderer";
 import SpatialHashGrid2D from "../modules/SpatialHashGrid2D";
 import Sorting from "../utility/Sorting";
 import DataHandler from "../utility/DataHandler";
+import type Animal from "../data/Animal";
+import { CollideType } from '../data/Entity';
+
+export interface INode {
+    readonly angleTo: number;
+    readonly distanceTo: number;
+    readonly offset: number;
+    readonly startPos: Vector;
+}
+
+export interface IPlaceOptions {
+    readonly position: Vector,
+    readonly id: TPlaceable,
+    readonly targetAngle: number,
+
+    /** True, if output angles should be reduces to a specific size */
+    reduce: boolean,
+
+    /** ID of object which should be excluded from checking */
+    ignoreID: number | null;
+
+    /** true, if object's health should be included when checking */
+    preplace: boolean;
+
+    /** true, if rest of space should be filled with the same angles */
+    fill: boolean;
+}
 
 class ObjectManager {
 
@@ -42,13 +70,20 @@ class ObjectManager {
 
         if (object instanceof PlayerObject) {
 
-            const { PlayerManager } = this.client;
+            const { PlayerManager, myPlayer } = this.client;
             const owner = (
                 PlayerManager.playerData.get(object.ownerID) ||
                 PlayerManager.createPlayer({ id: object.ownerID })
             );
             object.seenPlacement = this.inPlacementRange(object);
             owner.handleObjectPlacement(object);
+
+            if (object.type === EItem.TELEPORTER) {
+                if (myPlayer.collidingObject(object, CollideType.CURRENT) || myPlayer.collidingObject(object, CollideType.PREV)) {
+                    myPlayer.teleportPos.setVec(object.pos.current);
+                    myPlayer.teleported = true;
+                }
+            }
         }
     }
 
@@ -68,6 +103,12 @@ class ObjectManager {
         }
     }
 
+    readonly deletedObjects = new Set<PlayerObject>();
+
+    isDestroyedObject() {
+        return this.deletedObjects.size !== 0;
+    }
+
     private removeObject(object: TObject) {
         this.grid2D.remove(object.pos.current.x, object.pos.current.y, object.collisionScale, object.id);
         this.objects.delete(object.id);
@@ -76,6 +117,17 @@ class ObjectManager {
             const player = this.client.PlayerManager.playerData.get(object.ownerID);
             if (player !== undefined) {
                 player.handleObjectDeletion(object);
+                
+                const { myPlayer } = this.client;
+                const pos1 = object.pos.current.copy();
+                const pos2 = this.client.myPlayer.pos.current.copy();
+                const distance = pos1.distance(pos2);
+
+                const spikeID = myPlayer.getItemByType(ItemType.SPIKE);
+                const range = myPlayer.getItemPlaceScale(spikeID) + object.placementScale + myPlayer.speed + 25;
+                if (distance <= range) {
+                    this.deletedObjects.add(object);
+                }
             }
         }
     }
@@ -86,8 +138,9 @@ class ObjectManager {
             this.removeObject(object);
 
             if (this.client.isOwner) {
-                const pos = object.pos.current.copy().sub(this.client.myPlayer.offset);
-                if (settings._notificationTracers && !inView(pos.x, pos.y, object.scale)) {
+                const pos1 = object.pos.current.copy();
+                const pos2 = this.client.myPlayer.pos.current.copy();
+                if (settings._notificationTracers && !targetInsideRect(pos1, pos2, object.scale)) {
                     NotificationRenderer.add(object);
                 }
             }
@@ -116,30 +169,23 @@ class ObjectManager {
         return true;
     }
 
-    isTurretReloaded(object: TObject): boolean {
+    isTurretReloaded(object: TObject, tick = 1): boolean {
         const turret = this.reloadingTurrets.get(object.id);
         if (turret === undefined) return true;
 
-        const tick = this.client.SocketManager.TICK;
         return turret.reload > turret.maxReload - tick;
     }
 
-    /**
-     * Called after all packet received
-     */
+    /** Called after all packet received */
     postTick() {
         for (const [id, turret] of this.reloadingTurrets) {
-            turret.reload += this.client.PlayerManager.step;
+            turret.reload += 1;
             if (turret.reload >= turret.maxReload) {
                 turret.reload = turret.maxReload;
                 this.reloadingTurrets.delete(id);
             }
         }
     }
-
-    // retrieveObjects(pos: Vector, size = 2): number[] {
-    //     return this.grid2D.query(pos.x, pos.y, size);
-    // }
 
     canPlaceItem(id: TPlaceable, position: Vector, addRadius = 0) {
         if (id !== EItem.PLATFORM && pointInRiver(position)) {
@@ -171,53 +217,93 @@ class ObjectManager {
         )
     }
 
-    getBestPlacementAngles(
-        position: Vector,
-        id: TPlaceable,
-        targetAngle: number | null = null,
-        ignoreID: number | null = null,
-        ignoreHealth = false,
-        reduce = true
-    ): number[] {
-        const item = Items[id];
-        const length = this.client.myPlayer.getItemPlaceScale(id);
+    getBestPlacementAngles(options: IPlaceOptions): number[] {
+        const {
+            position,
+            id,
+            targetAngle,
+            ignoreID,
+            reduce,
+            preplace,
+            fill,
+        } = options;
+        const item = DataHandler.getItem(id);
 
-        // const hammerDamage = 75 * 1.18 * 3.3;
+        const { myPlayer, ModuleHandler } = this.client;
+        const length = myPlayer.getItemPlaceScale(id);
+
         const angles: IAngle[] = [];
+        // const preplaceAngles: IAngle[] = [];
         this.grid2D.query(position.x, position.y, 1, (id: number) => {
             const object = this.objects.get(id)!;
             if (
-                !ignoreHealth && object instanceof PlayerObject && object.canBeDestroyed /* && object.health <= hammerDamage */ ||
                 ignoreID !== null && ignoreID === object.id 
             ) return;
 
             const pos1 = object.pos.current;
             const angle = position.angle(pos1);
-            const distance = position.distance(pos1);
 
-            const a = object.placementScale + item.scale + 3;
-            const b = distance;
+            const a = object.placementScale + item.scale + 1;
+            const b = position.distance(pos1);
             const c = length;
             const cosArg = (b * b + c * c - a * a) / (2 * b * c);
 
-            // TODO: fix when myPlayer is slightly out of trap and it shows impossible straight angle
+            // let offset: number;
+            // if (cosArg < -1) {
+            //     offset = Math.PI;
+            // } else if (cosArg <= 1) {
+            //     offset = Math.acos(cosArg);
+            // } else {
+            //     return;
+            // }
+
+            // if (preplace && object instanceof PlayerObject && object.canBeDestroyed) {
+            //     preplaceAngles.push([ angle, offset ]);
+            // } else {
+            //     angles.push([ angle, offset ]);
+            // }
             if (cosArg < -1) {
-                angles.push({ angle, offset: Math.PI });
+                angles.push([ angle, Math.PI ]);
             } else if (cosArg <= 1) {
                 const offset = Math.acos(cosArg);
-                angles.push({ angle, offset });
+                angles.push([ angle, offset ]);
             }
         });
-        const finalAngles = findPlacementAngles(angles).slice(0, reduce ? 3 : angles.length);
-        if (targetAngle === null) return finalAngles;
+
+        // const finalAngles = findPlacementAngles(angles);
+        const finalAngles = findPlacementAngles(angles);
+        // if (preplace && preplaceAngles.length > 0) {
+        //     const preplaceFinalAngles = findPlacementAngles([...angles, ...preplaceAngles]);
+        //     finalAngles = [...new Set([...finalAngles, ...preplaceFinalAngles])];
+        // }
 
         // Checks if it is actually possible to use targetAngle in order to place an object
-        const targetAngleOverlaps = angles.some(({ angle, offset }) => getAngleDist(targetAngle, angle) <= offset);
+        const targetAngleOverlaps = angles.some(([ angle, offset ]) => getAngleDist(targetAngle, angle) <= offset);
         if (!targetAngleOverlaps) {
             finalAngles.push(targetAngle);
+
+            if (finalAngles.length === 1 && fill) {
+                if (item.itemType === ItemType.SPIKE) return [];
+                const offset = Math.asin((2 * item.scale + 1) / (2 * length)) * 2;
+                finalAngles.push(targetAngle - offset);
+                finalAngles.push(targetAngle + offset);
+                finalAngles.push(reverseAngle(targetAngle));
+                return finalAngles.slice(0, settings._placeAttempts);
+            }
         }
 
-        return finalAngles.sort(Sorting.byAngleDistance(targetAngle));
+        let anglesSorted = finalAngles.sort(Sorting.byAngleDistance(targetAngle));
+        if (reduce) {
+            if (!DataHandler.canMoveOnTop(id) && ModuleHandler.move_dir !== null && myPlayer.speed !== 0) {
+                const scale = item.scale;
+                const offset = Math.asin((2 * scale) / (2 * length));
+                anglesSorted = anglesSorted.filter(angle => {
+                    return getAngleDist(angle, ModuleHandler.move_dir!) > offset; 
+                });
+            }
+            return anglesSorted.slice(0, settings._placeAttempts);
+        }
+        return anglesSorted;
     }
 }
 

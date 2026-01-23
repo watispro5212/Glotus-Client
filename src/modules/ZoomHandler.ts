@@ -2,10 +2,6 @@ import { clamp, lerp } from './../utility/Common';
 import { isActiveInput } from "../utility/Common";
 import Hooker from "../utility/Hooker";
 
-function smoothstep(t: number) {
-    t = Math.max(0, Math.min(1, t));
-    return t * t * (3 - 2 * t);
-}
 const resizeEvent = new Event("resize");
 const ZoomHandler = new class ZoomHandler {
     readonly scale = {
@@ -52,10 +48,16 @@ const ZoomHandler = new class ZoomHandler {
         current.h = Default.h * zoom;
     }
 
+    private renderStart = Date.now();
     smoothUpdate() {
 
         const { current, smooth } = this.scale;
-        const blend = 0.09;
+        const now = Date.now();
+        const delta = now - this.renderStart;
+        this.renderStart = now;
+
+        const dt = delta / 1000;
+        const blend = (1 - Math.exp(-10 * dt)) * 0.4;
         smooth.w[0] = lerp(smooth.w[0], current.w, blend);
         smooth.h[0] = lerp(smooth.h[0], current.h, blend);
         window.dispatchEvent(resizeEvent);

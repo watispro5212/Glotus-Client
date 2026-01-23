@@ -1,0 +1,318 @@
+<div class="menu-page" data-id="2">
+    <div class="page-title">Combat</div>
+    <p class="page-description">Modify combat settings, change pvp behavior</p>
+
+    <!-- Defense -->
+    <div class="section">
+        <div class="section-title">Defense</div>
+        <div class="section-content">
+
+            <!-- <div class="content-option">
+                <span class="option-title">Biome hats</span>
+                <label class="switch-checkbox">
+                    <input id="_biomehats" type="checkbox"></input>
+                    <span></span>
+                </label>
+            </div> -->
+
+            <!-- <div class="content-option">
+                <span class="option-title">Auto emp</span>
+                <label class="switch-checkbox">
+                    <input id="_autoemp" type="checkbox"></input>
+                    <span></span>
+                </label>
+            </div> -->
+
+            <div class="content-option">
+                <span class="option-title">Anti enemy</span>
+                <label class="switch-checkbox">
+                    <input id="_antienemy" type="checkbox"></input>
+                    <span></span>
+                </label>
+                <span class="option-description">Basic soldier equipment for all types of antis</span>
+            </div>
+
+            <!-- <div class="content-option">
+                <span class="option-title">Soldier default</span>
+                <label class="switch-checkbox">
+                    <input id="_soldierDefault" type="checkbox"></input>
+                    <span></span>
+                </label>
+
+                <span class="option-description">Equips soldier by default, when antis fail to do its work</span>
+            </div> -->
+
+            <!-- <div class="content-option">
+                <span class="option-title">Anti animal</span>
+                <label class="switch-checkbox">
+                    <input id="_antianimal" type="checkbox"></input>
+                    <span></span>
+                </label>
+                <span class="option-description">Equips a soldier when danger animal is nearby</span>
+            </div> -->
+
+            <div class="content-option">
+                <span class="option-title">Anti spike</span>
+                <label class="switch-checkbox">
+                    <input id="_antispike" type="checkbox"></input>
+                    <span></span>
+                </label>
+                <span class="option-description">Adds additional layer of protection against spikes</span>
+            </div>
+
+            <div class="content-option">
+                <span class="option-title">Emp Defense</span>
+                <label class="switch-checkbox">
+                    <input id="_empDefense" type="checkbox"></input>
+                    <span></span>
+                </label>
+                <span class="option-description">Equips emp by default when you are not moving</span>
+            </div>
+
+            <div class="content-option">
+                <span class="option-title">Autoheal</span>
+                <label class="switch-checkbox">
+                    <input id="_autoheal" type="checkbox"></input>
+                    <span></span>
+                </label>
+            </div>
+            
+            <div class="content-option">
+                <span class="option-title">Autobreak</span>
+                <label class="switch-checkbox">
+                    <input id="_autobreak" type="checkbox"></input>
+                    <span></span>
+                </label>
+                <span class="option-description">Destroys nearby enemy traps and spikes</span>
+            </div>
+
+            <div class="content-option">
+                <span class="option-title">Safe walk</span>
+                <label class="switch-checkbox">
+                    <input id="_safeWalk" type="checkbox"></input>
+                    <span></span>
+                </label>
+                <span class="option-description">Prevents from colliding enemy spikes, cactuses, boostpads</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Placement -->
+     <div class="section">
+        <div class="section-title">Placement</div>
+
+        <div class="section-content">
+            <div class="content-option">
+                <span class="option-title">Autoplacer</span>
+                <label class="switch-checkbox">
+                    <input id="_autoplacer" type="checkbox"></input>
+                    <span></span>
+                </label>
+                <span class="option-description">Automatically places traps and spikes when enemy is nearby</span>
+            </div>
+
+            <!-- <div class="content-option">
+                <span class="option-title">Preplacer</span>
+                <label class="switch-checkbox">
+                    <input id="_preplacer" type="checkbox"></input>
+                    <span></span>
+                </label>
+            </div> -->
+
+            <div class="content-option">
+                <span class="option-title">Autoplacer radius</span>
+                <label class="slider">
+                    <span class="slider-value"></span>
+                    <input id="_autoplacerRadius" type="range" step="25" min="100" max="450">
+                </label>
+            </div>
+
+            <div class="content-option">
+                <span class="option-title">Placement accuracy</span>
+                <label class="slider">
+                    <span class="slider-value"></span>
+                    <input id="_placeAttempts" type="range" min="1" max="10">
+                </label>
+                <span class="option-description">Algorithm calculates all the possible attempts. But later this value decreases in order to avoid lags.</span>
+            </div>
+
+            <div class="content-option">
+                <span class="option-title">Automill</span>
+                <label class="switch-checkbox">
+                    <input id="_automill" type="checkbox"></input>
+                    <span></span>
+                </label>
+                <span class="option-description">Automatically places 3x windmills behind your back</span>
+            </div>
+
+            <div class="content-option">
+                <span class="option-title">Auto grind</span>
+                <label class="switch-checkbox">
+                    <input id="_autoGrind" type="checkbox"></input>
+                    <span></span>
+                </label>
+                <span class="option-description">Stay still to get autogrind working</span>
+            </div>
+
+            <div class="content-option">
+                <span class="option-title">Placement Defense</span>
+                <label class="switch-checkbox">
+                    <input id="_placementDefense" type="checkbox"></input>
+                    <span></span>
+                </label>
+                <span class="option-description">Places a wall/windmill on projectile threats</span>
+            </div>
+
+            <div class="content-option">
+                <span class="option-title">Dash Movement</span>
+                <label class="switch-checkbox">
+                    <input id="_dashMovement" type="checkbox"></input>
+                    <span></span>
+                </label>
+                <span class="option-description">When holding a boostpad hotkey, it is gonna place boost pad once and immediately destroy it, giving you additional speed.</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Instakills -->
+    <div class="section">
+        <div class="section-title">Instakills</div>
+
+        <div class="section-content">
+            <div class="content-option">
+                <span class="option-title">Auto sync</span>
+                <label class="switch-checkbox">
+                    <input id="_autoSync" type="checkbox"></input>
+                    <span></span>
+                </label>
+                <span class="option-description">Attacks when it is possible to sync enemy with 2 primary weapons</span>
+            </div>
+
+            <div class="content-option">
+                <span class="option-title">Velocity tick</span>
+                <label class="switch-checkbox">
+                    <input id="_velocityTick" type="checkbox"></input>
+                    <span></span>
+                </label>
+                <span class="option-description">Attacks using turret + diamond polearm in one tick</span>
+            </div>
+
+            <div class="content-option">
+                <span class="option-title">Spike tick</span>
+                <label class="switch-checkbox">
+                    <input id="_spikeTick" type="checkbox"></input>
+                    <span></span>
+                </label>
+                <span class="option-description">When enemy is about to collide a spike, attacks with primary weapon</span>
+            </div>
+
+            <div class="content-option">
+                <span class="option-title">Spike sync</span>
+                <label class="switch-checkbox">
+                    <input id="_spikeSync" type="checkbox"></input>
+                    <span></span>
+                </label>
+            </div>
+
+            <div class="content-option">
+                <span class="option-title">Spike sync hammer</span>
+                <label class="switch-checkbox">
+                    <input id="_spikeSyncHammer" type="checkbox"></input>
+                    <span></span>
+                </label>
+            </div>
+
+            <div class="content-option">
+                <span class="option-title">Knockback tick</span>
+                <label class="switch-checkbox">
+                    <input id="_knockbackTick" type="checkbox"></input>
+                    <span></span>
+                </label>
+                <span class="option-description">Attacks enemy when its possible to knockback on spike</span>
+            </div>
+
+            <div class="content-option">
+                <span class="option-title">Knockback tick hammer</span>
+                <label class="switch-checkbox">
+                    <input id="_knockbackTickHammer" type="checkbox"></input>
+                    <span></span>
+                </label>
+                <span class="option-description">Knockbacks enemy using hammer + turret + primary weapon on spike</span>
+            </div>
+
+            <div class="content-option">
+                <span class="option-title">Knockback tick trap</span>
+                <label class="switch-checkbox">
+                    <input id="_knockbackTickTrap" type="checkbox"></input>
+                    <span></span>
+                </label>
+                <span class="option-description">Destroys a trap and knockbacks enemy on spike</span>
+            </div>
+
+            <div class="content-option">
+                <span class="option-title">Anti Retrap</span>
+                <label class="switch-checkbox">
+                    <input id="_antiRetrap" type="checkbox"></input>
+                    <span></span>
+                </label>
+                <span class="option-description">When you are trapped, attacks enemy with primary weapon to push it away</span>
+            </div>
+
+            <div class="content-option">
+                <span class="option-title">Tool Spear Insta</span>
+                <label class="switch-checkbox">
+                    <input id="_toolSpearInsta" type="checkbox"></input>
+                    <span></span>
+                </label>
+
+                <span class="option-description">When you have Tool Hammer and also Polearm could be upgraded, then it is going to perform instakill on nearest enemy.</span>
+            </div>
+
+            <div class="content-option">
+                <span class="option-title">Autosteal</span>
+                <label class="switch-checkbox">
+                    <input id="_autoSteal" type="checkbox"></input>
+                    <span></span>
+                </label>
+                <span class="option-description">Steals kills/animals from other players</span>
+            </div>
+
+            <div class="content-option">
+                <span class="option-title">Autopush</span>
+                <label class="switch-checkbox">
+                    <input id="_autoPush" type="checkbox"></input>
+                    <span></span>
+                </label>
+            </div>
+
+            <div class="content-option">
+                <span class="option-title">Turret steal</span>
+                <label class="switch-checkbox">
+                    <input id="_turretSteal" type="checkbox"></input>
+                    <span></span>
+                </label>
+                <span class="option-description">Equips a turret hat if possible to kill with it</span>
+            </div>
+
+            <div class="content-option">
+                <span class="option-title">Spike Gear Insta</span>
+                <label class="switch-checkbox">
+                    <input id="_spikeGearInsta" type="checkbox"></input>
+                    <span></span>
+                </label>
+
+                <span class="option-description">Equips Spike Gear when it is possible to deal potential damage with it to the enemy. Instakill may happen.</span>
+            </div>
+
+            <div class="content-option">
+                <span class="option-title">Turret Sync</span>
+                <label class="switch-checkbox">
+                    <input id="_turretSync" type="checkbox"></input>
+                    <span></span>
+                </label>
+                <span class="option-description">Attacks using primary in sync with other turret objects</span>
+            </div>
+        </div>
+    </div>
+
+</div>

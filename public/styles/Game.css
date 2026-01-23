@@ -1,0 +1,167 @@
+#iframe-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    outline: none;
+    z-index: 10;
+}
+
+#promoImgHolder,
+.menuHeader,
+.menuText,
+#guideCard,
+#altServer,
+#gameName,
+#pingDisplay,
+#partyButton,
+#onetrust-consent-sdk,
+.adMenuCard,
+#topInfoHolder > div:not([id]):not([class]),
+#touch-controls-fullscreen,
+#altcha,
+#joinPartyButton {
+    display: none!important;
+}
+
+.menuCard {
+    box-shadow: none;
+}
+
+#setupCard {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: #6d6d6d77;
+    max-height: auto;
+    width: 280px;
+}
+
+#setupCard > * {
+    margin: 0!important;
+}
+
+#linksContainer2 {
+    background: #6d6d6d77;
+}
+
+#bottomContainer {
+    bottom: 20px;
+}
+
+#topInfoHolder {
+    display: flex;
+    flex-direction: column;
+    justify-content: right;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+#killCounter, #totalKillCounter {
+    position: static;
+    margin: 0;
+    background-image: url(../img/icons/skull.png);
+}
+
+.actionBarItem {
+    position: relative;
+}
+
+.itemCounter {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    font-size: 0.95em;
+    color: white;
+    text-shadow: #3d3f42 2px 0px 0px, #3d3f42 1.75517px 0.958851px 0px, #3d3f42 1.0806px 1.68294px 0px, #3d3f42 0.141474px 1.99499px 0px, #3d3f42 -0.832294px 1.81859px 0px, #3d3f42 -1.60229px 1.19694px 0px, #3d3f42 -1.97998px 0.28224px 0px, #3d3f42 -1.87291px -0.701566px 0px, #3d3f42 -1.30729px -1.5136px 0px, #3d3f42 -0.421592px -1.95506px 0px, #3d3f42 0.567324px -1.91785px 0px, #3d3f42 1.41734px -1.41108px 0px, #3d3f42 1.92034px -0.558831px 0px;
+}
+
+.itemCounter.hidden {
+    display: none;
+}
+
+#glotusStats {
+    position: absolute;
+    color: rgb(221, 221, 221);
+    font: 13px "Hammersmith One";
+    bottom: 210px;
+    left: 20px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.hidden {
+    display: none!important;
+}
+
+#chatLog {
+    position: absolute;
+    top: 65px;
+    left: 10px;
+
+    width: 380px;
+    height: 180px;
+
+    background: rgba(10, 12, 16, 0.6);
+    padding: 10px;
+    color: #f2f4f6;
+    border-radius: 6px;
+
+    display: flex;
+    flex-direction: column;
+}
+
+#chatLogHeader {
+    font-size: 1.8rem;
+    margin: 0 0 5px 0;
+    flex-shrink: 0;
+}
+
+#messageContainer {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+#messageContainer::-webkit-scrollbar {
+    width: 6px;
+}
+
+#messageContainer::-webkit-scrollbar-track {
+    background: #4c4f55;
+    border-radius: 6px;
+}
+
+#messageContainer::-webkit-scrollbar-thumb {
+    background: #303338;
+    border-radius: 6px;
+}
+
+.logMessage {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+}
+
+.logMessage span {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+.logMessage .darken {
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.logMessage .log,
+.logMessage .warn,
+.logMessage .error {
+    flex: 1;
+    min-width: 0;
+}

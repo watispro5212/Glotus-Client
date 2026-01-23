@@ -22,8 +22,8 @@ class Sorting {
         typeB: ExtractKeys<A>
     ) {
         return (a: A, b: A) => {
-            const dist1 = target.position[typeA]!.distance(a.position[typeB]!);
-            const dist2 = target.position[typeA]!.distance(b.position[typeB]!);
+            const dist1 = target.position[typeA]!.distanceDefault(a.position[typeB]!);
+            const dist2 = target.position[typeA]!.distanceDefault(b.position[typeB]!);
             return dist1 - dist2;
         }
     }
