@@ -1,4 +1,4 @@
-# Glotus client
+# Glotus Client
 > An excellent Moomoo.io hack for a comfortable gaming experience
 
 ### Installation
