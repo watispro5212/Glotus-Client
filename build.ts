@@ -1,9 +1,16 @@
 import { minify } from "terser";
 import getScriptHeader from "./getScriptHeader";
+import crypto from "crypto";
 
 const { header, version } = await getScriptHeader("userscript_header.txt");
 const entry = "src/index.ts";
 const outdir = "build";
+
+const createHash = (str: string, len = 15) => {
+    const hashBuffer = crypto.createHash("sha256").update(str).digest();
+    const base64Hash = hashBuffer.toString("base64");
+    return base64Hash.substring(0, len);
+}
 
 const buildResult = await Bun.build({
     entrypoints: [entry],
@@ -23,9 +30,11 @@ if (!buildResult.success) {
 
 const path = `${outdir}/index.js`;
 let code = await Bun.file(path).text();
+const hash = createHash(code);
 code = code.replace(/var /g, "const ");
 code = code.replace(/export\s*{.*?};?/s, "");
 code = code.replace(/{SCRIPT_VERSION}/g, version);
+code = code.replace(/{HASH}/g, hash);
 console.log("Input code length:", code.length);
 
 const result = await minify(code, {
