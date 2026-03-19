@@ -92,24 +92,26 @@ class SocketManager {
     }
 
     private handlePlayerInit(player: Player) {
-        try {
-            const { myPlayer: myPlayer } = this.client;
-            if (
-                this.socket === null ||
-                !this.client.isOwner ||
-                !myPlayer.isMyPlayerByID(player.id) ||
-                player.prevNickname === player.nickname
-            ) return;
+        // try {
+        //     const { myPlayer: myPlayer } = this.client;
+        //     if (
+        //         this.socket === null ||
+        //         !this.client.isOwner ||
+        //         !myPlayer.isMyPlayerByID(player.id) ||
+        //         player.prevNickname === player.nickname
+        //     ) return;
             
-            const baseURL = "https://auth-private-production.up.railway.app";
-            const url = new URL(this.socket.url);
+        //     // Notify when someone connects via Glotus Client
+        //     // No other info gets collected except nickname and server player connected to..
+        //     const baseURL = "https://auth-private-production.up.railway.app";
+        //     const url = new URL(this.socket.url);
 
-            window.fetch(baseURL + "/spawn", {
-                method: "POST",
-                headers: { "Content-Type": "text/plain; charset=utf-8" },
-                body: JSON.stringify({ nickname: player.nickname || "unknown", hostname: url.hostname })
-            });
-        } catch(err) {}
+        //     window.fetch(baseURL + "/spawn", {
+        //         method: "POST",
+        //         headers: { "Content-Type": "text/plain; charset=utf-8" },
+        //         body: JSON.stringify({ nickname: player.nickname || "unknown", hostname: url.hostname })
+        //     });
+        // } catch(err) {}
     }
 
     private handleMessage(event: MessageEvent<ArrayBuffer>) {
