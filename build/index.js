@@ -22,7 +22,7 @@
     Discord: https://discord.gg/cPRFdcZkeD
 
     Version: 5.5.4
-    Built Time: 19/03/2026 | 07:19:55
+    Build Time: 19/03/2026 | 07:42:50
     Works On: index-eb87bff7.js
 
     Leaking source code myself.. unfortunately.

@@ -22,7 +22,7 @@
     Discord: https://discord.gg/cPRFdcZkeD
 
     Version: {SCRIPT_VERSION}
-    Built Time: {BUILD_TIME}
+    Build Time: {BUILD_TIME}
     Works On: {WORKS_ON}
 
     Leaking source code myself.. unfortunately.

@@ -33,7 +33,9 @@
 
 (function(win, GM_info) {
 
+    // some shit may happen, testing purposes
     const VERBOSE = false;
+
     // MAKE SURE TO RETRIEVE TOKEN CODE BEFORE CALLING DEBUGGER
     // OTHERWISE IT MIGHT GET SPOOFED
     let access_token = null;
@@ -138,6 +140,7 @@
         return isNative();
     }
 
+    // Prevent hooking of important methods to avoid source leak
     if (!isNativeFunction(win, win.fetch) ||
         !isNativeFunction(win, win.XMLHttpRequest) ||
         !isNativeFunction(win, win.XMLHttpRequest.prototype.open) ||
@@ -153,7 +156,7 @@
         return;
     }
 
-
+    // Different eval variants, picks random method to safely inject the code
     const EVAL = (scope, code) => {
         if (
             !isNativeFunction(scope, scope.eval) ||
@@ -201,6 +204,7 @@
         return text.replace(/[\s\n]/g, "").replace(/\/\/==\/?UserScript==/g, "");
     }
 
+    // Basic integrity checks
     let failedToCheck = true;
     try {
         const _info = GM_info;
@@ -380,6 +384,7 @@
         return decodedStr;
     }
 
+    // Basically the same localStorage, but being able to store data across different domains (moomoo.io, sandbox.moomoo.io, dev.moomoo.io)
     const sharedStorage = (() => {
         const DOMAIN = ".moomoo.io";
         const PATH = "/";
@@ -618,7 +623,7 @@
     win.Number.DELTA = 1;
 
     // Fingerprint collection
-    // Used to verify and idenfity the user to prevent unauthorized access. It is not saved anywhere.
+    // Used to verify and idenfity the user to prevent unauthorized access. This data is not saved anywhere and gets deleted immediately
     function getFingerprintData() {
         const output = {};
 
@@ -935,6 +940,7 @@
     win.document.addEventListener("DOMContentLoaded", injectMenu, { once: true });
 
 })(
+    // Important shit for JSConfuser, cuz it is not able to handle such global variables
     unsafeWindow = this.unsafeWindow || window.unsafeWindow || typeof unsafeWindow !== "undefined" ? unsafeWindow : undefined,
     GM_info = this.GM_info || window.GM_info || typeof GM_info !== "undefined" ? GM_info : undefined,
 );
