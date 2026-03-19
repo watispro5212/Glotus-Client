@@ -7,14 +7,13 @@ import settings from "../../../utility/Settings";
 export default class DefaultHat {
     readonly moduleName = "defaultHat";
     private readonly client: PlayerClient;
-    private platformActivated = false;
 
     constructor(client: PlayerClient) {
         this.client = client;
     }
 
     private getBestCurrentHat() {
-        const { ModuleHandler, EnemyManager, myPlayer } = this.client;
+        const { _ModuleHandler: ModuleHandler, EnemyManager, myPlayer: myPlayer } = this.client;
         const { current, future } = myPlayer.pos;
         const { actual } = ModuleHandler.getHatStore();
 
@@ -37,6 +36,7 @@ export default class DefaultHat {
                     EnemyManager.detectedEnemy ||
                     EnemyManager.velocityTickThreat ||
                     EnemyManager.reverseInsta ||
+                    EnemyManager.toolHammerInsta ||
                     EnemyManager.rangedBowInsta
                 ) {
                     ModuleHandler.shouldEquipSoldier = true;
@@ -55,28 +55,10 @@ export default class DefaultHat {
             ) return EHat.SOLDIER_HELMET;
         }
         
-        if (settings._biomehats && useFlipper) {
+        if (settings._biomehats && useFlipper && !myPlayer.onPlatform) {
             const inRiver = pointInRiver(current) || pointInRiver(future);
             if (inRiver) {
                 return EHat.FLIPPER_HAT;
-                // // myPlayer is right on the platform
-                // const platformActivated = myPlayer.checkCollision(ItemGroup.PLATFORM, -30);
-
-                // // myPlayer almost left the platform
-                // const stillStandingOnPlatform = myPlayer.checkCollision(ItemGroup.PLATFORM, 15);
-
-                // if (!this.platformActivated && platformActivated) {
-                //     this.platformActivated = true;
-                // }
-
-                // // myPlayer is not standing on platform
-                // if (this.platformActivated && !stillStandingOnPlatform) {
-                //     this.platformActivated = false;
-                // }
-
-                // if (!this.platformActivated) {
-                //     return EHat.FLIPPER_HAT;
-                // }
             }
         }
 
@@ -110,7 +92,7 @@ export default class DefaultHat {
     }
 
     postTick() {
-        const { ModuleHandler } = this.client;
+        const { _ModuleHandler: ModuleHandler } = this.client;
         const hat = this.getBestCurrentHat();
         ModuleHandler.useHat = hat;
     }

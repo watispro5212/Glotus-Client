@@ -1,7 +1,7 @@
 import type Player from "../../../data/Player";
 import type PlayerClient from "../../../PlayerClient";
 import { EWeapon, ItemType, ReloadType, WeaponType } from "../../../types/Items";
-import { EHat } from "../../../types/Store";
+import { EHat, EStoreType } from "../../../types/Store";
 import DataHandler from "../../../utility/DataHandler";
 import settings from "../../../utility/Settings";
 
@@ -16,7 +16,7 @@ class SpikeTick {
     }
 
     postTick(): void {
-        const { ModuleHandler, EnemyManager, myPlayer } = this.client;
+        const { _ModuleHandler: ModuleHandler, EnemyManager, myPlayer: myPlayer } = this.client;
         if (ModuleHandler.moduleActive || !settings._spikeTick) {
             // this.targetEnemy = null;
             return;
@@ -26,7 +26,7 @@ class SpikeTick {
         const primary = myPlayer.getItemByType(WeaponType.PRIMARY);
         const isPrimary = primary !== EWeapon.STICK;
         const primaryReloaded = reloading.isReloaded(ReloadType.PRIMARY);
-        const turretReloaded = reloading.isReloaded(ReloadType.TURRET);
+        const turretReloaded = ModuleHandler.hasStoreItem(EStoreType.HAT, EHat.TURRET_GEAR) && reloading.isReloaded(ReloadType.TURRET);
 
         const spikeCollider = EnemyManager.enemySpikeCollider;
         if (this.useTurret) {
@@ -35,8 +35,8 @@ class SpikeTick {
             if (turretReloaded) {
                 ModuleHandler.moduleActive = true;
                 ModuleHandler.forceHat = EHat.TURRET_GEAR;
-                return;
             }
+            return;
         }
 
         if (
@@ -47,7 +47,6 @@ class SpikeTick {
             spikeCollider.futureHat === EHat.SOLDIER_HELMET && !spikeCollider.isTrapped */
         ) return;
 
-        // console.log(spikeCollider.futureHat);
         const weaponRange = DataHandler.getWeapon(primary).range;
         const range = weaponRange + spikeCollider.hitScale;
         if (!myPlayer.collidingEntity(spikeCollider, range, true)) return;

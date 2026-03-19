@@ -56,6 +56,10 @@ import SpikeTrap from "./modules/combat/SpikeTrap";
 import TurretSync from "./modules/combat/TurretSync";
 import DashMovement from "./modules/controls/DashMovement";
 import KBTickHammerV2 from "./modules/combat/KBTickHammerV2";
+import AutoShield from "./modules/defense/AutoShield";
+import TrapKB from "./modules/combat/TrapKB";
+import ShameSpam from "./modules/combat/ShameSpam";
+import AntiSpikePush from "./modules/defense/AntiSpikePush";
 
 interface IStore {
     readonly utility: Map<number, boolean>;
@@ -83,6 +87,7 @@ type TModuleList = [
     Reloading,
     DefaultAcc,
     AutoSync,
+    ShameSpam,
     SpikeSyncHammer,
     SpikeSync,
     SpikeTick,
@@ -101,6 +106,7 @@ type TModuleList = [
     BowInsta,
     Instakill,
     ReverseInstakill,
+    AntiSpikePush,
     Autobreak,
     AutoSteal,
     TurretSteal,
@@ -112,20 +118,22 @@ type TModuleList = [
     
     AntiInsta,
     ShameReset,
-    SafeWalk,
+    TrapKB,
+    AutoShield,
     PlacementDefense,
     AutoPlacer,
     DashMovement,
     Placer,
     Automill,
     AutoGrind,
-
+    
     PreAttack,
     Autohat,
-
+    
     UpdateAttack,
     UpdateAngle,
     KillChat,
+    SafeWalk,
 ]
 
 type TupleToObject<T extends { moduleName: string }[]> = {
@@ -201,7 +209,7 @@ class ModuleHandler {
     previousWeapon: WeaponType | null = null;
 
     /** Current mouse angle, including lock rotation */
-    currentAngle = 0;
+    _currentAngle = 0;
     move_dir: number | null = null;
     reverse_move_dir: number | null = null;
     moveTo: number | null | "disable" = "disable";
@@ -218,7 +226,9 @@ class ModuleHandler {
     }
 
     readonly placeAngles: [Exclude<ItemType, ItemType.FOOD> | null, number[]] = [null, []];
-
+    norecoil = false;
+    moduleStart = performance.now();
+    private maxExecutionTime = 0;
 
     constructor(client: PlayerClient) {
         this.client = client;
@@ -236,6 +246,7 @@ class ModuleHandler {
             reloading: new Reloading(client),
             defaultAcc: new DefaultAcc(client),
             autoSync: new AutoSync(client),
+            shameSpam: new ShameSpam(client),
             spikeSyncHammer: new SpikeSyncHammer(client),
             spikeSync: new SpikeSync(client),
             spikeTick: new SpikeTick(client),
@@ -254,6 +265,7 @@ class ModuleHandler {
             bowInsta: new BowInsta(client),
             instakill: new Instakill(client),
             reverseInstakill: new ReverseInstakill(client),
+            antiSpikePush: new AntiSpikePush(client),
             autoBreak: new Autobreak(client),
             autoSteal: new AutoSteal(client),
             turretSteal: new TurretSteal(client),
@@ -265,20 +277,22 @@ class ModuleHandler {
             
             antiInsta: new AntiInsta(client),
             shameReset: new ShameReset(client),
-            safeWalk: new SafeWalk(client),
+            trapKB: new TrapKB(client),
+            autoShield: new AutoShield(client),
             placementDefense: new PlacementDefense(client),
             dashMovement: new DashMovement(client),
             autoPlacer: new AutoPlacer(client),
             placer: new Placer(client),
             autoMill: new Automill(client),
             autoGrind: new AutoGrind(client),
-
+            
             preAttack: new PreAttack(client),
             autoHat: new Autohat(client),
-        
+            
             updateAttack: new UpdateAttack(client),
             updateAngle: new UpdateAngle(client),
             killChat: new KillChat(client),
+            safeWalk: new SafeWalk(client),
         };
 
         this.botModules = [
@@ -296,6 +310,7 @@ class ModuleHandler {
             this.staticModules.reloading,
             this.staticModules.defaultAcc,
             this.staticModules.autoSync,
+            this.staticModules.shameSpam,
             this.staticModules.spikeSyncHammer,
             this.staticModules.spikeSync,
             this.staticModules.spikeTick,
@@ -314,6 +329,7 @@ class ModuleHandler {
             this.staticModules.bowInsta,
             this.staticModules.instakill,
             this.staticModules.reverseInstakill,
+            this.staticModules.antiSpikePush,
             this.staticModules.autoBreak,
             this.staticModules.autoSteal,
             this.staticModules.turretSteal,
@@ -325,7 +341,8 @@ class ModuleHandler {
             
             this.staticModules.antiInsta,
             this.staticModules.shameReset,
-            this.staticModules.safeWalk,
+            this.staticModules.trapKB,
+            this.staticModules.autoShield,
             this.staticModules.placementDefense,
             this.staticModules.autoPlacer,
             this.staticModules.dashMovement,
@@ -335,10 +352,11 @@ class ModuleHandler {
             
             this.staticModules.preAttack,
             this.staticModules.autoHat,
-
+            
             this.staticModules.updateAttack,
             this.staticModules.updateAngle,
             this.staticModules.killChat,
+            this.staticModules.safeWalk,
         ];
         this.reset();
     }
@@ -378,8 +396,8 @@ class ModuleHandler {
 
         if (isOwner) {
             for (const client of clients) {
-                client.ModuleHandler.movementReset();
-                client.ModuleHandler.toggleAutoattack(false);
+                client._ModuleHandler.movementReset();
+                client._ModuleHandler.toggleAutoattack(false);
             }
         }
     }
@@ -406,11 +424,11 @@ class ModuleHandler {
     }
 
     setFollowTarget(x: number, y: number) {
-        this.followTarget.setXY(x, y);
+        this.followTarget._setXY(x, y);
     }
 
     setLookTarget(x: number, y: number) {
-        this.lookTarget.setXY(x, y);
+        this.lookTarget._setXY(x, y);
     }
 
     private updateSentAngle(priority: ESentAngle) {
@@ -418,7 +436,7 @@ class ModuleHandler {
         this.sentAngle = priority;
     }
 
-    upgradeItem(id: number, isItem = false) {
+    _upgradeItem(id: number, isItem = false) {
         if (isItem) {
             id += 16;
         }
@@ -440,14 +458,17 @@ class ModuleHandler {
             if (this.moveTo !== "disable") return;
         }
 
-        const { EnemyManager } = this.client;
-        const { safeWalk } = this.staticModules;
-        if (
-            safeWalk.willGetHit(angle, 45, EnemyManager.nearestCollider) ||
-            safeWalk.willGetHit(angle, 45, EnemyManager.secondNearestCollider)
-        ) return false;
+        const { myPlayer: myPlayer } = this.client;
+        // const { safeWalk } = this.staticModules;
+
+        if (myPlayer.simulation.collisionSimulation(this.client)) return false;
+        // if (
+        //     safeWalk.willGetHit(angle, 45, EnemyManager.nearestCollider) ||
+        //     safeWalk.willGetHit(angle, 45, EnemyManager.secondNearestCollider)
+        // ) return false;
 
         this.client.PacketManager.move(angle);
+        // this.moveTo = angle;
         return true;
     }
 
@@ -469,15 +490,15 @@ class ModuleHandler {
     }
 
     /** Buys a hat or accessory and returns true if it was successful */
-    buy(type: EStoreType, id: number, force = false): boolean {
+    _buy(type: EStoreType, id: number, force = false): boolean {
         const store = DataHandler.getStore(type);
-        const { isOwner, clients, myPlayer, PacketManager } = this.client;
+        const { isOwner, clients, myPlayer: myPlayer, PacketManager } = this.client;
         if (!myPlayer.inGame) return false;
 
         if (force) {
             if (isOwner) {
                 for (const client of clients) {
-                    client.ModuleHandler.buy(type, id, force);
+                    client._ModuleHandler._buy(type, id, force);
                 }
             }
         }
@@ -505,13 +526,13 @@ class ModuleHandler {
     }
     
     /** Buys and equips a hat or accessory */
-    equip(type: EStoreType, id: number, force = false, toggle = false): boolean {
+    _equip(type: EStoreType, id: number, force = false, toggle = false): boolean {
         const store = this.store[type];
-        const { myPlayer, PacketManager, EnemyManager, isOwner, clients } = this.client;
+        const { myPlayer: myPlayer, PacketManager, EnemyManager, isOwner, clients } = this.client;
         if (toggle && store.last === id && id !== 0) {
             id = 0;
         }
-        if (!myPlayer.inGame || !this.buy(type, id, force)/*  || store.last === id */) return false;
+        if (!myPlayer.inGame || !this._buy(type, id, force)/*  || store.last === id */) return false;
         if (store.last === id && myPlayer.storeData[type] === id) return false;
         // TODO: Improve the way store handles hat equipment between forced and automatic type
         // if (!force) {
@@ -532,7 +553,7 @@ class ModuleHandler {
             store.actual = id;
             if (isOwner) {
                 for (const client of clients) {
-                    client.ModuleHandler.staticModules.tempData.setStore(type, id);
+                    client._ModuleHandler.staticModules.tempData.setStore(type, id);
                 }
             }
         }
@@ -553,7 +574,7 @@ class ModuleHandler {
     }
 
     selectItem(type: ItemType) {
-        const { myPlayer } = this.client;
+        const { myPlayer: myPlayer } = this.client;
         const item = myPlayer.getItemByType(type)!;
         if (myPlayer.currentItem !== -1) {
             myPlayer.currentItem = -1;
@@ -596,10 +617,13 @@ class ModuleHandler {
         this.client.PacketManager.selectItemByID(weapon, true);
     }
 
-    place(type: ItemType, angle = this.currentAngle) {
+    place(type: ItemType, angle = this._currentAngle, reset = false) {
         this.totalPlaces += 1;
         this.selectItem(type);
         this.attack(angle, ESentAngle.LOW);
+        if (reset) {
+            this.stopAttack();
+        }
         this.whichWeapon();
     }
 
@@ -614,6 +638,7 @@ class ModuleHandler {
     
     activeModule: string | null = null;
     postTick() {
+        // this.moduleStart = performance.now();
         if (settings._circleRotation && this.move_dir === null) {
             const rotationSpeed = this.targetSpeed / settings._circleRadius;
             this.circleOffset = (this.circleOffset + rotationSpeed) % (Math.PI * 2);
@@ -667,6 +692,10 @@ class ModuleHandler {
             GameUI.updatePlaces(this.totalPlaces);
             GameUI.updateActiveModule(this.activeModule + `, ${this.tickCount}`);
             GameUI.updateEquipHat(`${this.store[EStoreType.HAT].last},  ${this.shouldEquipSoldier}`);
+
+            const executionTime = Math.round(performance.now() - this.moduleStart);
+            this.maxExecutionTime = Math.max(this.maxExecutionTime, executionTime);
+            GameUI.updateModulePerformance(`${executionTime}/${this.maxExecutionTime}`);
         }
     }
 }

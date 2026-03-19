@@ -11,7 +11,7 @@ export default class UseFastest {
     }
 
     postTick() {
-        const { myPlayer, ModuleHandler } = this.client;
+        const { myPlayer: myPlayer, _ModuleHandler: ModuleHandler } = this.client;
         if (ModuleHandler.moduleActive) return;
         
         const { reloading } = ModuleHandler.staticModules;

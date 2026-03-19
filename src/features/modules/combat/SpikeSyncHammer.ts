@@ -20,9 +20,8 @@ export default class SpikeSyncHammer {
     }
 
     postTick() {
-        const { ModuleHandler, EnemyManager, myPlayer, ObjectManager } = this.client;
+        const { _ModuleHandler: ModuleHandler, EnemyManager, myPlayer: myPlayer, ObjectManager } = this.client;
         if (ModuleHandler.moduleActive || !settings._spikeSyncHammer || EnemyManager.shouldIgnoreModule()) {
-        // if (ModuleHandler.moduleActive || !settings._spikeSyncHammer) {
             this.targetEnemy = null;
             this.useTurret = false;
             return;
@@ -37,7 +36,7 @@ export default class SpikeSyncHammer {
         const isPolearm = primary !== EWeapon.STICK;
         const isHammer = secondary === EWeapon.GREAT_HAMMER;
 
-        const primaryReloaded = reloading.isReloaded(ReloadType.PRIMARY);
+        const primaryReloaded = reloading.isReloaded(ReloadType.PRIMARY, 1);
         const secondaryReloaded = reloading.isReloaded(ReloadType.SECONDARY);
         const turretReloaded = reloading.isReloaded(ReloadType.TURRET);
 

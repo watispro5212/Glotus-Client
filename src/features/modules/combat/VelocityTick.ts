@@ -7,46 +7,28 @@ import { inRange } from "../../../utility/Common";
 import DataHandler from "../../../utility/DataHandler";
 import settings from "../../../utility/Settings";
 
-// const curvedMotion = (currentPos: Vector, targetPos: Vector, speed: number, minRange: number, maxRange: number) => {
-//     const distance = currentPos.distance(targetPos);
-
-//     if (distance >= minRange && distance <= maxRange) {
-//         return null;
-//     }
-
-//     const desiredRange = (minRange + maxRange) / 2;
-//     const dx = targetPos.x - currentPos.x;
-//     const dy = targetPos.y - currentPos.y;
-//     const dirX = dx / distance;
-//     const dirY = dy / distance;
-
-//     if (distance > desiredRange + speed) {
-//         return Math.atan2(dy, dx);
-//     }
-
-//     if (distance < Math.abs(desiredRange - speed)) {
-//         return Math.atan2(-dy, -dx);
-//     }
-
-//     if (distance === 0) {
-//         return 0;
-//     }
-
-//     const a = (distance * distance + desiredRange * desiredRange - speed * speed) / (2 * distance);
-//     const hSquared = desiredRange * desiredRange - a * a;
-
-//     if (hSquared < 0) {
-//         return Math.atan2(dy, dx);
-//     }
-
+// const calculatePreciseAngle = (player: Vector, target: Vector, speed: number, minRange: number, maxRange: number) => {
+//     const distance = player.distance(target);
+//     if (inRange(distance, minRange, maxRange)) return null;
+//     const targetDistance = (minRange + maxRange) / 2;
+    
+//     if (distance > targetDistance + speed) return null;//player.angle(target);
+//     if (distance < Math.abs(targetDistance - speed)) return null;//target.angle(player);
+//     if (distance === 0) return 0;
+    
+//     const a = (distance * distance + targetDistance * targetDistance - speed * speed) / (2 * distance);
+//     const hSquared = targetDistance * targetDistance - a * a;
+//     if (hSquared < 0) return null;//player.angle(target);
+    
+//     const dirX = (target.x - player.x) / distance;
+//     const dirY = (target.y - player.y) / distance;
 //     const h = Math.sqrt(hSquared);
-
-//     const px = targetPos.x - a * dirX;
-//     const py = targetPos.y - a * dirY;
-
+//     const px = target.x - a * dirX;
+//     const py = target.y - a * dirY;
 //     const ix = px + h * dirY;
 //     const iy = py - h * dirX;
-//     return Math.atan2(iy - currentPos.y, ix - currentPos.x);
+
+//     return Math.atan2(iy - player.y, ix - player.x);
 // }
 
 export default class VelocityTick {
@@ -56,8 +38,8 @@ export default class VelocityTick {
     private nearestTarget: Player | null = null;
     target: Player | null = null;
 
-    readonly minKB = 220;
-    readonly maxKB = 245;
+    minKB = 220;
+    maxKB = 245;
     constructor(client: PlayerClient) {
         this.client = client;
     }
@@ -67,7 +49,7 @@ export default class VelocityTick {
     }
 
     postTick() {
-        const { EnemyManager, myPlayer, ModuleHandler } = this.client;
+        const { EnemyManager, myPlayer: myPlayer, _ModuleHandler: ModuleHandler } = this.client;
         this.target = null;
 
         if (
@@ -85,7 +67,7 @@ export default class VelocityTick {
         const primary = myPlayer.getItemByType(WeaponType.PRIMARY);
         const isPolearm = primary === EWeapon.POLEARM;
         const isDiamond = myPlayer.getWeaponVariant(primary).current >= WeaponVariant.DIAMOND;
-        const isReloadedPrimary = reloading.isReloaded(WeaponType.PRIMARY);
+        const isReloadedPrimary = reloading.isReloaded(WeaponType.PRIMARY, 1);
         const isReloadedTurret = reloading.isReloaded(ReloadType.TURRET);
 
         if (this.nearestTarget !== null) {
@@ -110,26 +92,45 @@ export default class VelocityTick {
             !isReloadedPrimary ||
             !isReloadedTurret
         ) return;
-        
+
         this.target = nearestEnemy;
-        const pos0 = myPlayer.pos.current;
+
+        // myPlayer.simulation.reset(this.client);
+        // myPlayer.simulation.update(this.client, true);
+        const pos1 = myPlayer.pos.current;
         const pos2 = nearestEnemy.pos.future;
-        const distance = pos0.distance(pos2);
-        const angle = pos0.angle(pos2);
-        
+        const dist1 = pos1.distance(pos2);
+        const angle = pos1.angle(pos2);
+
+        // if (dist2 < 205 || dist2 - speed >= 205) return;
+
         const { current } = nearestEnemy.weapon;
         const type = DataHandler.getWeapon(current).type;
         const almostReloaded = DataHandler.isMelee(current) && nearestEnemy.atExact(type, 1);
         const detectFutureHat = this.isValidHat(nearestEnemy.futureHat);
         const canSend = almostReloaded || detectFutureHat;
-        const inAttackRange = inRange(distance, this.minKB, this.maxKB);
-
-        if (inAttackRange && canSend) {
-            ModuleHandler.moduleActive = true;
-            ModuleHandler.forceHat = EHat.TURRET_GEAR;
-            ModuleHandler.moveTo = angle;
-            this.nearestTarget = nearestEnemy;
-            this.client.StatsManager.velocityTickTimes = 1;
+        const inAttackRange = inRange(dist1, this.minKB, this.maxKB);
+        if (inAttackRange) {
+            if (canSend) {
+                ModuleHandler.moduleActive = true;
+                ModuleHandler.forceHat = EHat.TURRET_GEAR;
+                ModuleHandler.moveTo = angle;
+                this.nearestTarget = nearestEnemy;
+                this.client.StatsManager.velocityTickTimes = 1;
+            }
+            // return;
         }
+
+        // myPlayer.simulation.movementSimulation(this.client, angle);
+        // const pos0 = myPlayer.simulation.getPos().copy();
+        // const dist2 = pos0.distance(pos2);
+        // const speed = myPlayer.simulation.getSpeed();
+
+        // if (inRange(dist2, this.minKB, this.maxKB)) return;
+        // const moveAngle = calculatePreciseAngle(pos1, pos2, speed, this.minKB, this.maxKB);
+        // if (moveAngle === null) return;
+        // ModuleHandler.moduleActive = true;
+        // ModuleHandler.moveTo = moveAngle;
+        // const middleRange = (this.maxKB + this.minKB) / 2;
     }
 }

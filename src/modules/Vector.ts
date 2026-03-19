@@ -64,14 +64,14 @@ class Vector {
         return this.x * vec.x + this.y * vec.y;
     }
 
-    setXY(x: number, y: number) {
+    _setXY(x: number, y: number) {
         this.x = x;
         this.y = y;
         return this;
     }
 
     setVec(vec: Vector) {
-        return this.setXY(vec.x, vec.y);
+        return this._setXY(vec.x, vec.y);
     }
 
     setLength(value: number) {

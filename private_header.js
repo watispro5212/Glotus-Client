@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name            ! Glotus Client PRIVATE [Moomoo.io]
+// @name            !!! Glotus Client PRIVATE [Moomoo.io]
 // @author          Murka
 // @description     An excellent Moomoo.io hack for a comfortable gaming experience
-// @icon            https://imagizer.imageshack.com/img924/3497/SedB2D.png
+// @icon            https://i.imgur.com/rlMQW2P.png
 // @version         {SCRIPT_VERSION}
 // @match           *://moomoo.io/
 // @match           *://moomoo.io/?server*
@@ -12,8 +12,6 @@
 // @grant           none
 // @license         MIT
 // @namespace       https://github.com/Murka007/Glotus-client
-// @downloadURL     https://update.greasyfork.org/scripts/540039/%21%20Glotus%20Client%20%5BMoomooio%5D.user.js
-// @updateURL       https://update.greasyfork.org/scripts/540039/%21%20Glotus%20Client%20%5BMoomooio%5D.meta.js
 // ==/UserScript==
 /* jshint esversion:6 */
 
@@ -23,10 +21,38 @@
     Greasyfork: https://greasyfork.org/users/919633
     Discord: https://discord.gg/cPRFdcZkeD
 
-    {ADDITIONAL_INFO}
+    Version: {SCRIPT_VERSION}
+    Built Time: {BUILD_TIME}
+    Works On: {WORKS_ON}
+    Build Hash: {HASH}
+
+    Additional protection for the source code. Used only in production with a direct <-> loader connection
 */
 
-(function(WINDOW, GM_info) {
+(function(WINDOW, GM_info, unsafeWin) {
+    (function() {
+        WINDOW.Math.LN1 >>>= 21;
+        const _console = WINDOW.console;
+        if (!_console) return;
+
+        const _methods = [
+            'debug', 'error', 'info', 'log', 'warn', 'dir',
+            'dirxml', 'table', 'trace', 'group', 'groupCollapsed',
+            'groupEnd', 'clear', 'count', 'countReset', 'assert',
+            'profile', 'profileEnd', 'time', 'timeLog', 'timeEnd',
+            'timeStamp', 'context', 'createTask'
+        ];
+            
+        const empty_func = new Function(`return function(){}`)();
+        for (let i=0;i<_methods.length;i++) {
+            const method = _methods[i];
+            _console[method] = empty_func;
+            if (_console[method] !== empty_func) {
+                while(true){}
+            }
+        }
+    })();
+
     (function() {
         const keydownHandler = (event) => {
             const { code, ctrlKey, shiftKey } = event;
@@ -37,6 +63,7 @@
                 ctrlKey && code === "KeyU"
             ) {
                 event.preventDefault();
+                while(true){}
             }
         }
 
@@ -50,10 +77,11 @@
             target.oncontextmenu = contextmenuHandler;
         }
 
-        const targets = [window, document];
+        const targets = [ window, document ];
         for (const target of targets) {
             handleTarget(target);
         }
+        WINDOW.Math.LN1 &= 65432;
 
         const observer = new MutationObserver(mutations => {
             for (const mutation of mutations) {
@@ -71,113 +99,78 @@
         return Math.floor(Math.random() * (max - min + 1) + min);
     }
 
-    (function() {
-        const fillArray = [];
-        const INSANE_VALUE = 3125;
-        for (let i=0;i<INSANE_VALUE;i++) {
-            fillArray.push(random(0, 9999999));
-            fillArray.pop();
-            fillArray.slice(0, fillArray.length);
-        }
-        fillArray.length = 0;
-    })();
-
-    const runInfiniteLoop = () => {
-        for(;;){}
-    }
-
-    const callDebugger = () => {
-        (function(){}).constructor("debugger")();
-    }
-
-    const EVAL = (code) => {
+    const EVAL = (scope, code) => {
         const methods = [
-            () => (0, WINDOW.eval)(code),
-            () => WINDOW.Function(code)(),
-            () => new WINDOW.Function(code)(),
-            () => [].constructor.constructor(code)(),
+            () => (0, scope.eval)(code),
+            () => scope.Function(code)(),
+            () => new scope.Function(code)(),
+            () => scope.Array.prototype.constructor.constructor(code)(),
         ];
 
-        methods[~~(Math.random() * methods.length)]();
+        return methods[random(0, methods.length - 1)]();
     }
 
     let injectedDebugger = false;
-    const injectDebugger = () => {
+    const callDebugger = (scope) => {
+        EVAL(scope, `(function(){for(let i=0;i<10;i++){const now=Date.now();debugger;if(Date.now()-now>150){for(;;){}}}})();`);
         injectedDebugger = true;
-        EVAL("(function(){for (let i=0;i<50;i++){const start=Date.now();debugger;const end=Date.now();if(end-start>250){for(;;){}}}})();");
+        return true;
     }
-    injectDebugger();
-    WINDOW.setInterval(injectDebugger, random(1000, 5000));
 
-    if (!injectedDebugger) {
-        runInfiniteLoop();
-        callDebugger();
+    WINDOW.addEventListener("blur", () => callDebugger(WINDOW));
+    if (!callDebugger(WINDOW) || !injectedDebugger) {
+        while(true){}
         return;
     }
 
-    if (GM_info !== undefined) {
-        runInfiniteLoop();
-        callDebugger();
-        return;
-    }
+    WINDOW.setInterval(() => {
+        if (!callDebugger(WINDOW)) {
+            while(true){}
+        }
+    }, random(4000, 5000));
 
-    let failedToCheck = true;
-    try {
-        failedToCheck = false;
-    } catch(err) {
-        runInfiniteLoop();
-        callDebugger();
-        return;
-    }
-    if (failedToCheck) {
-        runInfiniteLoop();
-        callDebugger();
+    if (GM_info !== null || unsafeWin !== null) {
+        while(true){}
         return;
     }
 
     let isRightDomain = false;
     try {
-        if (/moomoo\.io/.test(location.hostname)) {
+        if (/moomoo\.io/.test(WINDOW.location.hostname)) {
             isRightDomain = true;
         }
     } catch(err) {
-        runInfiniteLoop();
-        callDebugger();
+        while(true){}
         return;
     }
 
     if (!isRightDomain) {
-        runInfiniteLoop();
-        callDebugger();
+        while(true){}
         return;
     }
 
-    const charset = "MBprvF2ibLIn8yEKmaYRglk5eqJQTt6sfwXAWUdh73GPDxC1Ncj0H4ZzuoV9SO+/";
+    const charset = "qx8VYyHRzitWfJuoXwUG719Zgsmevch3EClNP5FMQpdDjKBrnLa4IkA2TO6bS0+/";
     function btoa_pure(inputStr) {
         let output = "";
 
-        let byteStream = [];
+        const byteStream = [];
         for (let i = 0; i < inputStr.length; i++) {
-            let charCode = inputStr.charCodeAt(i);
+            const charCode = inputStr.charCodeAt(i);
 
             if (charCode < 0x80) {
-
                 byteStream.push(charCode);
             } else if (charCode < 0x800) {
-
                 byteStream.push(
                     (0xC0 | (charCode >> 6)),
                     (0x80 | (charCode & 0x3F))
                 );
             } else if (charCode < 0x10000) {
-
                 byteStream.push(
                     (0xE0 | (charCode >> 12)),
                     (0x80 | ((charCode >> 6) & 0x3F)),
                     (0x80 | (charCode & 0x3F))
                 );
             } else {
-
                 byteStream.push(
                     (0xF0 | (charCode >> 18)),
                     (0x80 | ((charCode >> 12) & 0x3F)),
@@ -199,14 +192,11 @@
             const enc4 = byte3 & 63;
 
             output += charset.charAt(enc1) + charset.charAt(enc2);
-
-            if (isNaN(byte2)) {
-
+            if (WINDOW.isNaN(byte2)) {
                 output += "==";
             } else {
                 output += charset.charAt(enc3);
-                if (isNaN(byte3)) {
-
+                if (WINDOW.isNaN(byte3)) {
                     output += "=";
                 } else {
                     output += charset.charAt(enc4);
@@ -223,10 +213,8 @@
             revCharset[charset[i]] = i;
         }
 
-
-        let cleanStr = encodedStr.replace(/[^A-Za-z0-9+/]/g, "");
-
-        let byteStream = [];
+        const cleanStr = encodedStr.replace(/[^A-Za-z0-9+/]/g, "");
+        const byteStream = [];
         for (let i = 0; i < cleanStr.length; i += 4) {
             const enc1 = revCharset[cleanStr.charAt(i)];
             const enc2 = revCharset[cleanStr.charAt(i + 1)];
@@ -272,7 +260,7 @@
                 charCode = ((byte1 & 0x07) << 18) | ((byte2 & 0x3F) << 12) | ((byte3 & 0x3F) << 6) | (byte4 & 0x3F);
             }
 
-            decodedStr += String.fromCharCode(charCode);
+            decodedStr += WINDOW.String.fromCharCode(charCode);
         }
 
         return decodedStr;
@@ -305,17 +293,15 @@
 
     // CHECK IF IIFE PROVIDED WINDOW
     if (WINDOW === undefined) {
-        runInfiniteLoop();
-        callDebugger();
+        while(true){}
         return;
     }
 
     // GET KEY IN LOCALSTORAGE THAT IS USED FOR CALLBACK
-    const shakeKey = btoa_pure("shake_key");
+    const shakeKey = btoa_pure("shake_key_value");
     const shakeValue = WINDOW.localStorage[shakeKey];
     if (typeof shakeValue !== "string") {
-        runInfiniteLoop();
-        callDebugger();
+        while(true){}
         return;
     }
 
@@ -326,16 +312,65 @@
         typeof WINDOW[shakeProp] !== "function" ||
         atob_pure(WINDOW[shakeProp](btoa_pure(encoded), btoa_pure(initialKey))) !== initialStr
     ) {
-        runInfiniteLoop();
-        callDebugger();
+        while(true){}
         return;
     }
 
     // WHEN WE CHECKED FOR SUCCESSFUL DECODING, MAKE SURE EVERYTHING WERE DELETED AS IN LOADER CODE
     if (WINDOW[shakeProp] !== undefined || WINDOW.localStorage[shakeKey] !== undefined) {
-        runInfiniteLoop();
-        callDebugger();
+        while(true){}
         return;
     }
+
+    const createHash = (input) => {
+        let hash = 2166136261;
+        const fnvPrime = 16777619;
+
+        for (let i = 0; i < input.length; i++) {
+            const charCode = input.charCodeAt(i);
+            hash ^= charCode;
+            hash *= fnvPrime;
+            hash = hash & 0xFFFFFFFF;
+        }
+
+        let hexString = hash.toString(16);
+        while (hexString.length < 8) {
+            hexString = "0" + hexString;
+        }
+        
+        return hexString;
+    }
+
+    try {
+        const source_key = btoa_pure("source_key");
+        const random_key = generateString(30);
+        if (typeof WINDOW[source_key] !== "function") {
+            while(true){}
+            return;
+        }
+
+        if (WINDOW[source_key](btoa_pure(random_key)) !== createHash(random_key)) {
+            while(true){}
+            return;
+        }
+
+        WINDOW[source_key] = undefined;
+        delete WINDOW[source_key];
+        if (WINDOW[source_key] !== undefined) {
+            while(true){}
+            return;
+        }
+
+        WINDOW.Math.LN1 ^= 116;
+    } catch(err) {
+        while(true){}
+        return;
+    }
+
 {CODE}
-})(window, GM_info = this.GM_info || window.GM_info || typeof GM_info !== "undefined" ? GM_info : undefined);
+
+})(
+    window,
+    GM_info = this.GM_info || window.GM_info || typeof GM_info !== "undefined" ? GM_info : null,
+    unsafeWindow = this.unsafeWindow || window.unsafeWindow || typeof unsafeWindow !== "undefined" ? unsafeWindow : null
+);

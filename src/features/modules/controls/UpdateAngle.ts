@@ -10,10 +10,10 @@ class UpdateAngle {
 
     postTick(): void {
         
-        const { sentAngle, currentAngle } = this.client.ModuleHandler;
+        const { sentAngle, _currentAngle: currentAngle } = this.client._ModuleHandler;
         if (sentAngle > ESentAngle.LOW) return;
 
-        this.client.ModuleHandler.updateAngle(currentAngle);
+        this.client._ModuleHandler.updateAngle(currentAngle);
     }
 }
 

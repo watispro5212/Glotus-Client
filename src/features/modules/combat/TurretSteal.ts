@@ -12,7 +12,7 @@ export default class TurretSteal {
     }
 
     postTick() {
-        const { ModuleHandler, myPlayer, EnemyManager } = this.client;
+        const { _ModuleHandler: ModuleHandler, myPlayer: myPlayer, EnemyManager } = this.client;
         if (ModuleHandler.moduleActive || !settings._turretSteal) return;
 
         const nearestEnemy = EnemyManager.nearestTurretEntity;
@@ -28,7 +28,7 @@ export default class TurretSteal {
         if (distance > 700) return;
 
         const { reloading } = ModuleHandler.staticModules;
-        if (!reloading.isReloaded(ReloadType.TURRET, 0)) return;
+        if (!reloading.isReloaded(ReloadType.TURRET)) return;
         ModuleHandler.moduleActive = true;
         ModuleHandler.forceHat = EHat.TURRET_GEAR;
     }

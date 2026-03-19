@@ -1,9 +1,9 @@
 export const isProd = process.env.NODE_ENV === "production";
 const version = isProd ? "{SCRIPT_VERSION}" : "Dev";
-const hash = "{HASH}";
 
 import { altcha } from "./modules/createSocket";
 import resetGame from "./modules/resetGame";
+import Vector from "./modules/Vector";
 import ZoomHandler from "./modules/ZoomHandler";
 import PlayerClient from "./PlayerClient";
 import EntityRenderer from "./rendering/EntityRenderer";
@@ -12,7 +12,6 @@ import Renderer from "./rendering/Renderer";
 import GameUI from "./UI/GameUI";
 import StoreHandler from "./UI/StoreHandler";
 import UI from "./UI/UI";
-import DataHandler from "./utility/DataHandler";
 import Logger from "./utility/Logger";
 import settings from "./utility/Settings";
 
@@ -37,26 +36,27 @@ window.WebSocket = new window.Proxy(window.WebSocket, {
 
 const win = window as any;
 export const Glotus = {
-    myClient: client,
-    settings: settings,
-    Renderer: Renderer,
-    DataHandler: DataHandler,
-    ZoomHandler: ZoomHandler,
-    hooks: {
-        EntityRenderer,
-        ObjectRenderer,
-        renderPlayer: function(){} as any,
-        showText: function(){} as any,
+    _myClient: client,
+    _settings: settings,
+    _Renderer: Renderer,
+    _ZoomHandler: ZoomHandler,
+    _hooks: {
+        _EntityRenderer: EntityRenderer,
+        _ObjectRenderer: ObjectRenderer,
+        _renderPlayer: function(){} as any,
     },
-    _getSmoothRendering() {
-        return settings._smoothRendering;
-    },
+    _config: {},
     version,
-    hash,
-    config: {},
-    gameInit(token: string){},
+    _offset: new Vector,
+    _gameInit(token: string){},
     async startGame() {
-        this.gameInit(await gameToken);
+        const token = await gameToken;
+        if (typeof token !== "string" || token.length === 0) {
+            Logger.error("Failed to generate altcha token..");
+            return;
+        }
+
+        this._gameInit(token);
     }
 }
 win.Glotus = Glotus;

@@ -26,6 +26,7 @@ class EnemyManager {
 
     private readonly dangerousEnemies: Player[] = [];
     private readonly _nearestEnemy: [Player | null, Animal | null] = [null, null];
+    secondNearestEnemy: Player | null = null;
 
     /** The closest animal that can cause damage to myPlayer */
     nearestDangerAnimal: Animal | null = null;
@@ -66,7 +67,11 @@ class EnemyManager {
     secondNearestEnemyObject: PlayerObject | null = null;
     nearestSpike: PlayerObject | null = null;
 
+    nearestKBTrapEnemy: Player | null = null;
+    nearestKBTrap: PlayerObject | null = null;
+
     willCollideSpike = false;
+    pushingOnSpike = false;
     collidingSpike = false;
 
     /** Represents an angle to nearest enemy, on whom a spinning spike can be placed */
@@ -86,6 +91,7 @@ class EnemyManager {
     detectedDanger = false;
     reverseInsta = false;
     rangedBowInsta = false;
+    toolHammerInsta = false;
     spikeSyncThreat = false;
     velocityTickThreat = false;
 
@@ -113,6 +119,7 @@ class EnemyManager {
     reset() {
         this.nearestEnemyToNearestEnemy = null;
         this.willCollideSpike = false;
+        this.pushingOnSpike = false;
         this.collidingSpike = false;
         this.prevNearestSpikePlacerAngle = this.nearestSpikePlacerAngle;
         this.nearestSpikePlacerAngle = null;
@@ -135,6 +142,8 @@ class EnemyManager {
         this.nearestEnemyObject = null;
         this.secondNearestEnemyObject = null;
         this.nearestSpike = null;
+        this.nearestKBTrapEnemy = null;
+        this.nearestKBTrap = null;
         this.enemyCanPlaceSpike = false;
         this.possibleToKnockback = false;
         this.velocityTickThreat = false;
@@ -144,6 +153,7 @@ class EnemyManager {
         this.detectedDanger = false;
         this.reverseInsta = false;
         this.rangedBowInsta = false;
+        this.toolHammerInsta = false;
         this.spikeSyncThreat = false;
         this.nearestEnemyPush = null;
         this.nearestPushSpike = null;
@@ -151,6 +161,7 @@ class EnemyManager {
         this.nearestLowHPObject = null;
         this.nearestSyncEnemy = null;
         this.primaryDamage = 0;
+        this.secondNearestEnemy = null;
     }
 
     /** Represents previously trapped enemy, but on the current tick he is not trapped */
@@ -206,9 +217,11 @@ class EnemyManager {
             this.velocityTickThreat ||
             this.reverseInsta ||
             this.rangedBowInsta ||
+            this.toolHammerInsta ||
             (this.primaryDamage + this.potentialSpikeKnockbackDamage) >= 100
         )
     }
+
     
     shouldIgnoreModule() {
         return (
@@ -218,6 +231,14 @@ class EnemyManager {
         )
     }
 
+    weaponDamageThreat() {
+        const { ProjectileManager, myPlayer: myPlayer } = this.client;
+        return (
+            this.shouldIgnoreModule() ||
+            ProjectileManager.totalDamage >= myPlayer.currentHealth
+        )
+    }
+    
     /** Returns true if nearestEnemy is within the specified range */
     nearestEnemyInRangeOf(range: number, target?: Player | Animal | null) {
         const enemy = target || this.nearestEnemy;
@@ -252,6 +273,9 @@ class EnemyManager {
         if (enemy.reverseInsta) {
             this.reverseInsta = true;
         }
+        if (enemy.toolHammerInsta) {
+            this.toolHammerInsta = true;
+        }
         if (enemy.rangedBowInsta) {
             this.rangedBowInsta = true;
         }
@@ -277,7 +301,7 @@ class EnemyManager {
         target.trappedInPrev = target.trappedIn;
         target.trappedIn = null;
 
-        const { ObjectManager, PlayerManager, myPlayer, ModuleHandler } = this.client;
+        const { ObjectManager, PlayerManager, myPlayer: myPlayer, _ModuleHandler: ModuleHandler } = this.client;
         const pos1 = myPlayer.pos.current;
         const pos2 = target.pos.current;
         const distanceToTarget = pos1.distance(pos2);
@@ -429,12 +453,15 @@ class EnemyManager {
 
                 // DETECT SPIKE/CACTUS COLLISION
                 if (
-                    !this.willCollideSpike &&
                     isEnemyObject &&
                     (isSpike || isCactus) &&
                     target.collidingObject(object, 70)
                 ) {
                     this.willCollideSpike = true;
+
+                    if (target.collidingObject(object, 25)) {
+                        this.pushingOnSpike = true;
+                    }
                 }
 
                 // DETECT ACTUAL OR POTENTIAL SPIKE DAMAGE COLLISION
@@ -468,6 +495,7 @@ class EnemyManager {
                 }
             } else {
 
+                // DETECT NEAREST ENEMY I CAN DO POLEAIDS ON
                 const { primary, secondary } = myPlayer.weapon;
                 if (
                     isPlayerObject && object.isDestroyable &&
@@ -523,6 +551,7 @@ class EnemyManager {
                     }
                 }
 
+                // SPIKE TICK DETECTION
                 if (
                     isEnemyObject &&
                     (isSpike || isCactus) &&
@@ -541,7 +570,7 @@ class EnemyManager {
 
                     // CHECK IF IT IS POSSIBLE TO PUSH ENEMY ON SPIKE
                     const KBDistance = myPlayer.getActualMaxKnockback(target);
-                    const spikeScale = object.collisionScale + target.collisionScale * 1.5;
+                    const spikeScale = object.collisionScale + target.collisionScale;// * 1.5;
                     const angleToEnemy = pos1.angle(pos2);
                     const angleToSpike = pos1.angle(pos3);
 
@@ -575,18 +604,68 @@ class EnemyManager {
                         }
                     }
                 }
+
+                // TRAP KNOCKBACK DETECTION
+                if (
+                    !target.isTrapped &&
+                    isEnemyObject &&
+                    object.type === EItem.PIT_TRAP &&
+                    this.isNear(target, this.nearestKBTrapEnemy)
+                ) {
+
+                    // CHECK IF IT IS POSSIBLE TO PUSH ENEMY ON TRAP
+                    const KBDistance = myPlayer.getActualMaxKnockback(target);
+                    const trapScale = object.collisionScale + target.collisionScale;
+                    const angleToEnemy = pos1.angle(pos2);
+                    const angleToSpike = pos1.angle(pos3);
+
+                    const distanceToTrap1 = pos1.distance(pos3);
+                    const offset = Math.asin((2 * trapScale) / (2 * distanceToTrap1));
+                    const angleDistance = getAngleDist(angleToEnemy, angleToSpike);
+                    const intersecting = angleDistance <= offset;
+                    const overlapping = distanceToTarget <= distanceToTrap1;
+                    const inRange = KBDistance !== 0 && target.collidingObject(object, KBDistance);
+
+                    if (intersecting && overlapping && inRange) {
+                        if (this.nearestKBTrap === null) {
+                            this.nearestKBTrapEnemy = target;
+                            this.nearestKBTrap = object;
+                        } else {
+
+                            // TEST IF NEW TRAP HAS LESS DISTANCE BETWEEN STRAIGHT ANGLE THAN PREVIOUS
+                            const pos4 = this.nearestKBTrap.pos.current;
+
+                            const angle1 = pos2.angle(pos3);
+                            const angle2 = pos1.angle(pos3);
+                            const angle3 = pos2.angle(pos4);
+                            const angle4 = pos1.angle(pos4);
+
+                            const angleDist1 = getAngleDist(angle1, angle2);
+                            const angleDist2 = getAngleDist(angle3, angle4);
+                            if (angleDist1 < angleDist2) {
+                                this.nearestKBTrapEnemy = target;
+                                this.nearestKBTrap = object;
+                            }
+                        }
+                    }
+                }
             }
         });
     }
 
     private handleNearest<T extends ENearest>(type: T, enemy: [Player, Animal][T]) {
-        const { myPlayer } = this.client;
+        const { myPlayer: myPlayer } = this.client;
         const primaryDamage = myPlayer.getMaxWeaponDamage(myPlayer.weapon.primary, false);
         if (primaryDamage >= enemy.currentHealth && this.isNear(enemy, this.nearestLowEntity)) {
             this.nearestLowEntity = enemy;
         }
         
         if (this.isNear(enemy, this._nearestEnemy[type])) {
+
+            if (type === ENearest.PLAYER) {
+                const nearest = this._nearestEnemy[type] as Player | null;
+                this.secondNearestEnemy = nearest;
+            }
             this._nearestEnemy[type] = enemy;
 
             if (enemy.canUseTurret && this.client.myPlayer.collidingSimple(enemy, 700)) {
@@ -596,7 +675,7 @@ class EnemyManager {
     }
 
     private handleNearestDangerAnimal(animal: Animal) {
-        const { myPlayer } = this.client;
+        const { myPlayer: myPlayer } = this.client;
 
         if (!animal.isDanger) return;
         if (!myPlayer.collidingEntity(animal, animal.collisionRange)) return;
@@ -611,7 +690,7 @@ class EnemyManager {
     }
 
     attemptSpikePlacement() {
-        const { ModuleHandler } = this.client;
+        const { _ModuleHandler: ModuleHandler } = this.client;
         const placementAngles = this.nearestSpikePlacerAngle;
         if (placementAngles === null) return;
 
@@ -629,7 +708,7 @@ class EnemyManager {
         // It is important to reset data on each tick
         this.reset();
 
-        const { myPlayer, ObjectManager, PlayerManager } = this.client;
+        const { myPlayer: myPlayer, ObjectManager, PlayerManager } = this.client;
         this.checkCollision(myPlayer, true);
 
         for (let i=0,len=enemies.length;i<len;i++) {
@@ -643,9 +722,6 @@ class EnemyManager {
         if (myPlayer.isBullTickTime()) {
             this.potentialDamage += 5;
         }
-        // if (myPlayer.wasTrapped()) {
-        //     this.potentialSpikeDamage = 45;
-        // }
         this.potentialDamage += this.client.ProjectileManager.totalDamage;
         
         const actualSpikeDamage = Math.max(this.potentialSpikeDamage, this.potentialSpikeKnockbackDamage);

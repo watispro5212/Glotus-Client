@@ -18,7 +18,7 @@ export default class Instakill {
     }
 
     postTick() {
-        const { myPlayer, EnemyManager, PlayerManager, ModuleHandler, InputHandler } = this.client;
+        const { myPlayer: myPlayer, EnemyManager, PlayerManager, _ModuleHandler: ModuleHandler, InputHandler } = this.client;
         if (!InputHandler.instaToggle) {
             this.reset();
             InputHandler.instaReset();
@@ -56,8 +56,8 @@ export default class Instakill {
         InputHandler.instakillTarget = nearestEnemy;
         const { reloading } = ModuleHandler.staticModules;
         const primaryReloaded = reloading.isReloaded(WeaponType.PRIMARY);
-        const secondaryReloaded = reloading.isReloaded(WeaponType.SECONDARY);
-        const turretReloaded = reloading.isReloaded(ReloadType.TURRET);
+        const secondaryReloaded = reloading.isReloaded(WeaponType.SECONDARY, 1);
+        const turretReloaded = reloading.isReloaded(ReloadType.TURRET, 1);
         const range = DataHandler.getWeapon(primary).range + nearestEnemy.hitScale;
 
         if (

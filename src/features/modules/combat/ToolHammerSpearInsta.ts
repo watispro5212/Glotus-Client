@@ -17,7 +17,7 @@ export default class ToolHammerSpearInsta {
     }
 
     postTick() {
-        const { ModuleHandler, myPlayer, EnemyManager } = this.client;
+        const { _ModuleHandler: ModuleHandler, myPlayer: myPlayer, EnemyManager } = this.client;
         if (ModuleHandler.moduleActive || !settings._toolSpearInsta) {
             this.nearestTarget = null;
             return;
@@ -52,7 +52,7 @@ export default class ToolHammerSpearInsta {
             ModuleHandler.forceHat = EHat.BULL_HELMET;
             ModuleHandler.forceWeapon = WeaponType.PRIMARY;
             ModuleHandler.shouldAttack = true;
-            ModuleHandler.upgradeItem(EWeapon.POLEARM);
+            ModuleHandler._upgradeItem(EWeapon.POLEARM);
             this.nearestTarget = null;
             this.useTurret = true;
 

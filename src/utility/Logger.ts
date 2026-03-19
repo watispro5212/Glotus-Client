@@ -2,9 +2,9 @@ import { isProd } from "..";
 import GameUI from "../UI/GameUI";
 
 export default class Logger {
-    static readonly staticLog = console.log;
-    static readonly staticError = console.error;
-    static readonly staticWarn = console.warn;
+    static readonly staticLog = console?.log || function(){};
+    static readonly staticError = console?.error || function(){};
+    static readonly staticWarn = console?.warn || function(){};
     static log(msg: any) {
         GameUI.addCacheMessage(["log", msg]);
         if (isProd) return;
@@ -28,19 +28,4 @@ export default class Logger {
         if (isProd) return;
         this.staticLog(msg);
     }
-    
-    // private static readonly timers: Map<string, number> = new Map;
-    
-    // static start(label: string) {
-    //     if (isProd) return;
-    //     this.timers.set(label, performance.now());
-    // }
-
-    // static end(label: string, msg: any) {
-    //     if (isProd) return;
-    //     if (this.timers.has(label)) {
-    //         this.log(`${label}: ${performance.now() - this.timers.get(label)!}`, msg);
-    //     }
-    //     this.timers.delete(label);
-    // }
 }

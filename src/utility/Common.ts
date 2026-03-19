@@ -92,16 +92,17 @@ const incrementor = () => {
 
 export const getUniqueID = incrementor();
 
+const EPS = 1e-9;
 export const pointInsideRect = (
-    point: Vector,
-    rectStart: Vector,
-    rectEnd: Vector
+    p: Vector,
+    rs: Vector,
+    re: Vector
 ): boolean => {
     return (
-        point.x >= rectStart.x &&
-        point.x <= rectEnd.x &&
-        point.y >= rectStart.y &&
-        point.y <= rectEnd.y
+        p.x >= rs.x - EPS &&
+        p.x <= re.x + EPS &&
+        p.y >= rs.y - EPS &&
+        p.y <= re.y + EPS
     )
 }
 
@@ -117,37 +118,49 @@ export const pointInsideRect = (
 //     )
 // }
 
-// export const lineIntersectsLine = (
-//     start1: Vector,
-//     end1: Vector,
-//     start2: Vector,
-//     end2: Vector
-// ): boolean => {
-//     const line1 = end1.copy().sub(start1);
-//     const line2 = end2.copy().sub(start2);
-  
-//     const diff = start1.copy().sub(start2);
-//     const a = (-line2.x * line1.y + line1.x * line2.y);
-//     const s = (-line1.y * diff.x + line1.x * diff.y) / a;
-//     const t = ( line2.x * diff.y - line2.y * diff.x) / a;
-//     return s >= 0 && s <= 1 && t >= 0 && t <= 1;
-// }
+export const lineIntersectsLine = (
+    p: Vector,
+    p2: Vector,
+    q: Vector,
+    q2: Vector
+): boolean => {
+    const r = p2.copy().sub(p);
+    const s = q2.copy().sub(q);
 
-// export const lineIntersectsRect = (
-//     lineStart: Vector,
-//     lineEnd: Vector,
-//     rectStart: Vector,
-//     rectEnd: Vector
-// ): boolean => {
-//     return (
-//         pointInsideRect(lineStart, rectStart, rectEnd) ||
-//         pointInsideRect(lineEnd, rectStart, rectEnd) ||
-//         lineIntersectsLine(lineStart, lineEnd, rectStart, new Vector(rectEnd.x, rectStart.y)) ||
-//         lineIntersectsLine(lineStart, lineEnd, new Vector(rectEnd.x, rectStart.y), rectEnd) ||
-//         lineIntersectsLine(lineStart, lineEnd, rectEnd, new Vector(rectStart.x, rectEnd.y)) ||
-//         lineIntersectsLine(lineStart, lineEnd, new Vector(rectStart.x, rectEnd.y), rectStart)
-//     )
-// }
+    const rxs = r.x * s.y - r.y * s.x;
+    const q_p = q.copy().sub(p);
+    const qpxr = q_p.x * r.y - q_p.y * r.x;
+
+    if (Math.abs(rxs) < EPS) {
+        if (Math.abs(qpxr) < EPS) {
+            const t0 = (q_p.x * r.x + q_p.y * r.y) / (r.x * r.x + r.y * r.y);
+            const t1 = t0 + (s.x * r.x + s.y * r.y) / (r.x * r.x + r.y * r.y);
+            return Math.max(0, Math.min(t0, t1)) <= Math.min(1, Math.max(t0, t1));
+        }
+        return false;
+    }
+
+    const t = (q_p.x * s.y - q_p.y * s.x) / rxs;
+    const u = (q_p.x * r.y - q_p.y * r.x) / rxs;
+
+    return t >= 0 && t <= 1 && u >= 0 && u <= 1;
+}
+
+export const lineIntersectsRect = (
+    lineStart: Vector,
+    lineEnd: Vector,
+    rectStart: Vector,
+    rectEnd: Vector
+): boolean => {
+    return (
+        pointInsideRect(lineStart, rectStart, rectEnd) ||
+        pointInsideRect(lineEnd, rectStart, rectEnd) ||
+        lineIntersectsLine(lineStart, lineEnd, rectStart, new Vector(rectEnd.x, rectStart.y)) ||
+        lineIntersectsLine(lineStart, lineEnd, new Vector(rectEnd.x, rectStart.y), rectEnd) ||
+        lineIntersectsLine(lineStart, lineEnd, rectEnd, new Vector(rectStart.x, rectEnd.y)) ||
+        lineIntersectsLine(lineStart, lineEnd, new Vector(rectStart.x, rectEnd.y), rectStart)
+    )
+}
 
 export const sleep = (ms: number): Promise<void> => {
     return new Promise<void>(resolve => setTimeout(resolve, ms));

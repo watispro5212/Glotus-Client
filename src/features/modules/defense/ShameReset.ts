@@ -1,6 +1,7 @@
 import type PlayerClient from "../../../PlayerClient";
 import { ItemType } from "../../../types/Items";
 import { EHat, EStoreType } from "../../../types/Store";
+import settings from "../../../utility/Settings";
 
 class ShameReset {
     readonly moduleName = "shameReset";
@@ -12,7 +13,7 @@ class ShameReset {
     }
 
     isBullTickTime() {
-        const { myPlayer } = this.client;
+        const { myPlayer: myPlayer } = this.client;
         return (
             !myPlayer.shameActive &&
             myPlayer.shameCount > 0 &&
@@ -22,7 +23,7 @@ class ShameReset {
     }
 
     private get shouldReset() {
-        const { ModuleHandler } = this.client;
+        const { _ModuleHandler: ModuleHandler } = this.client;
         return (
             this.isBullTickTime() &&
             ModuleHandler.canBuy(EStoreType.HAT, EHat.BULL_HELMET)
@@ -30,7 +31,7 @@ class ShameReset {
     }
 
     private notSave() {
-        const { EnemyManager, myPlayer, ModuleHandler } = this.client;
+        const { EnemyManager, myPlayer: myPlayer, _ModuleHandler: ModuleHandler } = this.client;
         return (
             ModuleHandler.forceHat === EHat.TANK_GEAR ||
             EnemyManager.instaThreat() ||
@@ -41,8 +42,8 @@ class ShameReset {
     }
 
     postTick() {
-        const { ModuleHandler } = this.client;
-        if (!this.notSave() && (this.shouldReset || this.tickToggle)) {
+        const { _ModuleHandler: ModuleHandler } = this.client;
+        if (settings._autoheal && !this.notSave() && (this.shouldReset || this.tickToggle)) {
             this.tickToggle = true;
             ModuleHandler.moduleActive = true;
             ModuleHandler.forceHat = EHat.BULL_HELMET;

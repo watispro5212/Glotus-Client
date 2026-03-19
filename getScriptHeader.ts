@@ -36,15 +36,56 @@ const getFormattedDate = () => {
     return `${day}/${month}/${year} | ${hours}:${minutes}:${seconds}`;
 }
 
+const sanitize = (text: string) => {
+    return text.replace(/[\s\n]/g, "").replace(/\/\/==\/?UserScript==/g, "");
+}
+
+const createHash = (input: string) => {
+    let hash = 2166136261;
+    const fnvPrime = 16777619;
+
+    for (let i = 0; i < input.length; i++) {
+        const charCode = input.charCodeAt(i);
+        hash ^= charCode;
+        hash *= fnvPrime;
+        hash = hash & 0xFFFFFFFF;
+    }
+
+    let hexString = hash.toString(16);
+    while (hexString.length < 8) {
+        hexString = "0" + hexString;
+    }
+    
+    return hexString;
+}
+
 const getScriptHeader = async (file: string) => {
     const bundleHash = await getBundleHash();
     const packageJSON: PackageJson = await Bun.file("package.json").json();
     const userscriptHeader = await Bun.file(file).text();
-    const header = userscriptHeader
-                    .replace(/{ADDITIONAL_INFO}/, `Version: {SCRIPT_VERSION}\n    Build Time: ${getFormattedDate()}\n    Works On: ${bundleHash}`)
-                    .replace(/{SCRIPT_VERSION}/g, packageJSON.version!)
     
-    return { header: header, version: packageJSON.version! };
+    let header = userscriptHeader
+                    .replace(/{BUILD_TIME}/g, getFormattedDate())
+                    .replace(/{WORKS_ON}/g, bundleHash)
+                    .replace(/{SCRIPT_VERSION}/g, packageJSON.version!);
+
+    const headerData = header.match(/\/\/\s*==UserScript==\s*(.+?)\s*\/\/\s*==\/UserScript==/s);
+    let header_hash = "";
+    if (headerData !== null) {
+        const data = headerData[1];
+        if (data) {
+            const sanitized = sanitize(data);
+            header_hash = createHash(sanitized);
+        }
+    }
+
+    header = header.replace(/{HEADER_HASH}/g, header_hash);
+    console.log("Generated hash:", header_hash);
+    return {
+        header,
+        version: packageJSON.version!,
+        header_hash,
+    }
 }
 
 export default getScriptHeader;

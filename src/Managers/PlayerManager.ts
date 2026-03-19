@@ -68,7 +68,7 @@ class PlayerManager {
     }
 
     createPlayer({ socketID, id, nickname, health, skinID }: IPlayerData) {
-        const { myPlayer } = this.client;
+        const { myPlayer: myPlayer } = this.client;
         if (socketID === this.client.clientID && myPlayer.id === -1) {
             myPlayer.playerInit(id);
         }
@@ -117,7 +117,7 @@ class PlayerManager {
         if (player === undefined) return;
         const { hatID, reload } = player;
 
-        const { myPlayer, ObjectManager } = this.client;
+        const { myPlayer: myPlayer, ObjectManager } = this.client;
         player.lastAttacked = myPlayer.tickCount;
         
         const isMyPlayer = myPlayer.isMyPlayerByID(id);
@@ -187,7 +187,7 @@ class PlayerManager {
         this.step = now - this.start;
         this.start = now;
 
-        const { myPlayer, isOwner, EnemyManager } = this.client;
+        const { myPlayer: myPlayer, isOwner, EnemyManager } = this.client;
         for (let i=0;i<buffer.length;i+=13) {
             const id = buffer[i];
             const player = this.playerData.get(id)!;
@@ -205,14 +205,10 @@ class PlayerManager {
                 buffer[i + 7],
                 buffer[i + 8],
                 buffer[i + 9],
-                buffer[i + 10]
+                buffer[i + 10],
+                buffer[i + 11],
+                buffer[i + 12],
             );
-
-            // if (this.prevPlayers.has(player)) {
-            //     this.prevPlayers.delete(player);
-            // }
-            // this.lastEnemyReceivedDamage[0] = 0;
-            // this.lastEnemyReceivedDamage[1] = 0;
 
             if (
                 !this.client.isBotByID(id) &&
@@ -261,7 +257,8 @@ class PlayerManager {
     }
 
     postTick() {
-        const { EnemyManager, ProjectileManager, ObjectManager, myPlayer, isOwner } = this.client;
+        const { EnemyManager, ProjectileManager, ObjectManager, myPlayer: myPlayer, isOwner, _ModuleHandler: ModuleHandler } = this.client;
+        ModuleHandler.moduleStart = performance.now();
         ProjectileManager.postTick();
         EnemyManager.handleEnemies(this.enemies);
 
@@ -357,7 +354,7 @@ class PlayerManager {
         const weapon = owner.weapon.current;
         if (weapon !== EWeapon.WOODEN_SHIELD) return false;
         
-        const { myPlayer, ModuleHandler } = this.client;
+        const { myPlayer: myPlayer, _ModuleHandler: ModuleHandler } = this.client;
         const pos1 = owner.pos.current;
         const pos2 = target.pos.current;
         const angle = pos1.angle(pos2);

@@ -1,18 +1,8 @@
 {
     "name": "glotus-client",
-    "version": "5.3",
+    "version": "5.5.4",
     "author": "Murka",
     "module": "src/index.ts",
-    "devDependencies": {
-        "@types/bun": "latest",
-        "concurrently": "^9.1.2",
-        "cross-env": "^7.0.3",
-        "js-confuser": "^2.0.0",
-        "terser": "^5.40.0"
-    },
-    "peerDependencies": {
-        "typescript": "^5"
-    },
     "description": "An excellent Moomoo.io hack for a comfortable gaming experience",
     "keywords": [
         "hack",
@@ -22,11 +12,27 @@
         "userscript",
         "io",
         "tampermonkey",
+        "violentmonkey",
         "game",
-        "browser"
+        "browser",
+        "bun",
+        "typescript",
+        "moomoo"
     ],
     "license": "MIT",
     "private": true,
+    "type": "module",
+    "devDependencies": {
+        "@types/bun": "latest",
+        "concurrently": "^9.1.2",
+        "cross-env": "^7.0.3",
+        "js-confuser": "^2.0.0",
+        "terser": "^5.40.0",
+        "type-fest": "^5.4.4"
+    },
+    "peerDependencies": {
+        "typescript": "^5"
+    },
     "scripts": {
         "host": "bun run hoster.ts",
         "dev": "cross-env NODE_ENV=development bun build src/index.ts --outdir dist --watch --target browser",
@@ -34,6 +40,5 @@
         "start": "concurrently \"bun run host\" \"bun run dev\"",
         "private": "cross-env NODE_ENV=production bun run privateBuild.ts",
         "commit-private": "cd private && git add . && git commit -am \"Update private files\" && git push origin main"
-    },
-    "type": "module"
+    }
 }

@@ -24,7 +24,7 @@ class Projectile {
     readonly scale: typeof Projectiles[number]["scale"];
     readonly maxRange: number;
     readonly damage: typeof Projectiles[number]["damage"];
-    owner: Player | null = null;
+    ownerClient: Player | null = null;
     life = 9;
 
     constructor(

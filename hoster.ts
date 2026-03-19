@@ -12,7 +12,7 @@ Bun.serve({
         };
 
         if (url.pathname === "/") {
-            return new Response("Hello from Fishka Client! Please visit 'dist' or 'build' paths.", { headers });
+            return new Response("Hello from Glotus Client! Please visit 'dist' or 'build' paths.", { headers });
         }
 
         if (url.pathname === "/dist") {

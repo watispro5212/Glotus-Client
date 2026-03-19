@@ -16,7 +16,7 @@ export default class AutoSync {
     }
 
     postTick() {
-        const { ModuleHandler, EnemyManager, myPlayer } = this.client;
+        const { _ModuleHandler: ModuleHandler, EnemyManager, myPlayer: myPlayer } = this.client;
         if (ModuleHandler.moduleActive || !settings._autoSync) {
             this.useTurret = false;
             return;

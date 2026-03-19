@@ -11,13 +11,13 @@ class UpdateAttack {
     }
 
     private getAttackAngle() {
-        const { useAngle, currentAngle } = this.client.ModuleHandler;
+        const { useAngle, _currentAngle: currentAngle } = this.client._ModuleHandler;
         if (useAngle !== null) return useAngle;
         return currentAngle;
     }
 
     postTick(): void {
-        const { ModuleHandler, myPlayer } = this.client;
+        const { _ModuleHandler: ModuleHandler, myPlayer: myPlayer } = this.client;
         const { useWeapon, forceWeapon, weapon, attacking, useItem, sentAngle, staticModules } = ModuleHandler;
         const { reloading } = staticModules;
 

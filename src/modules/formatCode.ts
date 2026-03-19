@@ -6,37 +6,37 @@ const formatCode = (code: string) => {
     const Hook = new Regexer(code);
 
     if (!isProd) {
-        Hook.code = `console.log("Loaded bundle..");` + Hook.code;
+        Hook.code = `console?.log("Loaded bundle..");` + Hook.code;
     }
 
     Hook.append(
         "preRenderLoop",
         /\)\}\}\(\);function \w+\(\)\{/,
-        `Glotus.Renderer.preRender();`
+        `Glotus._Renderer._preRender();`
     );
 
     Hook.append(
         "postRenderLoop",
         /\w+,\w+\(\),requestAnimFrame\(\w+\)/,
-        ";Glotus.Renderer.postRender();"
+        ";Glotus._Renderer._postRender();"
     );
 
     Hook.append(
         "mapPreRender",
         /(\w+)\.lineWidth=NUM{4};/,
-        `Glotus.Renderer.mapPreRender($1);`
+        `Glotus._Renderer._mapPreRender($1);`
     );
 
     Hook.prepend(
         "gameInit",
         /function (\w+)\(\w+\)\{\w+\.\w+\(\w+,f/,
-        "Glotus.gameInit=function(a){$1(a);};"
+        "Glotus._gameInit=function(a){$1(a);};"
     );
 
     Hook.prepend(
         "LockRotationClient",
         /return \w+\?\(\!/,
-        `return Glotus.myClient.ModuleHandler.currentAngle;`
+        `return Glotus._myClient._ModuleHandler._currentAngle;`
     );
 
     Hook.replace(
@@ -48,25 +48,25 @@ const formatCode = (code: string) => {
     Hook.append(
         "offset",
         /\W170\W.+?(\w+)=\w+\-\w+\/2.+?(\w+)=\w+\-\w+\/2;/,
-        `Glotus.myClient.myPlayer.offset.setXY($1,$2);`
+        `Glotus._offset._setXY($1,$2);`
     );
 
     Hook.prepend(
         "renderEntity",
         /\w+\.health>NUM{0}.+?(\w+)\.fillStyle=(\w+)==(\w+)/,
-        `;Glotus.hooks.EntityRenderer.render($1,$2,$3);false&&`
+        `;Glotus._hooks._EntityRenderer._render($1,$2,$3);false&&`
     );
 
     Hook.append(
         "renderItemPush",
         /,(\w+)\.blocker,\w+.+?2\)\)/,
-        `,Glotus.Renderer.renderObjects.push($1)`
+        `,Glotus._Renderer._renderObjects.push($1)`
     );
 
     Hook.append(
         "renderItem",
         /70, 0.35\)",(\w+).+?\w+\)/,
-        `,Glotus.hooks.ObjectRenderer.render($1)`
+        `,Glotus._hooks._ObjectRenderer._render($1)`
     );
 
     Hook.append(
@@ -78,13 +78,13 @@ const formatCode = (code: string) => {
     Hook.replace(
         "handleEquip",
         /\w+\.send\("\w+",0,(\w+),(\w+)\)/,
-        `Glotus.myClient.ModuleHandler.equip($2,$1,true,true)`
+        `Glotus._myClient._ModuleHandler._equip($2,$1,true,true)`
     );
 
     Hook.replace(
         "handleBuy",
         /\w+\.send\("\w+",1,(\w+),(\w+)\)/,
-        `Glotus.myClient.ModuleHandler.buy($2,$1,true)`
+        `Glotus._myClient._ModuleHandler._buy($2,$1,true)`
     );
 
     Hook.prepend(
@@ -102,7 +102,7 @@ const formatCode = (code: string) => {
     Hook.prepend(
         "preRender",
         /(\w+)\.lineWidth=NUM{4},/,
-        `Glotus.hooks.ObjectRenderer.preRender($1);`
+        `Glotus._hooks._ObjectRenderer._preRender($1);`
     );
     
     Hook.replace(
@@ -114,14 +114,14 @@ const formatCode = (code: string) => {
     Hook.replace(
         "upgradeItem",
         /(upgradeItem.+?onclick.+?)\w+\.send\("\w+",(\w+)\)\}/,
-        "$1Glotus.myClient.ModuleHandler.upgradeItem($2)}"
+        "$1Glotus._myClient._ModuleHandler._upgradeItem($2)}"
     );
 
     const data = Hook.match("DeathMarker", /99999.+?(\w+)=\{x:(\w+)/);
     Hook.append(
         "playerDied",
         /NUM{99999};function \w+\(\)\{/,
-        `if(Glotus.settings._autospawn){${data[1]}={x:${data[2]}.x,y:${data[2]}.y};return};`
+        `if(Glotus._settings._autospawn){${data[1]}={x:${data[2]}.x,y:${data[2]}.y};return};`
     );
 
     Hook.append(
@@ -151,21 +151,14 @@ const formatCode = (code: string) => {
     Hook.replace(
         "gameColor",
         /rgba\(0, 0, 70, 0.35\)/,
-        // "rgba(31, 14, 61, 0.6)"
         "rgba(23, 6, 62, 0.6)"
     );
 
     Hook.prepend(
         "renderPlayer",
         /function (\w+)\(\w+,\w+\)\{\w+=\w+\|\|\w+,/,
-        "Glotus.hooks.renderPlayer=$1;"
+        "Glotus._hooks._renderPlayer=$1;"
     );
-
-    // Hook.replace(
-    //     "showText",
-    //     /(function (\w+)\(\w+,\w+,(\w+),\w+)\)\{(\w+===)/,
-    //     "Glotus.hooks.showText=$2;$1,ignore){if(!ignore&&$3>0&&Glotus.settings._stackedDamage)return;$4"
-    // );
 
     Hook.replace(
         "maskFRVR",
@@ -177,13 +170,13 @@ const formatCode = (code: string) => {
     Hook.replace(
         "scaleWidth",
         /=1920/,
-        `=Glotus.ZoomHandler.scale.smooth.w`
+        `=Glotus._ZoomHandler._scale._smooth._w`
     );
 
     Hook.replace(
         "scaleHeight",
         /=1080/,
-        `=Glotus.ZoomHandler.scale.smooth.h`
+        `=Glotus._ZoomHandler._scale._smooth._h`
     );
 
     Hook.replace(
@@ -191,12 +184,6 @@ const formatCode = (code: string) => {
         /Math\.lerpAngle/,
         "THIS_STORAGE.lerpAngle",
         "g",
-    );
-
-    Hook.replace(
-        "smoothRendering",
-        /(\w+=)NUM{170};/,
-        "$1Glotus._getSmoothRendering();"
     );
 
     const addCode = isProd ? "const Glotus=window.Glotus;delete window.Glotus;" : "";

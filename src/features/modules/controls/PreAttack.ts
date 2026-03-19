@@ -10,14 +10,14 @@ class PreAttack {
     }
 
     private isReloadedByType(type: WeaponType | null) {
-        const { weapon, staticModules } = this.client.ModuleHandler;
+        const { weapon, staticModules } = this.client._ModuleHandler;
         const weaponType = type !== null ? type : weapon;
         return staticModules.reloading.isReloaded(weaponType);
     }
 
     postTick(): void {
         
-        const { ModuleHandler } = this.client;
+        const { _ModuleHandler: ModuleHandler } = this.client;
         const { useWeapon, weapon, forceWeapon } = ModuleHandler;
 
         const nextWeapon = forceWeapon !== null ? forceWeapon : useWeapon;

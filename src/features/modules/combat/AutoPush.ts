@@ -13,7 +13,7 @@ export default class AutoPush {
     }
 
     postTick() {
-        const { EnemyManager, myPlayer, ModuleHandler, ObjectManager, PlayerManager } = this.client;
+        const { EnemyManager, myPlayer: myPlayer, _ModuleHandler: ModuleHandler, ObjectManager, PlayerManager } = this.client;
 
         this.pushPos = null;
         

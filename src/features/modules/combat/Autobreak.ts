@@ -1,7 +1,9 @@
+import Config from "../../../constants/Config";
 import type { PlayerObject } from "../../../data/ObjectItem";
 import type PlayerClient from "../../../PlayerClient";
 import { EWeapon, WeaponType, type TMelee } from "../../../types/Items";
 import { EHat } from "../../../types/Store";
+import { findMiddleAngle, getAngleDist } from "../../../utility/Common";
 import DataHandler from "../../../utility/DataHandler";
 import settings from "../../../utility/Settings";
 
@@ -22,18 +24,18 @@ export default class Autobreak {
         return 0;
     }
 
-    private getDestroyingObject(): PlayerObject | null {
-        const { EnemyManager, myPlayer } = this.client;
+    private getDestroyingObject(): [ PlayerObject | null, PlayerObject | null ] {
+        const { EnemyManager, myPlayer: myPlayer } = this.client;
 
         const pos0 = myPlayer.pos.current;
         const primary = myPlayer.getItemByType(WeaponType.PRIMARY);
         const secondary = myPlayer.getItemByType(WeaponType.SECONDARY);
 
-        const isPrimary = primary !== EWeapon.STICK && primary !== EWeapon.POLEARM;
+        const isPrimary = primary !== EWeapon.STICK && primary !== EWeapon.POLEARM && primary !== EWeapon.BAT;
         const isHammer = secondary === EWeapon.GREAT_HAMMER;
 
-        const nearestTrap = EnemyManager.nearestTrap || EnemyManager.nearestEnemyObject;
-        const nearestSpike = EnemyManager.nearestSpike || EnemyManager.nearestEnemyObject;
+        const nearestTrap = EnemyManager.nearestTrap || EnemyManager.nearestEnemyObject || EnemyManager.secondNearestEnemyObject;
+        const nearestSpike = EnemyManager.nearestSpike || EnemyManager.nearestEnemyObject || EnemyManager.secondNearestEnemyObject;
 
         if (nearestSpike) {
             const pos2 = nearestSpike.pos.current;
@@ -43,21 +45,21 @@ export default class Autobreak {
             if (nearestTrap) {
                 const canUsePrimary = isPrimary && distPlayerSpike <= this.getWeaponRange(primary, nearestSpike);
                 if (canUseHammer || canUsePrimary) {
-                    return nearestSpike;
+                    return [ nearestSpike, nearestTrap ];
                 }
-                return nearestTrap;
+                return [ nearestTrap, nearestSpike ];
             }
 
             if (canUseHammer) {
-                return nearestSpike;
+                return [ nearestSpike, nearestTrap ];
             }
         }
 
-        return nearestTrap;
+        return [ nearestTrap, nearestSpike ];
     }
 
     private getDestroyingWeapon(target: PlayerObject): WeaponType | null {
-        const { myPlayer, ModuleHandler } = this.client;
+        const { myPlayer: myPlayer, _ModuleHandler: ModuleHandler } = this.client;
 
         const pos0 = myPlayer.pos.current;
         const pos1 = target.pos.current;
@@ -92,10 +94,10 @@ export default class Autobreak {
 
     postTick(): void {
         
-        const { EnemyManager, myPlayer, ModuleHandler } = this.client;
+        const { EnemyManager, myPlayer: myPlayer, _ModuleHandler: ModuleHandler } = this.client;
         if (!settings._autobreak || ModuleHandler.moduleActive) return;
 
-        const target = this.getDestroyingObject();
+        const [ target, secondTarget ] = this.getDestroyingObject();
         if (target === null) return;
 
         const type = this.getDestroyingWeapon(target);
@@ -108,10 +110,26 @@ export default class Autobreak {
         const distance = pos1.distance(pos2);
         if (distance > range) return;
         
-        const angle = pos1.angle(pos2);
+        const angle1 = pos1.angle(pos2);
+        let angle = angle1;
+
+        // HANDLE DESTRUCTION OF MULTIPLE OBJECTS AT ONCE
+        // if (secondTarget !== null && target !== secondTarget) {
+        //     const pos3 = secondTarget.pos.current;
+
+        //     const angle2 = pos1.angle(pos3);
+        //     const middleAngle = findMiddleAngle(angle1, angle2);
+        //     if (
+        //         myPlayer.colliding(target, range + secondTarget.hitScale) &&
+        //         getAngleDist(angle1, middleAngle) <= Config.gatherAngle &&
+        //         getAngleDist(angle2, middleAngle) <= Config.gatherAngle
+        //     ) {
+        //         angle = middleAngle;
+        //     }
+        // }
+
         const buildingDamage = myPlayer.getBuildingDamage(weapon, false);
         const isEnoughDamage = target.health <= buildingDamage;
-
 
         const nearestEnemy = EnemyManager.nearestEnemy;
         const totalDamage = EnemyManager.primaryDamage + EnemyManager.potentialSpikeDamage;

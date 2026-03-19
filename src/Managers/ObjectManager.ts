@@ -70,7 +70,7 @@ class ObjectManager {
 
         if (object instanceof PlayerObject) {
 
-            const { PlayerManager, myPlayer } = this.client;
+            const { PlayerManager, myPlayer: myPlayer } = this.client;
             const owner = (
                 PlayerManager.playerData.get(object.ownerID) ||
                 PlayerManager.createPlayer({ id: object.ownerID })
@@ -118,7 +118,7 @@ class ObjectManager {
             if (player !== undefined) {
                 player.handleObjectDeletion(object);
                 
-                const { myPlayer } = this.client;
+                const { myPlayer: myPlayer } = this.client;
                 const pos1 = object.pos.current.copy();
                 const pos2 = this.client.myPlayer.pos.current.copy();
                 const distance = pos1.distance(pos2);
@@ -229,7 +229,7 @@ class ObjectManager {
         } = options;
         const item = DataHandler.getItem(id);
 
-        const { myPlayer, ModuleHandler } = this.client;
+        const { myPlayer: myPlayer, _ModuleHandler: ModuleHandler } = this.client;
         const length = myPlayer.getItemPlaceScale(id);
 
         const angles: IAngle[] = [];

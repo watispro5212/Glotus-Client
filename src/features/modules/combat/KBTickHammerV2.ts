@@ -16,7 +16,7 @@ export default class KBTickHammerV2 {
     }
 
     postTick() {
-        const { ModuleHandler, EnemyManager, myPlayer } = this.client;
+        const { _ModuleHandler: ModuleHandler, EnemyManager, myPlayer: myPlayer } = this.client;
         if (ModuleHandler.moduleActive || !settings._knockbackTickHammer || EnemyManager.shouldIgnoreModule()) {
             this.targetEnemy = null;
             return;
@@ -28,7 +28,7 @@ export default class KBTickHammerV2 {
         const primary = myPlayer.getItemByType(WeaponType.PRIMARY);
         const secondary = myPlayer.getItemByType(WeaponType.SECONDARY);
         const isHammer = secondary !== null && secondary !== EWeapon.WOODEN_SHIELD;
-        const primaryReloaded = reloading.isReloaded(ReloadType.PRIMARY);
+        const primaryReloaded = reloading.isReloaded(ReloadType.PRIMARY, 1);
         const secondaryReloaded = reloading.isReloaded(ReloadType.SECONDARY);
 
         // ATTACKING WITH SPEAR AND BULL IF WE FOUND TARGET PREVIOUSLY
@@ -85,6 +85,7 @@ export default class KBTickHammerV2 {
                     this.targetEnemy = nearestEnemySpikeCollider;
 
                     this.client.StatsManager.knockbackTickHammerTimes = 1;
+                    EnemyManager.attemptSpikePlacement();
                 }
             }
         }

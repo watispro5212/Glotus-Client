@@ -13,19 +13,22 @@ export default class DefaultAcc {
     }
 
     private shouldUseTail() {
-        const { ModuleHandler, myPlayer } = this.client;
+        const { _ModuleHandler: ModuleHandler, myPlayer: myPlayer } = this.client;
         const { reloading } = ModuleHandler.staticModules;
 
         const primary = myPlayer.getItemByType(WeaponType.PRIMARY);
         const secondary = myPlayer.getItemByType(WeaponType.SECONDARY);
+        const isMelee1 = DataHandler.isMelee(primary);
+        const isMelee2 = DataHandler.isMelee(secondary);
         return (
-            DataHandler.isMelee(primary) && primary !== EWeapon.STICK && !reloading.isReloaded(WeaponType.PRIMARY, 2) ||
-            DataHandler.isMelee(secondary) && !reloading.isReloaded(WeaponType.SECONDARY, 2)
+            isMelee1 && primary === EWeapon.STICK ||
+            isMelee1 && !reloading.isReloaded(WeaponType.PRIMARY, 3) ||
+            isMelee2 && !reloading.isReloaded(WeaponType.SECONDARY, 3)
         );
     }
 
     private getBestCurrentAcc() {
-        const { ModuleHandler, EnemyManager } = this.client;
+        const { _ModuleHandler: ModuleHandler, EnemyManager } = this.client;
         const { actual } = ModuleHandler.getAccStore();
 
         const useCorrupt = ModuleHandler.canBuy(EStoreType.ACCESSORY, EAccessory.CORRUPT_X_WINGS);
@@ -33,7 +36,7 @@ export default class DefaultAcc {
         const useTail = ModuleHandler.canBuy(EStoreType.ACCESSORY, EAccessory.MONKEY_TAIL);
         const useActual = ModuleHandler.canBuy(EStoreType.ACCESSORY, actual);
 
-        // if (useTail && this.shouldUseTail()) return EAccessory.MONKEY_TAIL;
+        if (settings._tailPriority && useTail && this.shouldUseTail()) return EAccessory.MONKEY_TAIL;
         if (EnemyManager.detectedEnemy || EnemyManager.nearestEnemyInRangeOf(300, EnemyManager.nearestEntity)) {
             const isEnemy = EnemyManager.nearestEntity === EnemyManager.nearestEnemy;
             if (isEnemy && useCorrupt && settings._antienemy) return EAccessory.CORRUPT_X_WINGS;
@@ -48,7 +51,7 @@ export default class DefaultAcc {
     }
 
     postTick() {
-        const { ModuleHandler } = this.client;
+        const { _ModuleHandler: ModuleHandler } = this.client;
         const acc = this.getBestCurrentAcc();
         ModuleHandler.useAcc = acc;
     }

@@ -57,7 +57,7 @@ class AutoPlacer {
     postTick(): void {
         if (!settings._autoplacer) return;
         
-        const { myPlayer, ObjectManager, ModuleHandler, EnemyManager } = this.client;
+        const { myPlayer: myPlayer, ObjectManager, _ModuleHandler: ModuleHandler, EnemyManager } = this.client;
         const { currentType } = ModuleHandler;
         const pos0 = myPlayer.pos.current;
         
@@ -122,11 +122,12 @@ class AutoPlacer {
             let type = currentType && currentType !== ItemType.FOOD ? currentType : ItemType.TRAP;
             if (!myPlayer.canPlace(type)) return;
 
-            const id = myPlayer.getItemByType(type)!;
-            if (id === EItem.BOOST_PAD) return;
+            let id = myPlayer.getItemByType(type)!;
+            if (id === EItem.BOOST_PAD && !myPlayer.isTrapped) return;
             
-            if (this.placementCount >= 4) {
+            if (this.placementCount >= 3) {
                 type = ItemType.SPIKE;
+                id = myPlayer.getItemByType(type)!;
             }
             angles = ObjectManager.getBestPlacementAngles({
                 position: pos0,
@@ -135,7 +136,7 @@ class AutoPlacer {
                 ignoreID: null,
                 preplace: true,
                 reduce: true,
-                fill: true,
+                fill: type !== ItemType.SPIKE,
             });
             itemType = type;
 
@@ -160,6 +161,16 @@ class AutoPlacer {
 
             ModuleHandler.place(itemType, angle);
             ModuleHandler.placeAngles[1].push(angle);
+
+            // const ping = this.client.SocketManager.pong / 2;
+            // const tick = this.client.SocketManager.TICK;
+            // if (ping <= tick) {
+            //     const delay = Math.max(0, tick - ping);
+
+            //     setTimeout(() => {
+            //         ModuleHandler.place(itemType, angle, true);
+            //     }, delay);
+            // }
         }
 
         if (itemType !== ItemType.SPIKE) {

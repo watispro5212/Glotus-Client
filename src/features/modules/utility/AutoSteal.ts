@@ -13,7 +13,7 @@ export default class AutoSteal {
     }
 
     postTick() {
-        const { ModuleHandler, EnemyManager, myPlayer } = this.client;
+        const { _ModuleHandler: ModuleHandler, EnemyManager, myPlayer: myPlayer } = this.client;
         if (ModuleHandler.moduleActive || !settings._autoSteal) return;
 
         const nearestLowEntity = EnemyManager.nearestLowEntity;

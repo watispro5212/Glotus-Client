@@ -18,7 +18,7 @@ export default class KnockbackTickTrap {
     }
 
     postTick() {
-        const { ModuleHandler, EnemyManager, myPlayer } = this.client;
+        const { _ModuleHandler: ModuleHandler, EnemyManager, myPlayer: myPlayer } = this.client;
         if (ModuleHandler.moduleActive || !settings._knockbackTickTrap || EnemyManager.shouldIgnoreModule()) {
             this.targetEnemy = null;
             this.useTurret = false;
@@ -36,7 +36,7 @@ export default class KnockbackTickTrap {
         // const isPolearm = primary === EWeapon.POLEARM;
         const isHammer = secondary === EWeapon.GREAT_HAMMER;
 
-        const primaryReloaded = reloading.isReloaded(ReloadType.PRIMARY);
+        const primaryReloaded = reloading.isReloaded(ReloadType.PRIMARY, 1);
         const secondaryReloaded = reloading.isReloaded(ReloadType.SECONDARY);
         const turretReloaded = reloading.isReloaded(ReloadType.TURRET);
 
@@ -62,7 +62,7 @@ export default class KnockbackTickTrap {
             this.targetEnemy = null;
             this.useTurret = true;
 
-            // EnemyManager.attemptSpikePlacement();
+            EnemyManager.attemptSpikePlacement();
             return;
         }
 
@@ -110,6 +110,7 @@ export default class KnockbackTickTrap {
                 this.targetEnemy = nearestTrappedEnemy;
 
                 this.client.StatsManager.knockbackTickTrapTimes = 1;
+                EnemyManager.attemptSpikePlacement();
             }
         }
     }

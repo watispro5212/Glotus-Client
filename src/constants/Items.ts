@@ -893,16 +893,6 @@ export const Items = [{
     placeOffset: -5
 }] as const;
 
-// const data = {} as any;
-// for (const item of Items) {
-//     const offset = "scale" in item ? item.scale : 0;
-//     if (data[offset] === undefined) {
-//         data[offset] = [];
-//     }
-//     data[offset].push(item.name);
-// }
-// console.log(data);
-
 /**
  * All existing weapon variants
  */

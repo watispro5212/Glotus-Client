@@ -1,6 +1,6 @@
 import type PlayerClient from "../../../PlayerClient";
 import { ItemType, ReloadType, WeaponType } from "../../../types/Items";
-import { EHat } from "../../../types/Store";
+import { EHat, EStoreType } from "../../../types/Store";
 import DataHandler from "../../../utility/DataHandler";
 import settings from "../../../utility/Settings";
 
@@ -14,7 +14,7 @@ export default class KnockbackTick {
     }
 
     postTick() {
-        const { ModuleHandler, EnemyManager, myPlayer } = this.client;
+        const { _ModuleHandler: ModuleHandler, EnemyManager, myPlayer: myPlayer } = this.client;
         if (ModuleHandler.moduleActive || !settings._knockbackTick || EnemyManager.shouldIgnoreModule()) {
             this.useTurret = false;
             return;
@@ -25,12 +25,14 @@ export default class KnockbackTick {
         const reloading = ModuleHandler.staticModules.reloading;
         const primary = myPlayer.getItemByType(WeaponType.PRIMARY);
         const primaryReloaded = reloading.isReloaded(ReloadType.PRIMARY);
-        const turretReloaded = reloading.isReloaded(ReloadType.TURRET);
+        const turretReloaded = ModuleHandler.hasStoreItem(EStoreType.HAT, EHat.TURRET_GEAR) && reloading.isReloaded(ReloadType.TURRET);
 
         if (this.useTurret) {
             this.useTurret = false;
-            ModuleHandler.moduleActive = true;
-            ModuleHandler.forceHat = EHat.TURRET_GEAR;
+            if (turretReloaded) {
+                ModuleHandler.moduleActive = true;
+                ModuleHandler.forceHat = EHat.TURRET_GEAR;
+            }
             return;
         }
 
@@ -69,7 +71,7 @@ export default class KnockbackTick {
                     
                     this.client.StatsManager.knockbackTickTimes = 1;
 
-                    // EnemyManager.attemptSpikePlacement();
+                    EnemyManager.attemptSpikePlacement();
                 }
             }
         }

@@ -32,10 +32,10 @@ class ProjectileManager {
     }
 
     foundProjectile(projectile: Projectile) {
-        const owner = projectile.owner;
+        const owner = projectile.ownerClient;
         if (owner === null) return;
 
-        const { PlayerManager, myPlayer } = this.client;
+        const { PlayerManager, myPlayer: myPlayer } = this.client;
         if (PlayerManager.isEnemyByID(owner.id, myPlayer)) {
             const pos1 = projectile.pos.current;
             const pos2 = myPlayer.pos.current;
@@ -50,10 +50,10 @@ class ProjectileManager {
     }
 
     foundProjectileThreat(projectile: Projectile) {
-        const owner = projectile.owner;
+        const owner = projectile.ownerClient;
         if (owner === null) return;
 
-        const { PlayerManager, myPlayer, SocketManager } = this.client;
+        const { PlayerManager, myPlayer: myPlayer, SocketManager } = this.client;
         for (const enemy of PlayerManager.enemies) {
             if (!PlayerManager.isEnemyByID(owner.id, enemy)) continue;
 
@@ -66,7 +66,6 @@ class ProjectileManager {
             if (lookingAt) {
                 const tickDistance = Math.ceil(distance / (projectile.speed * SocketManager.TICK));
                 enemy.nextDamageTick = myPlayer.tickCount + tickDistance;
-                // console.log("sync!!!", distance, myPlayer.tickCount, tickDistance);
             }
         }
     }

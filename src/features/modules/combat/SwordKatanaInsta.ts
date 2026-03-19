@@ -16,7 +16,7 @@ export default class SwordKatanaInsta {
     }
 
     postTick() {
-        const { myPlayer, ModuleHandler, EnemyManager } = this.client;
+        const { myPlayer: myPlayer, _ModuleHandler: ModuleHandler, EnemyManager } = this.client;
         const nearestEnemy = EnemyManager.nearestEnemy;
         if (ModuleHandler.moduleActive || !nearestEnemy) {
             this.nearestTarget = null;
@@ -50,12 +50,12 @@ export default class SwordKatanaInsta {
             ModuleHandler.forceHat = EHat.BULL_HELMET;
             ModuleHandler.forceWeapon = WeaponType.PRIMARY;
             ModuleHandler.shouldAttack = true;
-            if (myPlayer.upgradeAge === 3) ModuleHandler.upgradeItem(EItem.COOKIE, true);
-            if (myPlayer.upgradeAge === 4) ModuleHandler.upgradeItem(EItem.PIT_TRAP, true);
-            if (myPlayer.upgradeAge === 5) ModuleHandler.upgradeItem(EItem.GREATER_SPIKES, true);
-            if (myPlayer.upgradeAge === 6) ModuleHandler.upgradeItem(EWeapon.GREAT_HAMMER);
-            if (myPlayer.upgradeAge === 7) ModuleHandler.upgradeItem(EItem.TELEPORTER, true);
-            if (myPlayer.upgradeAge === 8) ModuleHandler.upgradeItem(EWeapon.KATANA);
+            if (myPlayer.upgradeAge === 3) ModuleHandler._upgradeItem(EItem.COOKIE, true);
+            if (myPlayer.upgradeAge === 4) ModuleHandler._upgradeItem(EItem.PIT_TRAP, true);
+            if (myPlayer.upgradeAge === 5) ModuleHandler._upgradeItem(EItem.GREATER_SPIKES, true);
+            if (myPlayer.upgradeAge === 6) ModuleHandler._upgradeItem(EWeapon.GREAT_HAMMER);
+            if (myPlayer.upgradeAge === 7) ModuleHandler._upgradeItem(EItem.TELEPORTER, true);
+            if (myPlayer.upgradeAge === 8) ModuleHandler._upgradeItem(EWeapon.KATANA);
             this.nearestTarget = null;
             if (ModuleHandler.canBuy(EStoreType.HAT, EHat.TURRET_GEAR)) {
                 this.useTurret = true;
@@ -65,6 +65,7 @@ export default class SwordKatanaInsta {
 
         if (
             myPlayer.age < 8 ||
+            myPlayer.upgradeAge >= 9 ||
             !isSword ||
             !primaryReloaded ||
             !ModuleHandler.canBuy(EStoreType.HAT, EHat.BULL_HELMET)

@@ -1,3 +1,4 @@
+import { PlayerObject } from './../data/ObjectItem';
 import { client, Glotus } from "..";
 import Config from "../constants/Config";
 import { Items } from "../constants/Items";
@@ -6,6 +7,7 @@ import { formatDate, getTargetValue } from "../utility/Common";
 import CustomStorage from "../utility/CustomStorage";
 import settings from "../utility/Settings";
 import StoreHandler from "./StoreHandler";
+import type PlayerClient from '../PlayerClient';
 
 const GameUI = new class GameUI {
 
@@ -29,6 +31,7 @@ const GameUI = new class GameUI {
             setupCard: querySelector<HTMLDivElement>("#setupCard")!,
             serverBrowser: querySelector<HTMLSelectElement>("#serverBrowser")!,
             skinColorHolder: querySelector<HTMLDivElement>("#skinColorHolder")!,
+            altServer: querySelector<HTMLAnchorElement>("#altServer")!,
             settingRadio: querySelectorAll<HTMLDivElement>(".settingRadio")!,
             pingDisplay: querySelector<HTMLDivElement>("#pingDisplay")!,
             enterGame: querySelector<HTMLDivElement>("#enterGame")!,
@@ -84,7 +87,7 @@ const GameUI = new class GameUI {
     }
 
     private formatMainMenu() {
-        const { setupCard, serverBrowser, settingRadio, gameUI } = this.getElements();
+        const { setupCard, serverBrowser, settingRadio, altServer, gameUI } = this.getElements();
         setupCard.appendChild(serverBrowser);
         setupCard.querySelector("br")?.remove();
         this.createSkinColors();
@@ -93,6 +96,7 @@ const GameUI = new class GameUI {
         if (radio) {
             setupCard.appendChild(radio);
         }
+        setupCard.appendChild(altServer);
 
         const div = document.createElement("div");
         div.id = "glotusStats";
@@ -109,6 +113,7 @@ const GameUI = new class GameUI {
             <span>PotDmg: <span id="glotusPotentialDamage"></span></span>
             <span>Danger: <span id="glotusDangerState"></span></span>
             <span>Hat: <span id="glotusEquipHat">0</span></span>
+            <span>Performance: <span id="glotusPerformance">0</span></span>
             <span>CollideSpike: <span id="glotusCollideSpike"></span></span>
         `;
         gameUI.appendChild(div);
@@ -136,13 +141,25 @@ const GameUI = new class GameUI {
         }
     }
 
+    private handleChatMessage(client: PlayerClient, text: string) {
+        if (text === "/norecoil") {
+            client._ModuleHandler.norecoil = !client._ModuleHandler.norecoil;
+        }
+
+        client.PacketManager.chat(text);
+    }
+
     private modifyInputs() {
         const { chatHolder, chatBox, nameInput } = this.getElements();
         chatBox.onblur = () => {
             chatHolder.style.display = "none";
             const value = chatBox.value;
             if (value.length > 0) {
-                client.PacketManager.chat(value);
+                this.handleChatMessage(client, value);
+
+                for (const bot of client.clients) {
+                    this.handleChatMessage(bot, value);
+                }
             }
             chatBox.value = "";
         }
@@ -263,6 +280,13 @@ const GameUI = new class GameUI {
         }
     }
 
+    updateModulePerformance(state: string) {
+        const span = document.querySelector<HTMLSpanElement>("#glotusPerformance");
+        if (span !== null) {
+            span.textContent = state + "";
+        }
+    }
+
     init() {
         this.formatMainMenu();
         this.modifyInputs();
@@ -316,8 +340,8 @@ const GameUI = new class GameUI {
             const scale = 14400 / bounds.width;
             const posX = (event.clientX - bounds.left) * scale;
             const posY = (event.clientY - bounds.top) * scale;
-            client.ModuleHandler.endTarget.setXY(posX, posY);
-            client.ModuleHandler.followPath = true;
+            client._ModuleHandler.endTarget._setXY(posX, posY);
+            client._ModuleHandler.followPath = true;
             _mapClick.call(this, event);
         }
 

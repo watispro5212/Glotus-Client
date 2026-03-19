@@ -24,7 +24,7 @@ export default class UseDestroying {
     // }
 
     postTick() {
-        const { myPlayer, ModuleHandler, EnemyManager } = this.client;
+        const { myPlayer: myPlayer, _ModuleHandler: ModuleHandler, EnemyManager } = this.client;
         if (
             ModuleHandler.moduleActive ||
             ModuleHandler.attackingState !== EAttack.DESTROY ||

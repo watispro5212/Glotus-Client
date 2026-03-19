@@ -11,7 +11,7 @@ export default class SpikeTrap {
     }
 
     postTick() {
-        const { ModuleHandler, myPlayer, EnemyManager } = this.client;
+        const { _ModuleHandler: ModuleHandler, myPlayer: myPlayer, EnemyManager } = this.client;
         if (ModuleHandler.moduleActive) return;
 
         const trapId = myPlayer.getItemByType(ItemType.TRAP);

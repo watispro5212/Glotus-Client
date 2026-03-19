@@ -13,8 +13,8 @@ export default class DashMovement {
     }
 
     postTick() {
-        const { ModuleHandler, myPlayer } = this.client;
-        const { currentType, currentAngle } = ModuleHandler;
+        const { _ModuleHandler: ModuleHandler, myPlayer: myPlayer } = this.client;
+        const { currentType, _currentAngle: currentAngle } = ModuleHandler;
         if (!myPlayer.canPlace(currentType) || !settings._dashMovement) return;
 
         const { reloading } = ModuleHandler.staticModules;

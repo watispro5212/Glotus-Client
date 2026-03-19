@@ -74,6 +74,10 @@ export class Resource extends ObjectItem {
         if (this.isCactus) return 35;
         return 0;
     }
+
+    canMoveOnTop() {
+        return false;
+    }
 }
 
 export class PlayerObject extends ObjectItem {
@@ -128,7 +132,6 @@ export class PlayerObject extends ObjectItem {
         this.tempHealth = this.health;
         this.maxHealth = this.health;
         this.isDestroyable = this.maxHealth !== Infinity;
-
         if (item.id === EItem.TURRET) {
             this.reload = Math.ceil(item.shootRate / 111);
             this.maxReload = this.reload;
@@ -161,6 +164,10 @@ export class PlayerObject extends ObjectItem {
             return DataHandler.getItem(type).damage;
         }
         return 0;
+    }
+
+    canMoveOnTop() {
+        return "ignoreCollision" in Items[this.type];
     }
 }
 

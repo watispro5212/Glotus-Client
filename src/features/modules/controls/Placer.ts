@@ -9,8 +9,8 @@ class Placer {
     }
 
     postTick(): void {
-        const { ModuleHandler, myPlayer } = this.client;
-        const { currentType, placedOnce, healedOnce, currentAngle } = ModuleHandler;
+        const { _ModuleHandler: ModuleHandler, myPlayer: myPlayer } = this.client;
+        const { currentType, placedOnce, healedOnce, _currentAngle: currentAngle } = ModuleHandler;
         if (!myPlayer.canPlace(currentType)) return;
 
         if (currentType === ItemType.FOOD) {

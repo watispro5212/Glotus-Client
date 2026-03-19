@@ -15,7 +15,6 @@
 .menuHeader,
 .menuText,
 #guideCard,
-#altServer,
 #gameName,
 #pingDisplay,
 #partyButton,
@@ -164,4 +163,12 @@
 .logMessage .error {
     flex: 1;
     min-width: 0;
+}
+
+.warn {
+    color: rgb(251, 251, 112);
+}
+
+.error {
+    color: rgb(217, 103, 103);
 }

@@ -1,6 +1,8 @@
+import Config from "../../../constants/Config";
 import type PlayerClient from "../../../PlayerClient";
 import { EAttack } from "../../../types/Enums";
 import { WeaponType } from "../../../types/Items";
+import { findMiddleAngle, getAngleDist } from "../../../utility/Common";
 import DataHandler from "../../../utility/DataHandler";
 
 export default class UseAttacking {
@@ -12,10 +14,11 @@ export default class UseAttacking {
     }
 
     private getWeaponType() {
-        const { EnemyManager, myPlayer, ModuleHandler } = this.client;
+        const { EnemyManager, myPlayer: myPlayer, _ModuleHandler: ModuleHandler } = this.client;
 
         const pos1 = myPlayer.pos.future;
-        const nearestEntity = EnemyManager.nearestEntity;
+        const nearestEnemy = EnemyManager.nearestEnemy;
+        const nearestAnimal = EnemyManager.nearestAnimal;
         const nearestObject = EnemyManager.nearestObject;
 
         const primaryID = myPlayer.getItemByType(WeaponType.PRIMARY);
@@ -25,10 +28,23 @@ export default class UseAttacking {
         const range = primary.range;
 
         // HANDLE NEAREST ENEMIES
-        if (nearestEntity !== null) {
-            const pos2 = nearestEntity.pos.future;
+        if (nearestEnemy !== null) {
+            const pos2 = nearestEnemy.pos.future;
             const angle = pos1.angle(pos2);
-            if (myPlayer.collidingEntity(nearestEntity, range + nearestEntity.hitScale)) {
+            if (myPlayer.collidingEntity(nearestEnemy, range + nearestEnemy.hitScale)) {
+                return [WeaponType.PRIMARY, angle] as const;
+            }
+
+            if (DataHandler.isShootable(secondaryID) && !ModuleHandler.autoattack) {
+                return [WeaponType.SECONDARY, angle] as const;
+            }
+        }
+
+        // HANDLE NEAREST ANIMALS
+        if (nearestAnimal !== null) {
+            const pos2 = nearestAnimal.pos.future;
+            const angle = pos1.angle(pos2);
+            if (myPlayer.collidingEntity(nearestAnimal, range + nearestAnimal.hitScale)) {
                 return [WeaponType.PRIMARY, angle] as const;
             }
 
@@ -44,6 +60,7 @@ export default class UseAttacking {
         // const angle1 = pos1.angle(pos2);
 
         // HANDLE DESTRUCTION OF MULTIPLE OBJECTS AT ONCE
+        // const secondNearestObject = EnemyManager.secondNearestPlayerObject;
         // if (secondNearestObject !== null && nearestObject !== secondNearestObject) {
         //     const pos3 = secondNearestObject.pos.current;
 
@@ -66,7 +83,7 @@ export default class UseAttacking {
     }
 
     postTick() {
-        const { ModuleHandler, EnemyManager, myPlayer } = this.client;
+        const { _ModuleHandler: ModuleHandler } = this.client;
         if (
             ModuleHandler.moduleActive ||
             ModuleHandler.attackingState !== EAttack.ATTACK ||

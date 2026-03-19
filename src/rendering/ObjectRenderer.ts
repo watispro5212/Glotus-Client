@@ -6,7 +6,7 @@ import type { IRenderObject } from "../types/RenderTargets";
 import settings from "../utility/Settings";
 import Vector from "../modules/Vector";
 import Renderer from "./Renderer";
-import { client } from "..";
+import { client, Glotus } from "..";
 import ZoomHandler from "../modules/ZoomHandler";
 import { DeadPlayerHandler } from "../modules/DeadPlayer";
 
@@ -54,12 +54,6 @@ const ObjectRenderer = new class ObjectRenderer {
         if (settings._weaponHitbox) Renderer.circle(ctx, x, y, object.hitScale, "#3f4ec4", 0.5, 1);
         if (settings._placementHitbox) Renderer.circle(ctx, x, y, object.placementScale, "#73b9ba", 0.5, 1);
 
-        // const nearestCollider = client.EnemyManager.nearestCollider;
-        // if (nearestCollider === object) {
-        //     const scale = nearestCollider.scale * 0.1;
-        //     Renderer.fillCircle(ctx, x, y, scale, "#b53f6b", 0.4);
-        // }
-
         // const nearestEnemyObject = client.EnemyManager.nearestEnemyObject;
         // if (nearestEnemyObject === object) {
         //     const scale = nearestEnemyObject.collisionScale * 0.4;
@@ -77,13 +71,18 @@ const ObjectRenderer = new class ObjectRenderer {
         //     Renderer.fillCircle(ctx, x, y, scale, "#364cc9ff", 0.3);
         // }
 
-        const spikeCollider = client.EnemyManager.spikeCollider;
-        // console.log(spikeCollider)
-        if (spikeCollider === object) {
-            const scale = spikeCollider.scale * 0.3;
-            Renderer.fillCircle(ctx, x, y, scale, "#bf3d59", 0.6);
-        }
-        
+        // const spikeCollider = client.EnemyManager.spikeCollider;
+        // if (spikeCollider === object) {
+        //     const scale = spikeCollider.collisionScale;
+        //     Renderer.fillCircle(ctx, x, y, scale, "#bf3d59", 0.2);
+
+        //     const nearestEnemySpikeCollider = client.EnemyManager.nearestEnemySpikeCollider;
+        //     if (nearestEnemySpikeCollider !== null) {
+        //         const scale = nearestEnemySpikeCollider.collisionScale;
+        //         Renderer.fillCircle(ctx, x, y, scale, "#bf3d59", 0.2);
+        //     }
+        // }
+
         if (object instanceof PlayerObject && object.canBeDestroyed) {
             Renderer.fillCircle(ctx, x, y, 10, "#f88a41ff", 0.3);
         }
@@ -95,11 +94,11 @@ const ObjectRenderer = new class ObjectRenderer {
 
     }
 
-    render(ctx: TCTX) {
-        if (Renderer.renderObjects.length === 0) return;
+    _render(ctx: TCTX) {
+        if (Renderer._renderObjects.length === 0) return;
 
-        const { ObjectManager, ModuleHandler, myPlayer } = client;
-        for (const entity of Renderer.renderObjects) {
+        const { ObjectManager, _ModuleHandler: ModuleHandler, myPlayer: myPlayer } = client;
+        for (const entity of Renderer._renderObjects) {
             const object = ObjectManager.objects.get(entity.sid);
             if (object === undefined) continue;
             Renderer.renderMarker(ctx, entity);
@@ -116,7 +115,7 @@ const ObjectRenderer = new class ObjectRenderer {
             //     Renderer.renderText(ctx, myPlayer.pos.current.distance(object.pos.current) + "", entity.x, entity.y, 12);
             // }
         }
-        Renderer.renderObjects.length = 0;
+        Renderer._renderObjects.length = 0;
     }
 
     private readonly volcanoBoxSize = 1880 / 2;
@@ -124,16 +123,41 @@ const ObjectRenderer = new class ObjectRenderer {
     private readonly volcanoBoxPos = new Vector(14400, 14400).sub(this.volcanoBoxSize);
     private readonly volcanoPos = new Vector(13960, 13960);
 
-    preRender(ctx: TCTX) {
-        Renderer.rect(ctx, this.volcanoBoxPos, this.volcanoBoxSize, "red", 1, 0.5);
-        Renderer.circle(ctx, this.volcanoPos.x, this.volcanoPos.y, this.volcanoAggressionRadius, "red", 1, 0.4);
+    _preRender(ctx: TCTX) {
+        // Renderer.rect(ctx, this.volcanoBoxPos, this.volcanoBoxSize, "red", 1, 0.5);
+        // Renderer.circle(ctx, this.volcanoPos.x, this.volcanoPos.y, this.volcanoAggressionRadius, "red", 1, 0.4);
+        
+        const offsetX = Glotus._offset.x;
+        const offsetY = Glotus._offset.y;
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        ctx.strokeStyle = "red";
+        ctx.translate(-offsetX, -offsetY);
+        ctx.beginPath();
+        ctx.arc(this.volcanoPos.x, this.volcanoPos.y, this.volcanoAggressionRadius, 2.831070818924026, 5.022910815050457);
+
+        const size = this.volcanoBoxSize;
+        const x = this.volcanoBoxPos.x - size;
+        const y = this.volcanoBoxPos.y - size;
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + size * 2, y);
+        ctx.moveTo(x, y);
+        ctx.lineTo(x, y + size * 2);
+        ctx.stroke();
+        ctx.restore();
 
         if (client.myPlayer.diedOnce) {
             const { x, y } = client.myPlayer.deathPosition;
             Renderer.cross(ctx, x, y, 50, 15, "#cc5151");
         }
 
-        DeadPlayerHandler.update(ctx);
+        if (settings._positionPrediction && client.myPlayer.inGame) {
+            DeadPlayerHandler.render(
+                ctx,
+                client.myPlayer.simulation.getPos(),
+                client.myPlayer.simulation.spikeCollision ? "red" : "yellow"
+            );
+        }
     }
 }
 

@@ -102,12 +102,40 @@ export const DeadPlayerHandler = new class DeadPlayerHandler {
         this.deadPlayers.add(player);
     }
 
+    render(ctx: TCTX, pos: Vector, color: string) {
+        const player = client.myPlayer;
+        if (!player.inGame) return;
+
+        const offset = Glotus._offset;
+        ctx.save();
+        ctx.translate(pos.x - offset.x, pos.y - offset.y);
+        ctx.rotate(player.angle);
+        ctx.globalAlpha = 0.6;
+        ctx.strokeStyle = "#525252";
+
+        const { autoHat } = client._ModuleHandler.staticModules;
+        const weaponID = autoHat.getNextWeaponID();
+        const variant = player.getWeaponVariant(weaponID).current
+        Glotus._hooks._renderPlayer({
+            weaponIndex: weaponID,
+            buildIndex: autoHat.getNextItemID(),
+            tailIndex: autoHat.getNextAcc(),
+            skinIndex: autoHat.getNextHat(),
+            weaponVariant: variant,
+            skinColor: player.skinID,
+            scale: 35,
+        }, ctx);
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.restore();
+    }
+
     update(ctx: TCTX) {
         const now = Date.now();
         const delta = now - this.start;
         this.start = now;
 
-        const offset = client.myPlayer.offset;
+        const offset = Glotus._offset;
         for (const player of this.deadPlayers) {
             player.update(delta);
 
@@ -116,7 +144,7 @@ export const DeadPlayerHandler = new class DeadPlayerHandler {
             ctx.rotate(player.rotation);
             ctx.globalAlpha = player.opacity;
             ctx.strokeStyle = "#525252";
-            Glotus.hooks.renderPlayer({
+            Glotus._hooks._renderPlayer({
                 weaponIndex: player.weapon,
                 buildIndex: -1,
                 tailIndex: player.accID,

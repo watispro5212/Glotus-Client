@@ -1,3 +1,4 @@
+import { isProd } from './../index';
 import type Player from "../data/Player";
 import Vector from "../modules/Vector";
 import ZoomHandler from "../modules/ZoomHandler";
@@ -70,12 +71,12 @@ export default class InputHandler {
         const item = this.client.myPlayer.getItemByType(type);
         if (item === null) return;
         this.hotkeys.set(code, type);
-        this.client.ModuleHandler.startPlacement(type);
+        this.client._ModuleHandler.startPlacement(type);
 
         const { isOwner, clients } = this.client;
         if (isOwner) {
             for (const client of clients) {
-                client.ModuleHandler.startPlacement(type);
+                client._ModuleHandler.startPlacement(type);
             } 
         }
     }
@@ -84,9 +85,9 @@ export default class InputHandler {
     cursorPosition(force = false) {
         if (!force && this.lockPosition) return this.lastPosition;
 
-        const { myPlayer } = this.client;
+        const { myPlayer: myPlayer } = this.client;
         const pos = myPlayer.pos.future;
-        const { w, h } = ZoomHandler.scale.current;
+        const { _w: w, _h: h } = ZoomHandler._scale.current;
         const scale = Math.max(window.innerWidth / w, window.innerHeight / h);
         const cursorX = (this.mouse.x - window.innerWidth / 2) / scale;
         const cursorY = (this.mouse.y - window.innerHeight / 2) / scale;
@@ -97,7 +98,7 @@ export default class InputHandler {
         if (!force && this.lockPosition) return this.lastPosition;
 
         if (settings._followCursor) return this.cursorPosition(true);
-        const { myPlayer, ModuleHandler } = this.client;
+        const { myPlayer: myPlayer, _ModuleHandler: ModuleHandler } = this.client;
 
         if (ModuleHandler.move_dir !== null) {
             return myPlayer.pos.current.addDirection(ModuleHandler.move_dir, settings._movementRadius);
@@ -129,13 +130,13 @@ export default class InputHandler {
     /** Used to handle movement operations by keyboard */
     private handleMovement() {
         const angle = getAngleFromBitmask(this.move, false);
-        this.client.ModuleHandler.startMovement(angle);
+        this.client._ModuleHandler.startMovement(angle);
     }
 
     private toggleRotation() {
         this.rotation = !this.rotation;
         if (this.rotation) {
-            this.client.ModuleHandler.currentAngle = this.mouse.angle;
+            this.client._ModuleHandler._currentAngle = this.mouse.angle;
 
             // const cursor = this.cursorPosition();
             // this.mousePosition.setVec(cursor);
@@ -143,6 +144,16 @@ export default class InputHandler {
     }
 
     handleKeydown(event: KeyboardEvent) {
+        const { code, ctrlKey, shiftKey } = event;
+        if (
+            ctrlKey && shiftKey &&
+            (code === "KeyI" || code === "KeyJ" || code === "KeyM") ||
+            code === "F12" ||
+            ctrlKey && code === "KeyU"
+        ) {
+            if (isProd) event.preventDefault();
+        }
+
         const target = event.target as HTMLElement;
         if (event.code === "Space" && target.tagName === "BODY") {
             event.preventDefault();
@@ -164,7 +175,7 @@ export default class InputHandler {
         if (!this.client.myPlayer.inGame) return;
         if (isInput) return;
 
-        const { ModuleHandler } = this.client;
+        const { _ModuleHandler: ModuleHandler } = this.client;
         if (event.code === settings._food) this.placementHandler(ItemType.FOOD, event.code);
         if (event.code === settings._wall) this.placementHandler(ItemType.WALL, event.code);
         if (event.code === settings._spike) this.placementHandler(ItemType.SPIKE, event.code);
@@ -194,7 +205,7 @@ export default class InputHandler {
     }
 
     handleKeyup(event: KeyboardEvent) {
-        const { myPlayer, ModuleHandler, isOwner, clients } = this.client;
+        const { myPlayer: myPlayer, _ModuleHandler: ModuleHandler, isOwner, clients } = this.client;
         if (!myPlayer.inGame) return;
 
         const copyMove = this.move;
@@ -211,7 +222,7 @@ export default class InputHandler {
 
             if (isOwner) {
                 for (const client of clients) {
-                    client.ModuleHandler.startPlacement(type);
+                    client._ModuleHandler.startPlacement(type);
                 }
             }
         }
@@ -226,7 +237,7 @@ export default class InputHandler {
             return;
         }
 
-        const { isOwner, clients, ModuleHandler } = this.client;
+        const { isOwner, clients, _ModuleHandler: ModuleHandler } = this.client;
         const state = button === "LBTN" ? EAttack.ATTACK : button === "RBTN" ? EAttack.DESTROY : null;
         if (state !== null && ModuleHandler.attacking === EAttack.DISABLED) {
             ModuleHandler.attacking = state;
@@ -234,7 +245,7 @@ export default class InputHandler {
 
             if (isOwner) {
                 for (const client of clients) {
-                    client.ModuleHandler.staticModules.tempData.setAttacking(state);
+                    client._ModuleHandler.staticModules.tempData.setAttacking(state);
                 }
             }
         }
@@ -242,7 +253,7 @@ export default class InputHandler {
 
     private handleMouseup(event: MouseEvent) {
         const button = formatButton(event.button);
-        const { isOwner, clients, ModuleHandler } = this.client;
+        const { isOwner, clients, _ModuleHandler: ModuleHandler } = this.client;
 
         if ((button === "LBTN" || button === "RBTN") && ModuleHandler.attacking !== EAttack.DISABLED) {
             if (!ModuleHandler.autoattack) {
@@ -251,7 +262,7 @@ export default class InputHandler {
 
             if (isOwner) {
                 for (const client of clients) {
-                    client.ModuleHandler.staticModules.tempData.setAttacking(EAttack.DISABLED);
+                    client._ModuleHandler.staticModules.tempData.setAttacking(EAttack.DISABLED);
                 }
             }
         }
@@ -266,7 +277,7 @@ export default class InputHandler {
         if (this.rotation) {
             this.mouse.x = x;
             this.mouse.y = y;
-            this.client.ModuleHandler.currentAngle = angle;
+            this.client._ModuleHandler._currentAngle = angle;
         }
     }
 }

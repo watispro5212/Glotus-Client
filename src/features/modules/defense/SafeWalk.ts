@@ -37,21 +37,21 @@ export default class SafeWalk {
     //     return movingAt;
     // }
 
-    willGetHit(angle: number | null, speed: number, target: PlayerObject | Resource | null): boolean {
-        if (angle === null || !settings._safeWalk) return false;
-        const { myPlayer } = this.client;
-        const nearestCollider = target;
-        if (nearestCollider === null) return false;
+    // willGetHit(angle: number | null, speed: number, target: PlayerObject | Resource | null): boolean {
+    //     if (angle === null || !settings._safeWalk) return false;
+    //     const { myPlayer } = this.client;
+    //     const nearestCollider = target;
+    //     if (nearestCollider === null) return false;
 
-        const future = Vector.fromAngle(angle, speed + myPlayer.speed / 4).add(myPlayer.pos.current);
-        const distance = future.distance(nearestCollider.pos.current);
-        const range = myPlayer.collisionScale + nearestCollider.collisionScale;
-        if (distance > range) return false;
-        return true;
-    }
+    //     const future = Vector.fromAngle(angle, speed + myPlayer.speed / 4).add(myPlayer.pos.current);
+    //     const distance = future.distance(nearestCollider.pos.current);
+    //     const range = myPlayer.collisionScale + nearestCollider.collisionScale;
+    //     if (distance > range) return false;
+    //     return true;
+    // }
 
     postTick() {
-        const { ModuleHandler, myPlayer, ObjectManager, EnemyManager } = this.client;
+        const { _ModuleHandler: ModuleHandler, myPlayer: myPlayer, ObjectManager, EnemyManager } = this.client;
 
         // ModuleHandler.moveTo = 0;
         const { prevMoveTo, moveTo } = ModuleHandler;
@@ -60,11 +60,9 @@ export default class SafeWalk {
             ModuleHandler.startMovement(angle, true);
             return;
         }
-
-        const offset = myPlayer.speed + 45;
-        if (this.willGetHit(ModuleHandler.move_dir, offset, EnemyManager.nearestCollider) ||
-            this.willGetHit(ModuleHandler.move_dir, offset, EnemyManager.secondNearestCollider)
-        ) {
+        
+        // return;
+        if (myPlayer.simulation.collisionSimulation(this.client)) {
             if (!this.movingState) {
                 this.movingState = true;
                 ModuleHandler.stopMovement();

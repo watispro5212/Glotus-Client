@@ -10,6 +10,7 @@ import { EDanger } from "../types/Enums";
 import { client } from "..";
 import NotificationRenderer from "./NotificationRenderer";
 import { getAngle } from "../utility/Common";
+import { DeadPlayerHandler } from "../modules/DeadPlayer";
 
 const colors = [["orange", "red"], ["aqua", "blue"]] as const;
 
@@ -21,7 +22,7 @@ const EntityRenderer = new class EntityRenderer {
     private drawWeaponHitbox(ctx: TCTX, player: IRenderEntity) {
         if (!settings._weaponHitbox) return;
 
-        const { myPlayer } = client;
+        const { myPlayer: myPlayer } = client;
         const current = myPlayer.weapon.current;
         if (DataHandler.isMelee(current)) {
             const weapon = DataHandler.getWeapon(current);
@@ -31,7 +32,7 @@ const EntityRenderer = new class EntityRenderer {
 
     private drawPlacement(ctx: TCTX) {
         if (!settings._possiblePlacement) return;
-        const { myPlayer, ModuleHandler } = client;
+        const { myPlayer: myPlayer, _ModuleHandler: ModuleHandler } = client;
         const [ type, angles ] = ModuleHandler.placeAngles;
         if (type === null || angles === null) return;
 
@@ -89,15 +90,16 @@ const EntityRenderer = new class EntityRenderer {
         }
     }
 
-    render(ctx: TCTX, entity: IRenderEntity, player: IRenderEntity) {
-        const now = Date.now();
-        this.step = now - this.start;
-        this.start = now;
+    _render(ctx: TCTX, entity: IRenderEntity, player: IRenderEntity) {
         
-        const { myPlayer, EnemyManager, ModuleHandler, ObjectManager, InputHandler } = client;
+        const { myPlayer: myPlayer, EnemyManager, _ModuleHandler: ModuleHandler, ObjectManager, InputHandler } = client;
         const isMyPlayer = entity === player;
+        const pos = new Vector(entity.x, entity.y);
         if (isMyPlayer) {
-            const pos = new Vector(player.x, player.y);
+            const now = Date.now();
+            this.step = now - this.start;
+            this.start = now;
+
             if (settings._displayPlayerAngle) {
                 Renderer.line(ctx, pos, pos.addDirection(client.myPlayer.angle, 70), "#e9adf0");
             }
@@ -137,27 +139,31 @@ const EntityRenderer = new class EntityRenderer {
             this.drawHitScale(ctx, entity);
             Renderer.renderTracer(ctx, entity, player);
             Renderer.renderDistance(ctx, entity, player);
-            // const nearestTrappedEnemy = EnemyManager.nearestTrappedEnemy;
-            // if (entity.isPlayer && nearestTrappedEnemy !== null && entity.sid === nearestTrappedEnemy.id) {
-            //     Renderer.fillCircle(ctx, entity.x, entity.y, 35, "#51b054", 0.3);
-            // } else {
-            // }
+
+            const x = entity.x;
+            const y = entity.y;
             const nearestEnemyToNearestEnemy = EnemyManager.nearestEnemyToNearestEnemy;
             if (nearestEnemyToNearestEnemy !== null && !entity.isAI && entity.sid === nearestEnemyToNearestEnemy.id) {
-                Renderer.fillCircle(ctx, entity.x, entity.y, 35, "#48f072", 0.5);
+                Renderer.fillCircle(ctx, x, y, 35, "#48f072", 0.5);
             } else {
                 this.drawDanger(ctx, entity);
             }
 
-            // RENDER SPIKE TICK ENTITY
-            const spikeCollider = EnemyManager.enemySpikeCollider;
-            if (
-                spikeCollider &&
-                !entity.isAI &&
-                entity.sid === spikeCollider.id
-            ) {
-                Renderer.fillCircle(ctx, entity.x, entity.y, 10, "#691313");
-            }
+            // if (settings._knockbackTarget && client.myPlayer.inGame) {
+            //     const spikeCollider = client.EnemyManager.spikeCollider;
+            //     const nearestEnemySpikeCollider = client.EnemyManager.nearestEnemySpikeCollider;
+            //     if (nearestEnemySpikeCollider !== null && nearestEnemySpikeCollider.id === entity.sid && spikeCollider !== null) {
+            //         Renderer.fillCircle(
+            //             ctx, x, y, nearestEnemySpikeCollider.collisionScale, "#bf3d59", 0.3
+            //         );
+
+            //         Renderer.fillCircle(
+            //             ctx, spikeCollider.pos.current.x, spikeCollider.pos.current.y, spikeCollider.collisionScale, "#bf3d59", 0.3
+            //         );
+
+            //         Renderer.line(ctx, pos, spikeCollider.pos.current, "#451717", 1, 3);
+            //     }
+            // }
 
             // const nearestEnemyPush = EnemyManager.nearestEnemyPush;
             // if (
@@ -192,8 +198,6 @@ const EntityRenderer = new class EntityRenderer {
             const posX = entity.x + Math.cos(angle) * length;
             const posY = entity.y + Math.sin(angle) * length;
             Renderer.circle(ctx, posX, posY, diff, "#e25176", 0.5, 1);
-            // Renderer.circle(ctx, entity.x, entity.y, minKB, "#eda0ee", 0.4, 1);
-            // Renderer.circle(ctx, entity.x, entity.y, maxKB, "#eda0ee", 0.4, 1);
         }
     }
 }

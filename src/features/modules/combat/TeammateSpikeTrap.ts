@@ -11,7 +11,7 @@ export default class TeammateSpikeTrap {
     }
 
     postTick() {
-        const { ModuleHandler, InputHandler, PlayerManager, myPlayer, PacketManager } = this.client;
+        const { _ModuleHandler: ModuleHandler, InputHandler, PlayerManager, myPlayer: myPlayer, PacketManager } = this.client;
         if (ModuleHandler.moduleActive) return;
 
         if (!InputHandler.instaToggle) {

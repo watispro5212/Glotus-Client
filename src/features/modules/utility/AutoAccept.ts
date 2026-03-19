@@ -7,13 +7,15 @@ class AutoAccept {
     private readonly client: PlayerClient;
 
     private prevClan: string | null = null;
+    private acceptCount = 0;
+
     constructor(client: PlayerClient) {
         this.client = client;
     }
 
     postTick(): void {
         
-        const { myPlayer, clientIDList, PacketManager, isOwner } = this.client;
+        const { myPlayer: myPlayer, clientIDList, PacketManager, isOwner } = this.client;
 
         // ONCE CLAN IS CHANGED, RESET ALL REQUESTS
         const currentClan = myPlayer.clanName;
@@ -23,7 +25,8 @@ class AutoAccept {
             this.client.pendingJoins.clear();
         }
 
-        if (!myPlayer.isLeader || myPlayer.joinRequests.length === 0) return;
+        this.acceptCount = (this.acceptCount + 1) % 3;
+        if (!myPlayer.isLeader || myPlayer.joinRequests.length === 0 || this.acceptCount !== 0) return;
         
         const id = myPlayer.joinRequests[0]![0];
         if (settings._autoaccept || this.client.pendingJoins.size !== 0) {

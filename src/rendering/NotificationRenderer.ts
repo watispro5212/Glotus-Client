@@ -9,7 +9,7 @@ export class Notify {
     readonly y: number;
     private readonly timeout = {
         value: 0,
-        max: 2000
+        max: 1500
     }
 
     constructor(x: number, y: number) {
@@ -17,18 +17,13 @@ export class Notify {
         this.y = y;
     }
 
-    private animate() {
-        const { value, max } = this.timeout;
-        if (value >= max) {
+    render(ctx: TCTX, player: IRenderEntity) {
+        this.timeout.value += EntityRenderer.step;
+        if (this.timeout.value >= this.timeout.max) {
             NotificationRenderer.remove(this);
             return;
         }
 
-        this.timeout.value += EntityRenderer.step;
-    }
-
-    render(ctx: TCTX, player: IRenderEntity) {
-        this.animate();
         Renderer.renderTracer(ctx, this, player);
     }
 }

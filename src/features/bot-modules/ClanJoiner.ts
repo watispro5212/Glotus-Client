@@ -11,7 +11,7 @@ class ClanJoiner {
     }
 
     postTick(): void {
-        const { myPlayer, PacketManager, owner, PlayerManager } = this.client;
+        const { myPlayer: myPlayer, PacketManager, ownerClient: owner, PlayerManager } = this.client;
         const ownerClan = owner.myPlayer.clanName;
         const myClan = myPlayer.clanName;
 
@@ -22,9 +22,10 @@ class ClanJoiner {
 
             this.joinCount = 0;
         }
+        
         if (ownerClan === null || myClan === ownerClan || !PlayerManager.clanExist(ownerClan)) return;
 
-        if (this.joinCount === 3) {
+        if (this.joinCount === 4) {
             this.joinCount = 0;
 
             if (myClan !== null) {
@@ -33,6 +34,7 @@ class ClanJoiner {
                 owner.pendingJoins.add(myPlayer.id);
                 PacketManager.joinClan(ownerClan);
             }
+            return;
         }
         this.joinCount += 1;
     }

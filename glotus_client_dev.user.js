@@ -2,7 +2,7 @@
 // @name            ! Glotus Client Development
 // @author          Murka
 // @description     An excellent Moomoo.io hack for a comfortable gaming experience
-// @icon            https://imagizer.imageshack.com/img924/3497/SedB2D.png
+// @icon            https://i.imgur.com/rlMQW2P.png
 // @version         1.0
 // @match           *://moomoo.io/
 // @match           *://moomoo.io/?server*

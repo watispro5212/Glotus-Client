@@ -15,7 +15,7 @@ export default class SpikeSync {
     }
 
     postTick() {
-        const { ModuleHandler, EnemyManager, myPlayer } = this.client;
+        const { _ModuleHandler: ModuleHandler, EnemyManager, myPlayer: myPlayer } = this.client;
         if (ModuleHandler.moduleActive || !settings._spikeSync) {
             this.useTurret = false;
             return;
@@ -44,7 +44,8 @@ export default class SpikeSync {
             EnemyManager.canSpikeSync &&
             placementAngles !== null &&
             isPolearm &&
-            primaryReloaded
+            primaryReloaded &&
+            !ModuleHandler.staticModules.shameSpam.wasActive
         ) {
             const spear = DataHandler.getWeapon(primary);
             const range = spear.range + nearest.hitScale;

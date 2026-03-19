@@ -13,7 +13,7 @@ export default class UtilityHat {
     }
 
     private getBestUtilityHat(weaponType: WeaponType) {
-        const { ModuleHandler, EnemyManager, myPlayer } = this.client;
+        const { _ModuleHandler: ModuleHandler, EnemyManager, myPlayer: myPlayer } = this.client;
         const id = myPlayer.getItemByType(weaponType)!;
         if (id === EWeapon.WOODEN_SHIELD) return null;
         if (DataHandler.isShootable(id)) {
@@ -50,7 +50,7 @@ export default class UtilityHat {
     }
 
     postTick() {
-        const { ModuleHandler, EnemyManager, myPlayer } = this.client;
+        const { _ModuleHandler: ModuleHandler, EnemyManager, myPlayer: myPlayer } = this.client;
         if (ModuleHandler.moduleActive) return;
         
         const { forceWeapon, useWeapon, weapon } = ModuleHandler;

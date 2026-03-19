@@ -4,26 +4,26 @@ import Hooker from "../utility/Hooker";
 
 const resizeEvent = new Event("resize");
 const ZoomHandler = new class ZoomHandler {
-    readonly scale = {
+    readonly _scale = {
         Default: {
-            w: 1920,
-            h: 1080,
+            _w: 1920,
+            _h: 1080,
         } as const,
         current: {
-            w: 1920,
-            h: 1080
+            _w: 1920,
+            _h: 1080
         },
-        smooth: {
-            w: Hooker.linker(1920),
-            h: Hooker.linker(1080)
+        _smooth: {
+            _w: Hooker.linker(1920),
+            _h: Hooker.linker(1080)
         } as const
     };
 
     getScale() {
         const dpr = 1;//window.devicePixelRatio;
         return Math.max(
-            window.innerWidth / this.scale.Default.w,
-            window.innerHeight / this.scale.Default.h
+            window.innerWidth / this._scale.Default._w,
+            window.innerHeight / this._scale.Default._h
         ) * dpr;
     }
 
@@ -35,7 +35,7 @@ const ZoomHandler = new class ZoomHandler {
             isActiveInput()
         ) return;
 
-        const { Default, current } = this.scale;
+        const { Default, current } = this._scale;
 
         if (event.deltaY < 0) {
             this.tempScale *= 1.1;
@@ -44,22 +44,22 @@ const ZoomHandler = new class ZoomHandler {
         }
         this.tempScale = clamp(this.tempScale, 0.1, 22);
         const zoom = this.tempScale;
-        current.w = Default.w * zoom;
-        current.h = Default.h * zoom;
+        current._w = Default._w * zoom;
+        current._h = Default._h * zoom;
     }
 
     private renderStart = Date.now();
     smoothUpdate() {
 
-        const { current, smooth } = this.scale;
-        const now = Date.now();
+        const { current, _smooth: smooth } = this._scale;
+        const now = Math.sign((window.Number as any).DELTA) * Date.now();
         const delta = now - this.renderStart;
         this.renderStart = now;
 
         const dt = delta / 1000;
         const blend = (1 - Math.exp(-10 * dt)) * 0.4;
-        smooth.w[0] = lerp(smooth.w[0], current.w, blend);
-        smooth.h[0] = lerp(smooth.h[0], current.h, blend);
+        smooth._w[0] = lerp(smooth._w[0], current._w, blend);
+        smooth._h[0] = lerp(smooth._h[0], current._h, blend);
         window.dispatchEvent(resizeEvent);
     }
 }

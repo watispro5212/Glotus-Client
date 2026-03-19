@@ -156,13 +156,15 @@ const resetGame = (loadedFast: boolean) => {
             deleteProp(that, "storeBuy");
             deleteProp(that, "storeEquip");
             deleteProp(that, "showItemInfo");
-            deleteProp(that, "selectSkinColor");
-            // deleteProp(that, "changeStoreIndex");
+
             deleteProp(that, "config");
             deleteProp(that, "altchaCreateWorker");
             deleteProp(that, "captchaCallbackHook");
             deleteProp(that, "showPreAd");
             deleteProp(that, "setUsingTouch");
+            
+            // deleteProp(that, "selectSkinColor");
+            // deleteProp(that, "changeStoreIndex");
 
             that.addEventListener("blur", that.onblur);
             deleteProp(that, "onblur");
@@ -170,7 +172,8 @@ const resetGame = (loadedFast: boolean) => {
             that.addEventListener("focus", that.onfocus);
             deleteProp(that, "onfocus");
 
-            Glotus.config = config;
+            Glotus._config = config;
+            Logger.log("Intercepted config..");
             return loadedFast;
         }
     );
@@ -187,6 +190,7 @@ const resetGame = (loadedFast: boolean) => {
         Object.prototype, "maxExtLength",
         (_this) => {
             client.PacketManager.Decoder = _this;
+            Logger.log("Hooked decoder..");
             return true;
         }
     );
@@ -217,6 +221,7 @@ const resetGame = (loadedFast: boolean) => {
     };
 
     if (settings._texturepack) {
+        Logger.log("Injected texture pack..");
         const imageDesc = Object.getOwnPropertyDescriptor(Image.prototype, "src")!;
         Object.defineProperty(Image.prototype, "src", {
             get() {
@@ -238,11 +243,13 @@ const resetGame = (loadedFast: boolean) => {
     const _proto_ = Object.prototype as any;
     Object.defineProperty(_proto_, "processServers", {
         set(value) {
+            Logger.log("Hooked processServers..");
             delete _proto_.processServers;
             this.processServers = function(data: any) {
                 for (const server of data) {
                     server.playerCapacity += 1;
                 }
+                Logger.log("Increased capacity..");
                 return value.call(this, data);
             }
         },

@@ -26,7 +26,7 @@ export default class BowInsta {
     }
 
     postTick() {
-        const { EnemyManager, ModuleHandler, myPlayer, InputHandler } = this.client;
+        const { EnemyManager, _ModuleHandler: ModuleHandler, myPlayer: myPlayer, InputHandler } = this.client;
         if (!InputHandler.instaToggle) {
             this.reset();
             InputHandler.instaReset();
@@ -56,7 +56,7 @@ export default class BowInsta {
                 ModuleHandler.forceWeapon = WeaponType.SECONDARY;
                 ModuleHandler.shouldAttack = true;
                 ModuleHandler.moveTo = null;
-                ModuleHandler.upgradeItem(EWeapon.MUSKET);
+                ModuleHandler._upgradeItem(EWeapon.MUSKET);
                 
                 this.reset();
                 InputHandler.instaReset();
@@ -69,7 +69,7 @@ export default class BowInsta {
                 ModuleHandler.forceWeapon = WeaponType.SECONDARY;
                 ModuleHandler.shouldAttack = true;
                 ModuleHandler.moveTo = null;
-                ModuleHandler.upgradeItem(EWeapon.CROSSBOW);
+                ModuleHandler._upgradeItem(EWeapon.CROSSBOW);
                 this.tickAction = 2;
                 return;
             }
@@ -98,8 +98,8 @@ export default class BowInsta {
         ModuleHandler.forceHat = EHat.TURRET_GEAR;
         ModuleHandler.forceWeapon = WeaponType.SECONDARY;
         ModuleHandler.shouldAttack = true;
-        if (myPlayer.upgradeAge === 6) ModuleHandler.upgradeItem(EWeapon.HUNTING_BOW);
-        if (myPlayer.upgradeAge === 7) ModuleHandler.upgradeItem(EItem.PLATFORM, true);
+        if (myPlayer.upgradeAge === 6) ModuleHandler._upgradeItem(EWeapon.HUNTING_BOW);
+        if (myPlayer.upgradeAge === 7) ModuleHandler._upgradeItem(EItem.PLATFORM, true);
         if (myPlayer.upgradeAge === 8 && myPlayer.getItemByType(ItemType.TURRET) === EItem.PLATFORM) {
             ModuleHandler.place(ItemType.TURRET, angle);
             ModuleHandler.place(ItemType.TURRET, angle - toRadians(90));

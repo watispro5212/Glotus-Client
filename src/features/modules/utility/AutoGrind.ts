@@ -17,7 +17,7 @@ export default class AutoGrind {
     }
 
     private isFullyUpgraded() {
-        const { myPlayer } = this.client;
+        const { myPlayer: myPlayer } = this.client;
         const primary = myPlayer.getItemByType(WeaponType.PRIMARY);
         const secondary = myPlayer.getItemByType(WeaponType.SECONDARY);
 
@@ -35,7 +35,7 @@ export default class AutoGrind {
     }
 
     private getGrindWeapon(): WeaponType | null {
-        const { myPlayer, EnemyManager, ModuleHandler } = this.client;
+        const { myPlayer: myPlayer, EnemyManager, _ModuleHandler: ModuleHandler } = this.client;
 
         const nearestObject = EnemyManager.nearestPlayerObject;
         const secondNearestObject = EnemyManager.secondNearestPlayerObject;
@@ -79,7 +79,7 @@ export default class AutoGrind {
     }
 
     private placeTurret(angle: number): boolean {
-        const { myPlayer, ObjectManager, ModuleHandler } = this.client;
+        const { myPlayer: myPlayer, ObjectManager, _ModuleHandler: ModuleHandler } = this.client;
         const id = myPlayer.getItemByType(ItemType.TURRET)!;
         const position = myPlayer.getPlacePosition(myPlayer.pos.future, id, angle);
         if (!ObjectManager.canPlaceItem(id, position)) return false;
@@ -93,7 +93,7 @@ export default class AutoGrind {
     }
 
     postTick() {
-        const { ModuleHandler, EnemyManager, myPlayer } = this.client;
+        const { _ModuleHandler: ModuleHandler, EnemyManager, myPlayer: myPlayer } = this.client;
         if (
             !settings._autoGrind ||
             ModuleHandler.moduleActive ||
@@ -118,7 +118,7 @@ export default class AutoGrind {
 
         const item = DataHandler.getItem(farmItem);
         const distance = myPlayer.getItemPlaceScale(item.id);
-        const angle = ModuleHandler.currentAngle;
+        const angle = ModuleHandler._currentAngle;
 
         const angleBetween = Math.asin((2 * item.scale + 15) / (2 * distance));
         this.placeTurret(angle - angleBetween);

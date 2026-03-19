@@ -36,7 +36,7 @@ class Animal extends Entity {
         this.type = type;
 
         this.pos.previous.setVec(this.pos.current);
-        this.pos.current.setXY(x, y);
+        this.pos.current._setXY(x, y);
         this.setFuturePosition();
 
         const animal = Animals[type];

@@ -13,7 +13,7 @@ export default class TurretSync {
     }
 
     postTick() {
-        const { ModuleHandler, EnemyManager, myPlayer } = this.client;
+        const { _ModuleHandler: ModuleHandler, EnemyManager, myPlayer: myPlayer } = this.client;
         if (ModuleHandler.moduleActive || !settings._turretSync) return;
 
         const nearestEnemy = EnemyManager.nearestEnemy;

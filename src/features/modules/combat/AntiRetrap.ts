@@ -1,6 +1,6 @@
 import type PlayerClient from "../../../PlayerClient";
 import { EWeapon, ReloadType, WeaponType } from "../../../types/Items";
-import { EHat } from "../../../types/Store";
+import { EHat, EStoreType } from "../../../types/Store";
 import DataHandler from "../../../utility/DataHandler";
 import settings from "../../../utility/Settings";
 
@@ -13,7 +13,7 @@ export default class AntiRetrap {
     }
 
     postTick() {
-        const { ModuleHandler, EnemyManager, myPlayer } = this.client;
+        const { _ModuleHandler: ModuleHandler, EnemyManager, myPlayer: myPlayer } = this.client;
         if (ModuleHandler.moduleActive || !settings._antiRetrap) return;
 
         const { reloading } = ModuleHandler.staticModules;
@@ -25,7 +25,7 @@ export default class AntiRetrap {
         const isHammer = secondary === EWeapon.GREAT_HAMMER;
         const isReloadedSecondary = reloading.isReloaded(WeaponType.SECONDARY);
         const damage = myPlayer.getBuildingDamage(EWeapon.GREAT_HAMMER, true);
-        const turretReloaded = reloading.isReloaded(ReloadType.TURRET);
+        const turretReloaded = ModuleHandler.hasStoreItem(EStoreType.HAT, EHat.TURRET_GEAR) && reloading.isReloaded(ReloadType.TURRET);
 
         const nearestEnemy = EnemyManager.nearestEnemy;
         if (

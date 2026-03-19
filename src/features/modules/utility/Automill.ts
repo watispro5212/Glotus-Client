@@ -26,13 +26,15 @@ class Automill {
 
     private get canAutomill() {
         const isOwner = this.client.isOwner;
-        const { attacking, placedOnce } = this.client.ModuleHandler;
+        const { attacking, placedOnce, staticModules } = this.client._ModuleHandler;
         return (
             settings._automill &&
             this.client.myPlayer.isSandbox &&
             !placedOnce &&
             (!isOwner || !attacking) &&
-            this.active
+            this.active &&
+            !staticModules.autoBuy.boughtEverything() &&
+            this.client.myPlayer.age < 20
         )
     }
 
@@ -41,7 +43,7 @@ class Automill {
     }
 
     private placeWindmill(angle: number) {
-        const { ModuleHandler } = this.client;
+        const { _ModuleHandler: ModuleHandler } = this.client;
         const type = ItemType.WINDMILL;
         ModuleHandler.place(type, angle);
         ModuleHandler.placedOnce = true;
@@ -51,7 +53,7 @@ class Automill {
     }
 
     postTick(): void {
-        const { myPlayer, ModuleHandler } = this.client;
+        const { myPlayer: myPlayer, _ModuleHandler: ModuleHandler } = this.client;
         this.toggle = true;
 
         if (!this.canAutomill) {

@@ -14,14 +14,14 @@ class PlayerClient {
     id = -1;
     connectSuccess = false;
     clientID: string | null = null;
-    readonly owner: PlayerClient;
+    readonly ownerClient: PlayerClient;
     readonly SocketManager: SocketManager;
     readonly ObjectManager: ObjectManager;
     readonly PlayerManager: PlayerManager;
     readonly ProjectileManager: ProjectileManager;
     readonly LeaderboardManager: LeaderboardManager;
     readonly EnemyManager: EnemyManager;
-    readonly ModuleHandler: ModuleHandler;
+    readonly _ModuleHandler: ModuleHandler;
     readonly myPlayer: ClientPlayer;
     readonly PacketManager: PacketManager;
     readonly InputHandler: InputHandler;
@@ -32,14 +32,14 @@ class PlayerClient {
     readonly clients = new Set<PlayerClient>();
 
     constructor(owner?: PlayerClient) {
-        this.owner = owner || this;
+        this.ownerClient = owner || this;
         this.SocketManager = new SocketManager(this);
         this.ObjectManager = new ObjectManager(this);
         this.PlayerManager = new PlayerManager(this);
         this.ProjectileManager = new ProjectileManager(this);
         this.LeaderboardManager = new LeaderboardManager(this);
         this.EnemyManager = new EnemyManager(this);
-        this.ModuleHandler = new ModuleHandler(this);
+        this._ModuleHandler = new ModuleHandler(this);
         this.myPlayer = new ClientPlayer(this);
         this.PacketManager = new PacketManager(this);
         this.InputHandler = new InputHandler(this);
@@ -51,7 +51,7 @@ class PlayerClient {
     }
 
     get isOwner() {
-        return this.owner === this;
+        return this.ownerClient === this;
     }
 
     isBotByID(id: number) {

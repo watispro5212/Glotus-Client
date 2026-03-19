@@ -10,7 +10,7 @@ export default class KillChat {
     }
 
     postTick() {
-        const { myPlayer, PacketManager } = this.client;
+        const { myPlayer: myPlayer, PacketManager } = this.client;
         if (!settings._killMessage || !myPlayer.killedSomeone || myPlayer.resources.kills === 0) return;
         
         const message = (settings._killMessageText || "").trim();

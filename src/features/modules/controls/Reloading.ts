@@ -20,7 +20,7 @@ class Reloading {
     }
 
     get currentReload() {
-        return this.clientReload[this.client.ModuleHandler.weapon];
+        return this.clientReload[this.client._ModuleHandler.weapon];
     }
 
     getReload(type: WeaponType | ReloadType) {
@@ -28,7 +28,7 @@ class Reloading {
     }
 
     updateMaxReload(type: WeaponType) {
-        const { myPlayer, ModuleHandler, SocketManager } = this.client;
+        const { myPlayer: myPlayer, _ModuleHandler: ModuleHandler, SocketManager } = this.client;
         const reload = this.getReload(type);
         const id = myPlayer.getItemByType(type)!;
         const store = ModuleHandler.getHatStore();
@@ -47,8 +47,10 @@ class Reloading {
     }
 
     isReloaded(type: WeaponType | ReloadType, ticks = 0) {
+        if (this.client._ModuleHandler.norecoil) return true;
+
         const reload = this.clientReload[type];
-        return reload.current >= (reload.max - ticks);
+        return reload.current >= Math.max(0, reload.max - ticks);
     }
 
     isFasterThan(type1: WeaponType, type2: WeaponType) {
@@ -66,7 +68,7 @@ class Reloading {
 
     postTick(): void {
         
-        const { myPlayer } = this.client;
+        const { myPlayer: myPlayer } = this.client;
 
         const primaryReload = myPlayer.reload[ReloadType.PRIMARY].current;
         const secondaryReload = myPlayer.reload[ReloadType.SECONDARY].current;

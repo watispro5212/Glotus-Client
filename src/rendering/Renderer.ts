@@ -34,15 +34,15 @@ const renderText = (ctx: any, text: string, size = 25, posx = 10, posy = 9) => {
 }
 
 const Renderer = new class Renderer {
-    readonly renderObjects: IRenderObject[] = [];
+    readonly _renderObjects: IRenderObject[] = [];
     private readonly totalTimes: number[] = [];
     private lastLogTime = performance.now();
 
-    preRender() {
+    _preRender() {
         ZoomHandler.smoothUpdate();
     }
 
-    postRender() {
+    _postRender() {
         const now = performance.now();
         while (this.totalTimes.length > 0 && this.totalTimes[0]! <= now - 1000) {
             this.totalTimes.shift();
@@ -61,7 +61,7 @@ const Renderer = new class Renderer {
         renderText(ctx, "by Murka", 15, 15, 36);
     }
 
-    mapPreRender(ctx: TCTX) {
+    _mapPreRender(ctx: TCTX) {
         ctx.save();
         ctx.globalAlpha = 0.6;
 
@@ -79,7 +79,7 @@ const Renderer = new class Renderer {
         const startY = (Config.mapScale / 2 - Config.riverWidth / 2) / Config.mapScale * height;
         ctx.fillRect(0, startY, width, Config.riverWidth / Config.mapScale * height);
 
-        const { ModuleHandler, myPlayer } = client;
+        const { _ModuleHandler: ModuleHandler, myPlayer: myPlayer } = client;
         ctx.globalAlpha = 1;
         const markSize = 8;
         if (ModuleHandler.followPath) {
@@ -98,14 +98,16 @@ const Renderer = new class Renderer {
             ctx.fill();
         }
 
-        ctx.fillStyle = settings._notificationTracersColor;
-        const notifications = NotificationRenderer.notifications;
-        for (const notify of notifications) {
-            const x = notify.x / Config.mapScale * width;
-            const y = notify.y / Config.mapScale * width;
-            ctx.beginPath();
-            ctx.arc(x, y, markSize * 1.5, 0, 2 * Math.PI);
-            ctx.fill();
+        if (settings._notificationTracers) {
+            ctx.fillStyle = settings._notificationTracersColor;
+            const notifications = NotificationRenderer.notifications;
+            for (const notify of notifications) {
+                const x = notify.x / Config.mapScale * width;
+                const y = notify.y / Config.mapScale * width;
+                ctx.beginPath();
+                ctx.arc(x, y, markSize * 1.5, 0, 2 * Math.PI);
+                ctx.fill();
+            }
         }
         ctx.restore();
     }
@@ -133,8 +135,9 @@ const Renderer = new class Renderer {
     drawTarget(ctx: TCTX, entity: IRenderEntity) {
         const len = entity.scale + 30;
         this.rotation = (this.rotation + 0.01) % 6.28;
+        const offset = Glotus._offset;
         ctx.save();
-        ctx.translate(-client.myPlayer.offset.x, -client.myPlayer.offset.y);
+        ctx.translate(-offset.x, -offset.y);
         ctx.translate(entity.x, entity.y);
         ctx.rotate(this.rotation);
         this.drawNorthArrow(ctx, len * Math.cos(this.arrowPart * 1), len * Math.sin(this.arrowPart * 1), -1.04);
@@ -144,12 +147,13 @@ const Renderer = new class Renderer {
     }
 
     rect(ctx: TCTX, pos: Vector, scale: number, color: string, lineWidth = 4, alpha = 1) {
+        const offset = Glotus._offset;
         ctx.save();
         ctx.globalAlpha = alpha;
         ctx.strokeStyle = color;
         ctx.lineWidth = lineWidth;
         ctx.beginPath();
-        ctx.translate(-client.myPlayer.offset.x, -client.myPlayer.offset.y);
+        ctx.translate(-offset.x, -offset.y);
         ctx.translate(pos.x, pos.y);
         ctx.rect(-scale, -scale, scale * 2, scale * 2);
         ctx.stroke();
@@ -178,12 +182,13 @@ const Renderer = new class Renderer {
         opacity = 1,
         lineWidth = 4
     ) {
+        const offset = Glotus._offset;
         ctx.save();
         ctx.globalAlpha = opacity;
         ctx.strokeStyle = color;
         ctx.lineWidth = lineWidth;
         ctx.beginPath();
-        ctx.translate(-client.myPlayer.offset.x, -client.myPlayer.offset.y);
+        ctx.translate(-offset.x, -offset.y);
         ctx.arc(x, y, radius, 0, 2 * Math.PI);
         ctx.stroke();
         ctx.closePath();
@@ -197,11 +202,12 @@ const Renderer = new class Renderer {
         color: string,
         opacity = 1,
     ) {
+        const offset = Glotus._offset;
         ctx.save();
         ctx.globalAlpha = opacity;
         ctx.fillStyle = color;
         ctx.beginPath();
-        ctx.translate(-client.myPlayer.offset.x, -client.myPlayer.offset.y);
+        ctx.translate(-offset.x, -offset.y);
         ctx.arc(x, y, radius, 0, 2 * Math.PI);
         ctx.fill();
         ctx.closePath();
@@ -217,15 +223,17 @@ const Renderer = new class Renderer {
         ctx.textBaseline = "top";
         ctx.globalAlpha = opacity;
         ctx.font = `${fontSize}px Hammersmith One`;
-        ctx.translate(-client.myPlayer.offset.x, -client.myPlayer.offset.y);
+        const offset = Glotus._offset;
+        ctx.translate(-offset.x, -offset.y);
         ctx.strokeText(text, x, y);
         ctx.fillText(text, x, y);
         ctx.restore();
     }
 
     line(ctx: TCTX, start: Vector, end: Vector, color: string, opacity = 1, lineWidth = 4) {
+        const offset = Glotus._offset;
         ctx.save();
-        ctx.translate(-client.myPlayer.offset.x, -client.myPlayer.offset.y);
+        ctx.translate(-offset.x, -offset.y);
         ctx.globalAlpha = opacity;
         ctx.strokeStyle = color;
         ctx.lineCap = "round";
@@ -238,8 +246,9 @@ const Renderer = new class Renderer {
     }
 
     arrow(ctx: TCTX, length: number, x: number, y: number, angle: number, color: string) {
+        const offset = Glotus._offset;
         ctx.save();
-        ctx.translate(-client.myPlayer.offset.x, -client.myPlayer.offset.y);
+        ctx.translate(-offset.x, -offset.y);
         ctx.translate(x, y);
         ctx.rotate(Math.PI / 4);
         ctx.rotate(angle);
@@ -260,7 +269,8 @@ const Renderer = new class Renderer {
         ctx.globalAlpha = 1;
         ctx.lineWidth = lineWidth;
         ctx.strokeStyle = color;
-        ctx.translate(x - client.myPlayer.offset.x, y - client.myPlayer.offset.y);
+        const offset = Glotus._offset;
+        ctx.translate(x - offset.x, y - offset.y);
         const halfSize = size / 2;
         ctx.beginPath();
         ctx.moveTo(-halfSize, -halfSize);
@@ -348,8 +358,9 @@ const Renderer = new class Renderer {
     renderMarker(ctx: TCTX, object: IRenderObject) {
         const color = this.getMarkerColor(object);
         if (color === null) return;
-        const x = object.x + object.xWiggle - client.myPlayer.offset.x;
-        const y = object.y + object.yWiggle - client.myPlayer.offset.y;
+        const offset = Glotus._offset;
+        const x = object.x + object.xWiggle - offset.x;
+        const y = object.y + object.yWiggle - offset.y;
         ctx.save();
         ctx.strokeStyle = "#3b3b3b";
         ctx.lineWidth = 3;
@@ -420,9 +431,10 @@ const Renderer = new class Renderer {
         const totalWidth = barWidth + barPad;
         const scale = entity.scale + 34;
 
-        const { myPlayer, PlayerManager } = client;
-        let x = entity.x - myPlayer.offset.x - totalWidth;
-        let y = entity.y - myPlayer.offset.y + scale;
+        const { myPlayer: myPlayer, PlayerManager } = client;
+        const offset = Glotus._offset;
+        let x = entity.x - offset.x - totalWidth;
+        let y = entity.y - offset.y + scale;
         ctx.save();
 
         const player = entity.isPlayer && PlayerManager.playerData.get(entity.sid);
@@ -465,7 +477,7 @@ const Renderer = new class Renderer {
 
         const target = player || animal;
         if (target) {
-            const container = getTargetValue(Glotus, "config");
+            const container = getTargetValue(Glotus, "_config");
             setTargetValue(container, "nameY", this.getNameY(target));
 
             const { currentHealth, maxHealth } = target;
@@ -487,12 +499,16 @@ const Renderer = new class Renderer {
         let text = `HP ${Math.floor(entity.health)}/${entity.maxHealth}`;
         const offset = entity.scale + nameY + barPad + containerHeight;
 
-        const { myPlayer } = client;
-        const x = entity.x - myPlayer.offset.x;
-        const y = entity.y - myPlayer.offset.y + offset;
+        const { myPlayer: myPlayer, PlayerManager } = client;
+        const _offset = Glotus._offset;
+        const x = entity.x - _offset.x;
+        const y = entity.y - _offset.y + offset;
 
-        if (entity.isPlayer && myPlayer.isMyPlayerByID(entity.sid)) {
-            text += ` ${myPlayer.shameCount}/8`;
+        if (entity.isPlayer) {
+            const player = PlayerManager.playerData.get(entity.sid);
+            if (player !== undefined) {
+                text += ` ${player.shameCount}/8`;
+            }
         }
 
         ctx.save();
@@ -515,8 +531,9 @@ const Renderer = new class Renderer {
         color: string,
         offset = 0
     ): number {
-        const x = object.x + object.xWiggle - client.myPlayer.offset.x;
-        const y = object.y + object.yWiggle - client.myPlayer.offset.y;
+        const _offset = Glotus._offset;
+        const x = object.x + object.xWiggle - _offset.x;
+        const y = object.y + object.yWiggle - _offset.y;
         const height = Config.barHeight * 0.5;
         const defaultScale = 10 + height / 2;
         const scale = defaultScale + 1 + offset;

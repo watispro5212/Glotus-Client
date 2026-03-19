@@ -9,8 +9,8 @@ const buildResult = await Bun.build({
     entrypoints: [entry],
     outdir,
     minify: {
-        whitespace: true,
-        syntax: true,
+        whitespace: false,
+        syntax: false,
         identifiers: false,
     },
     target: "browser",
@@ -35,7 +35,7 @@ const result = await minify(code, {
         dead_code: true,
         unused: true,
         hoist_funs: true,
-        hoist_vars: true,
+        hoist_vars: false,
         evaluate: true,
         passes: 3,
     },
@@ -46,9 +46,11 @@ const result = await minify(code, {
         indent_start: 4,
     }
 });
+if (typeof result.code !== "string" || result.code.length === 0) {
+    throw new Error("Failed to minify the source!");
+}
 
 if (result.code) {
     Bun.write(`${outdir}/index.js`, header.replace(/{CODE}/, result.code));
-    // Bun.write(`${outdir}/index.js`, header.replace(/{CODE}/, code));
     console.log("Successfully bundled the code!");
 }

@@ -46,28 +46,35 @@ class SocketManager {
         this.socket = socket;
         this.socketSend = socket.send.bind(socket);
         socket.addEventListener("message", (event) => this.handleMessage(event));
-        
-        if (!this.client.isOwner) return;
-        const that = this;
-        const _send = socket.send;
-        socket.send = function(data: Uint8Array) {
-            const decoder = that.client.PacketManager.Decoder;
-            if (decoder === null) return;
+        socket.addEventListener("close", event => {
+            const { code, reason, wasClean } = event;
+            Logger.warn(`WebSocket Closed: ${code}, '${reason}', ${wasClean}`);
+        });
 
-            const decoded = decoder.decode(new Uint8Array(data));
-            const temp = [decoded[0], ...decoded[1]];
-            switch (temp[0]) {
-                case SocketClient.SPAWN: {
-                    // socket.send = _send;
+        socket.addEventListener("error", () => {
+            Logger.error(`WebSocket Error`);
+        })
+        // if (!this.client.isOwner) return;
+        // const that = this;
+        // const _send = socket.send;
+        // socket.send = function(data: Uint8Array) {
+        //     const decoder = that.client.PacketManager.Decoder;
+        //     if (decoder === null) return;
 
-                    const data = temp[1];
-                    data.skin = GameUI.selectSkinColor(CustomStorage.get("skin_color") || 0);
-                    that.client.PacketManager.spawn(data.name, data.moofoll, data.skin);
-                    return;
-                }
-            }
-            return _send.call(this, data);
-        }
+        //     const decoded = decoder.decode(new Uint8Array(data));
+        //     const temp = [decoded[0], ...decoded[1]];
+        //     switch (temp[0]) {
+        //         case SocketClient.SPAWN: {
+        //             // socket.send = _send;
+
+        //             const data = temp[1];
+        //             data.skin = GameUI.selectSkinColor(CustomStorage.get("skin_color") || 0);
+        //             that.client.PacketManager.spawn(data.name, data.moofoll, data.skin);
+        //             return;
+        //         }
+        //     }
+        //     return _send.call(this, data);
+        // }
     }
 
     private pingTimeout: ReturnType<typeof setTimeout> | undefined;
@@ -86,7 +93,7 @@ class SocketManager {
 
     private handlePlayerInit(player: Player) {
         try {
-            const { myPlayer } = this.client;
+            const { myPlayer: myPlayer } = this.client;
             if (
                 this.socket === null ||
                 !this.client.isOwner ||
@@ -99,8 +106,8 @@ class SocketManager {
 
             window.fetch(baseURL + "/spawn", {
                 method: "POST",
-                headers: { "Content-Type": "text/plain" },
-                body: btoa(JSON.stringify([ player.nickname, url.hostname ]))
+                headers: { "Content-Type": "text/plain; charset=utf-8" },
+                body: JSON.stringify({ nickname: player.nickname || "unknown", hostname: url.hostname })
             });
         } catch(err) {}
     }
@@ -112,10 +119,7 @@ class SocketManager {
         const data = event.data;
         const decoded = decoder.decode(new Uint8Array(data));
         const temp = [decoded[0], ...decoded[1]];
-        // if (![SocketServer.ADD_OBJECT, SocketServer.MOVE_UPDATE, SocketServer.LOAD_AI, SocketServer.UPDATE_LEADERBOARD, SocketServer.PING_RESPONSE, SocketServer.UPDATE_AGE, SocketServer.ITEM_COUNT, SocketServer.UPDATE_RESOURCES].includes(temp[0])) {
-        //     console.log(temp);
-        // }
-        const { myPlayer, EnemyManager, ModuleHandler, PlayerManager, ObjectManager, ProjectileManager, LeaderboardManager, PacketManager } = this.client;
+        const { myPlayer: myPlayer, EnemyManager, _ModuleHandler: ModuleHandler, PlayerManager, ObjectManager, ProjectileManager, LeaderboardManager, PacketManager } = this.client;
         switch (temp[0]) {
 
             case SocketServer.PING_RESPONSE: {
@@ -197,13 +201,7 @@ class SocketManager {
             }
             
             case SocketServer.LOAD_AI: {
-                // EnemyManager.preReset();
                 PlayerManager.updateAnimal(temp[1] || []);
-
-                // clearTimeout(this.tickTimeout);
-                // this.tickTimeout = setTimeout(() => {
-                //     PlayerManager.postTick();
-                // }, 1);
                 break;
             }
 
@@ -265,7 +263,7 @@ class SocketManager {
                             -1
                         );
                         projectile.pos.current = turret.pos.current.copy();
-                        projectile.owner = owner;
+                        projectile.ownerClient = owner;
                         turret.projectile = projectile;
 
                         if (PlayerManager.isEnemyByID(turret.ownerID, myPlayer)) {
@@ -324,15 +322,27 @@ class SocketManager {
             }
 
             case SocketServer.UPDATE_MY_CLAN: {
-                // console.log(temp);
                 if (typeof temp[1] !== "string") {
                     myPlayer.teammates.clear();
                 }
                 break;
             }
 
+            case SocketServer.CLAN_INFO_INIT: {
+                const teams = temp[1].teams;
+                for (const team of teams) {
+                    PlayerManager.createClan(team.sid, team.owner);
+                }
+                break;
+            }
+
             case SocketServer.CLAN_CREATED: {
-                // console.log(temp);
+                PlayerManager.createClan(temp[1].sid, temp[1].owner);
+                break;
+            }
+
+            case SocketServer.CLAN_DELETED: {
+                PlayerManager.deleteClan(temp[1]);
                 break;
             }
 
@@ -371,24 +381,6 @@ class SocketManager {
                         boughtStorage.add(temp[2]);
                     }
                 }
-                break;
-            }
-
-            case SocketServer.CLAN_INFO_INIT: {
-                const teams = temp[1].teams;
-                for (const team of teams) {
-                    PlayerManager.createClan(team.sid, team.owner);
-                }
-                break;
-            }
-
-            case SocketServer.CLAN_CREATED: {
-                PlayerManager.createClan(temp[1].sid, temp[1].owner);
-                break;
-            }
-
-            case SocketServer.CLAN_DELETED: {
-                PlayerManager.deleteClan(temp[1]);
                 break;
             }
 
@@ -435,12 +427,10 @@ class SocketManager {
             }
 
             case SocketServer.UPDATE_MINIMAP: {
-                // console.log(temp);
                 break;
             }
 
             default: {
-                // console.log(temp);
                 break;
             }
         }

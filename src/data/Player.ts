@@ -16,6 +16,9 @@ import Entity from "./Entity";
 import { PlayerObject } from "./ObjectItem";
 import Projectile from "./Projectile";
 
+const scale_value = (window as any).grbtp as 35;
+delete (window as any).grbtp;
+
 /** Represents all players. */
 class Player extends Entity {
     
@@ -28,10 +31,10 @@ class Player extends Entity {
 
     clanName: string | null = null;
     isLeader = false;
-    prevNickname = "";
-    nickname = "unknown";
+    prevNickname: string | null = null;
+    nickname: string | null = null;
     skinID = 0;
-    override readonly scale = 35;
+    override readonly scale = scale_value;
 
     readonly storeData: [number, number] = [0, 0];
     hatID: EHat = 0;
@@ -43,7 +46,7 @@ class Player extends Entity {
     previousHealth = 100;
     currentHealth = 100;
     tempHealth = 100;
-    maxHealth = 100;
+    maxHealth = ((Math as any).LN1) as number;
 
     primaryReloadTickCount = 0;
     nextDamageTick = 0;
@@ -111,8 +114,10 @@ class Player extends Entity {
     canPlaceSpike = false;
     velocityTicking = false;
     reverseInsta = false;
+    toolHammerInsta = false;
     rangedBowInsta = false;
     spikeSyncThreat = false;
+    onPlatform = false;
 
     tickDamage = 100;
     stackedDamage = 0;
@@ -136,7 +141,7 @@ class Player extends Entity {
     }
 
     addFound(projectile: Projectile) {
-        projectile.owner = this;
+        projectile.ownerClient = this;
         this.client.ProjectileManager.foundProjectile(projectile);
     }
 
@@ -157,6 +162,7 @@ class Player extends Entity {
         reload[ReloadType.TURRET].previous = 23;
         reload[ReloadType.TURRET].current = 23;
         reload[ReloadType.TURRET].max = 23;
+        this.shameCount = 0;
     }
 
     private resetGlobalInventory() {
@@ -218,7 +224,9 @@ class Player extends Entity {
         clanName: string | null,
         isLeader: 1 | 0,
         hatID: EHat,
-        accessoryID: EAccessory
+        accessoryID: EAccessory,
+        hasSkull: 1 | 0,
+        onPlatform: 1 | 0,
     ) {
         this.prevSeenBefore = this.seenBefore;
         this.seenBefore = true;
@@ -229,7 +237,7 @@ class Player extends Entity {
         this.id = id;
 
         this.pos.previous.setVec(this.pos.current);
-        this.pos.current.setXY(x, y);
+        this.pos.current._setXY(x, y);
         this.setFuturePosition();
 
         this.angle = angle;
@@ -241,6 +249,7 @@ class Player extends Entity {
         this.variant.current = weaponVariant;
         this.clanName = clanName;
         this.isLeader = Boolean(isLeader);
+        this.onPlatform = Boolean(onPlatform);
         this.prevHat = this.hatID;
         this.hatID = hatID;
         if (
@@ -254,8 +263,7 @@ class Player extends Entity {
         if (this.hatHistory.length > 4) {
             this.hatHistory.shift();
         }
-        HatPredictor.train(this.hatHistory);
-        this.futureHat = HatPredictor.predict(hatID);
+        this.futureHat = null;
         if (this.usesTurret && hatID === EHat.BULL_HELMET) {
             this.futureHat = EHat.TURRET_GEAR;
         }
@@ -272,6 +280,7 @@ class Player extends Entity {
         this.canPlaceSpike = false;
         this.velocityTicking = false;
         this.reverseInsta = false;
+        this.toolHammerInsta = false;
         this.rangedBowInsta = false;
         this.spikeSyncThreat = false;
 
@@ -286,7 +295,7 @@ class Player extends Entity {
             this.shameCount = 8;
         }
 
-        const { PlayerManager, myPlayer } = this.client;
+        const { PlayerManager, myPlayer: myPlayer } = this.client;
         this.shameTimer += PlayerManager.step;
         if (this.shameTimer >= 30000 && this.shameActive) {
             this.shameActive = false;
@@ -300,6 +309,11 @@ class Player extends Entity {
             }
 
             this.poisonCount = Math.max(this.poisonCount - 1, 0);
+        }
+
+        if (this.futureHat === null) {
+            HatPredictor.train(this.hatHistory);
+            this.futureHat = HatPredictor.predict(hatID);
         }
         // this.updateStackedDamage();
 
@@ -325,7 +339,7 @@ class Player extends Entity {
 
         if (this.shameActive) return;
         
-        const { myPlayer, PlayerManager } = this.client;
+        const { myPlayer: myPlayer, PlayerManager } = this.client;
         const isEnemy = myPlayer.isEnemyByID(this.id);
         const { currentHealth, previousHealth } = this;
         const difference = Math.abs(currentHealth - previousHealth);
@@ -345,7 +359,6 @@ class Player extends Entity {
             if (isEnemy) {
                 PlayerManager.lastEnemyReceivedDamage[0] = this.id;
                 PlayerManager.lastEnemyReceivedDamage[1] = Math.round(difference);
-                // console.log("dmg", this.tickCount);
             }
         } else if (this.receivedDamage !== null) {
             const step = Date.now() - this.receivedDamage;
@@ -456,7 +469,7 @@ class Player extends Entity {
     handleObjectPlacement(object: PlayerObject) {
         this.objects.add(object);
 
-        const { myPlayer, ObjectManager } = this.client;
+        const { myPlayer: myPlayer, ObjectManager } = this.client;
         const item = Items[object.type];
         if (object.seenPlacement) {
             if (object.type === EItem.TURRET) {
@@ -476,7 +489,7 @@ class Player extends Entity {
     handleObjectDeletion(object: PlayerObject) {
         this.objects.delete(object);
 
-        const { myPlayer } = this.client;
+        const { myPlayer: myPlayer } = this.client;
         const item = Items[object.type];
         if (myPlayer.isMyPlayerByID(this.id) && item.itemType === ItemType.WINDMILL) {
             myPlayer.totalGoldAmount -= item.pps;
@@ -773,7 +786,7 @@ class Player extends Entity {
     }
 
     private detectSpikeInsta() {
-        const { myPlayer, ObjectManager } = this.client;
+        const { myPlayer: myPlayer, ObjectManager } = this.client;
         const spikeID = this.globalInventory[ItemType.SPIKE] || EItem.SPINNING_SPIKES;
         const placeLength = this.getItemPlaceScale(spikeID);
 
@@ -787,7 +800,7 @@ class Player extends Entity {
         const distance = pos2.distance(straightSpikePos);
         if (distance > range) return 0;
 
-        const trappedInID = myPlayer.trappedIn !== null && myPlayer.trappedIn.canBeDestroyed ? myPlayer.trappedIn.id : null;
+        // const trappedInID = myPlayer.trappedIn !== null && myPlayer.trappedIn.canBeDestroyed ? myPlayer.trappedIn.id : null;
         const angles = ObjectManager.getBestPlacementAngles({
             position: pos1,
             id: spikeID,
@@ -808,14 +821,14 @@ class Player extends Entity {
     }
 
     canPossiblyInstakill(): EDanger {
-        const { PlayerManager, myPlayer } = this.client;
+        const { PlayerManager, myPlayer: myPlayer } = this.client;
         const lookingShield = PlayerManager.lookingShield(myPlayer, this);
 
         const { primary, secondary } = this.weapon;
         const primaryDamage = this.getMaxWeaponDamage(primary, lookingShield);
         const secondaryDamage = this.getMaxWeaponDamage(secondary, lookingShield);
 
-        const addRange = this.isTrapped ? 20 : 115;
+        const addRange = this.isTrapped ? 30 : 130;
         const boostRange = this.usingBoost && !this.isTrapped ? 430 : addRange;
         const primaryRange = this.getWeaponRange(primary) + boostRange;
         const secondaryRange = this.getWeaponRange(secondary) + addRange;
@@ -876,6 +889,16 @@ class Player extends Entity {
             primaryReloaded
         ) {
             this.reverseInsta = true;
+        }
+
+        if (
+            collidingPrimary &&
+            (
+                this.weapon.oldCurrent === EWeapon.TOOL_HAMMER && this.weapon.current === EWeapon.POLEARM ||
+                this.weapon.current === EWeapon.TOOL_HAMMER && this.isEmptyReload(ReloadType.PRIMARY) && this.hatID === EHat.BULL_HELMET
+            )
+        ) {
+            this.toolHammerInsta = true;
         }
 
         const pos1 = this.pos.current;

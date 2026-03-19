@@ -13,6 +13,7 @@ import DataHandler from "../utility/DataHandler";
 import { PlayerObject } from "./ObjectItem";
 import UI from "../UI/UI";
 import Logger from "../utility/Logger";
+import MovementSimulation from "../modules/MovementSimulation";
 
 interface IWeaponXP {
     current: number;
@@ -39,7 +40,6 @@ class ClientPlayer extends Player {
     tempGold = 0;
 
     readonly deathPosition = new Vector;
-    readonly offset = new Vector;
     readonly teleportPos = new Vector;
     teleported = false;
 
@@ -72,6 +72,8 @@ class ClientPlayer extends Player {
 
     totalKills = 0;
     deaths = 0;
+
+    readonly simulation = new MovementSimulation();
 
     constructor(client: PlayerClient) {
         super(client);
@@ -152,7 +154,7 @@ class ClientPlayer extends Player {
     }
 
     canPlaceObject(type: Exclude<ItemType, ItemType.FOOD>, angle: number): boolean {
-        const { myPlayer, ObjectManager } = this.client;
+        const { myPlayer: myPlayer, ObjectManager } = this.client;
         const id = myPlayer.getItemByType(type)!;
         const current = myPlayer.getPlacePosition(myPlayer.pos.current, id, angle);
         return ObjectManager.canPlaceItem(id, current);
@@ -171,7 +173,7 @@ class ClientPlayer extends Player {
         const notStick = primary.damage !== 1;
         const notPolearm = primaryID !== EWeapon.POLEARM;
         // const isKatana = primaryID === EWeapon.SHORT_SWORD || primaryID === EWeapon.KATANA;
-        const { reloading } = this.client.ModuleHandler.staticModules;
+        const { reloading } = this.client._ModuleHandler.staticModules;
 
         const primaryDamage = this.getBuildingDamage(primaryID, false);
         if (
@@ -295,7 +297,7 @@ class ClientPlayer extends Player {
         //     this.poisonCount = Math.max(this.poisonCount - 1, 0);
         // }
 
-        const { ModuleHandler, PlayerManager } = this.client;
+        const { _ModuleHandler: ModuleHandler, PlayerManager } = this.client;
         this.killedSomeone = false;
         this.actuallyKilledSomeone = false;
         if (this.totalKills > this.prevKills) {
@@ -317,7 +319,7 @@ class ClientPlayer extends Player {
         if (this.shameActive) return;
 
         if (health < 100) {
-            const { ModuleHandler } = this.client;
+            const { _ModuleHandler: ModuleHandler } = this.client;
             ModuleHandler.staticModules.shameReset.healthUpdate();
         }
     }
@@ -331,24 +333,24 @@ class ClientPlayer extends Player {
     }
 
     private onFirstTickAfterSpawn() {
-        const { ModuleHandler, isOwner } = this.client;
+        const { _ModuleHandler: ModuleHandler, isOwner } = this.client;
         const { mouse, staticModules } = ModuleHandler;
         // const hatStore = ModuleHandler.getHatStore();
         // const accStore = ModuleHandler.getAccStore();
         // ModuleHandler.equip(EStoreType.HAT, hatStore.best);
         // ModuleHandler.equip(EStoreType.ACCESSORY, accStore.best);
 
-        ModuleHandler.equip(EStoreType.HAT, 0);
+        ModuleHandler._equip(EStoreType.HAT, 0);
         ModuleHandler.updateAngle(mouse.sentAngle, true);
         if (!isOwner) {
-            const owner = this.client.owner;
+            const owner = this.client.ownerClient;
             UI.updateBotOption(this.client, "title");
             owner.clientIDList.add(this.id);
 
             // staticModules.tempData.setWeapon(ModuleHandler.weapon);
-            staticModules.tempData.setAttacking(owner.ModuleHandler.attacking);
-            staticModules.tempData.setStore(EStoreType.HAT, owner.ModuleHandler.store[EStoreType.HAT].actual);
-            staticModules.tempData.setStore(EStoreType.ACCESSORY, owner.ModuleHandler.store[EStoreType.ACCESSORY].actual);
+            staticModules.tempData.setAttacking(owner._ModuleHandler.attacking);
+            staticModules.tempData.setStore(EStoreType.HAT, owner._ModuleHandler.store[EStoreType.HAT].actual);
+            staticModules.tempData.setStore(EStoreType.ACCESSORY, owner._ModuleHandler.store[EStoreType.ACCESSORY].actual);
         }
     }
 
@@ -382,10 +384,10 @@ class ClientPlayer extends Player {
         }
 
         if (!this.client.isOwner) {
-            const id = this.client.owner.myPlayer.upgradeOrder[this.upgradeIndex];
+            const id = this.client.ownerClient.myPlayer.upgradeOrder[this.upgradeIndex];
             if (id !== undefined && ids.includes(id)) {
                 this.upgradeIndex += 1;
-                this.client.ModuleHandler.upgradeItem(id);
+                this.client._ModuleHandler._upgradeItem(id);
             }
         }
     }
@@ -450,7 +452,7 @@ class ClientPlayer extends Player {
             this.totalKills += difference;
             this.client.StatsManager.kills = difference;
             this.client.StatsManager.totalKills = difference;
-            this.client.owner.StatsManager.globalKills = difference;
+            this.client.ownerClient.StatsManager.globalKills = difference;
             if (this.client.isOwner) {
                 GameUI.updateTotalKills(this.totalKills);
             }
@@ -527,7 +529,7 @@ class ClientPlayer extends Player {
         this.resetInventory();
         this.resetWeaponXP();
 
-        const { ModuleHandler, PlayerManager } = this.client;
+        const { _ModuleHandler: ModuleHandler, PlayerManager } = this.client;
         ModuleHandler.reset();
 
         this.inGame = false;

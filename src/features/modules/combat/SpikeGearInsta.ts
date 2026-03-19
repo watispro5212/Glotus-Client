@@ -13,7 +13,7 @@ export default class SpikeGearInsta {
     }
 
     postTick() {
-        const { ModuleHandler, EnemyManager, myPlayer } = this.client;
+        const { _ModuleHandler: ModuleHandler, EnemyManager, myPlayer: myPlayer } = this.client;
         if (ModuleHandler.moduleActive || EnemyManager.instaThreat() || EnemyManager.spikeSyncThreat || !settings._spikeGearInsta) {
             return;
         }

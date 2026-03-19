@@ -26,13 +26,17 @@ export default class AutoBuy {
         this.client = client;
     }
 
+    boughtEverything() {
+        return this.buyIndex >= this.buyList.length;
+    }
+
     postTick() {
-        const { ModuleHandler, myPlayer } = this.client;
-        if (this.buyIndex >= this.buyList.length || !myPlayer.isSandbox) return;
+        const { _ModuleHandler: ModuleHandler, myPlayer: myPlayer } = this.client;
+        if (this.boughtEverything() || !myPlayer.isSandbox) return;
 
         const [ type, id ] = this.buyList[this.buyIndex]!;
         if (ModuleHandler.canBuy(type, id)) {
-            ModuleHandler.buy(type, id);
+            ModuleHandler._buy(type, id);
         }
 
         if (ModuleHandler.bought[type].has(id)) {

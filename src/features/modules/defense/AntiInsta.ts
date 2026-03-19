@@ -11,12 +11,14 @@ class AntiInsta {
     private toggleAnti = false;
 
     private healingCount = 0;
+
+    forceHeal = false;
     constructor(client: PlayerClient) {
         this.client = client;
     }
 
     private isSaveHealTime(): boolean {
-        const { myPlayer, SocketManager } = this.client;
+        const { myPlayer: myPlayer, SocketManager } = this.client;
 
         const startHit = myPlayer.receivedDamage || 0;
         const timeSinceHit = Date.now() - startHit + SocketManager.pong;
@@ -34,9 +36,10 @@ class AntiInsta {
     }
 
     postTick(): void {
+        this.forceHeal = false;
         if (!settings._autoheal) return;
 
-        const { myPlayer, ModuleHandler, EnemyManager, ProjectileManager } = this.client;
+        const { myPlayer: myPlayer, _ModuleHandler: ModuleHandler, EnemyManager, ProjectileManager } = this.client;
         if (myPlayer.shameActive) return;
 
         const foodID = myPlayer.getItemByType(ItemType.FOOD);
@@ -45,10 +48,10 @@ class AntiInsta {
         const needTimes = Math.ceil((myPlayer.maxHealth - myPlayer.tempHealth) / restore);
         let healingTimes: number | null = null;
         
-        let forceHeal = false;
         if (
             EnemyManager.velocityTickThreat ||
             EnemyManager.reverseInsta ||
+            EnemyManager.toolHammerInsta ||
             EnemyManager.rangedBowInsta ||
             EnemyManager.detectedDangerEnemy ||
             EnemyManager.detectedEnemy ||
@@ -56,10 +59,10 @@ class AntiInsta {
             ModuleHandler.shouldEquipSoldier && ModuleHandler.forceHat !== EHat.SOLDIER_HELMET ||
             EnemyManager.dangerWithoutSoldier
         ) {
-            forceHeal = true;
+            this.forceHeal = true;
         }
 
-        if (myPlayer.shameCount < 7 && forceHeal && myPlayer.tempHealth < 95) {
+        if (myPlayer.shameCount < 7 && this.forceHeal && myPlayer.tempHealth < 95) {
             ModuleHandler.didAntiInsta = true;
             healingTimes = needTimes || 1;
         } else if (this.isSaveHeal() && myPlayer.tempHealth < 100) {

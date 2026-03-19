@@ -92,7 +92,7 @@ const StoreHandler = new class StoreHandler {
 
         const equipButton = div.querySelector<HTMLDivElement>(".equipButton")!;
         equipButton.onmousedown = () => {
-            client.ModuleHandler.equip(type, id, true, true);
+            client._ModuleHandler._equip(type, id, true, true);
         }
         
         return div.firstElementChild!;

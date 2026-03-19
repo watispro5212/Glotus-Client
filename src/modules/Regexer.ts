@@ -129,20 +129,6 @@ class Regexer {
     wrap(left: string, right: string) {
         this.code = left + this.code + right;
     }
-    // insert(name: string, regex: TRegex, substr: string) {
-    //     const expression = this.format(name, regex);
-    //     if (!/{INSERT}/.test(expression.source)) {
-    //         throw new Error("insert Error: Your regexp must contain {INSERT} keyword");
-    //     }
-
-    //     let source = expression.source;
-    //     while (/\(.+?\)/.test(source)) {
-    //         source = source.replace(/\((?!\?)(.+?)\)/g, "$1");
-    //     }
-    //     const formatted = new RegExp(source.replace(/{INSERT}/g, ""));
-    //     const match = this.code.match(formatted)!;
-    //     console.log(expression, match);
-    // }
 }
 
 export default Regexer;

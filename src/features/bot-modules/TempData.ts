@@ -13,7 +13,7 @@ class TempData {
     }
 
     setAttacking(attacking: EAttack) {
-        const { ModuleHandler } = this.client;
+        const { _ModuleHandler: ModuleHandler } = this.client;
         ModuleHandler.attacking = attacking;
         
         if (attacking !== EAttack.DISABLED) {
@@ -27,14 +27,14 @@ class TempData {
     }
 
     private handleBuy(type: EStoreType) {
-        const { ModuleHandler } = this.client;
+        const { _ModuleHandler: ModuleHandler } = this.client;
         const id = this.store[type];
         const store = ModuleHandler.store[type];
         if (store.actual === id) return;
         if (ModuleHandler.sentHatEquip) return;
         
         const temp = ModuleHandler.canBuy(type, id) ? id : 0;
-        ModuleHandler.equip(type, temp, true);
+        ModuleHandler._equip(type, temp, true);
     }
 
     postTick(): void {
