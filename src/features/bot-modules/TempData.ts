@@ -15,10 +15,13 @@ class TempData {
     setAttacking(attacking: EAttack) {
         const { _ModuleHandler: ModuleHandler } = this.client;
         ModuleHandler.attacking = attacking;
-        
-        if (attacking !== EAttack.DISABLED) {
-            ModuleHandler.attackingState = attacking;
-        }
+        ModuleHandler.attackingState = attacking;
+    }
+
+    setWeapon(weapon: WeaponType) {
+        const { _ModuleHandler: ModuleHandler } = this.client;
+        ModuleHandler.weapon = weapon;
+        ModuleHandler.forceWeapon = weapon;
     }
 
     setStore(type: EStoreType, id: number) {

@@ -245,7 +245,7 @@ export default class InputHandler {
 
             if (isOwner) {
                 for (const client of clients) {
-                    client._ModuleHandler.staticModules.tempData.setAttacking(state);
+                    // client._ModuleHandler.staticModules.tempData.setAttacking(state);
                 }
             }
         }
@@ -262,7 +262,7 @@ export default class InputHandler {
 
             if (isOwner) {
                 for (const client of clients) {
-                    client._ModuleHandler.staticModules.tempData.setAttacking(EAttack.DISABLED);
+                    // client._ModuleHandler.staticModules.tempData.setAttacking(EAttack.DISABLED);
                 }
             }
         }

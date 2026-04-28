@@ -347,8 +347,7 @@ class ClientPlayer extends Player {
             UI.updateBotOption(this.client, "title");
             owner.clientIDList.add(this.id);
 
-            // staticModules.tempData.setWeapon(ModuleHandler.weapon);
-            staticModules.tempData.setAttacking(owner._ModuleHandler.attacking);
+            staticModules.tempData.setWeapon(ModuleHandler.weapon);
             staticModules.tempData.setStore(EStoreType.HAT, owner._ModuleHandler.store[EStoreType.HAT].actual);
             staticModules.tempData.setStore(EStoreType.ACCESSORY, owner._ModuleHandler.store[EStoreType.ACCESSORY].actual);
         }

@@ -22,7 +22,7 @@
     Discord: https://discord.gg/cPRFdcZkeD
 
     Version: 5.5.4
-    Build Time: 19/03/2026 | 07:57:06
+    Build Time: 27/04/2026 | 21:47:01
     Works On: index-eb87bff7.js
 
     Leaking source code myself.. unfortunately.
@@ -1646,7 +1646,7 @@ window.grbtp = 35;
 
     const Navbar_default = '<div id="navbar-container">\r\n    <button data-id="0" class="open-menu active">\r\n        <span>\r\n            <svg class="small-icon" xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><path fill="currentColor" d="M240 6.1c9.1-8.2 22.9-8.2 32 0l232 208c9.9 8.8 10.7 24 1.8 33.9s-24 10.7-33.9 1.8l-8-7.2v205.3c0 35.3-28.7 64-64 64h-288c-35.3 0-64-28.7-64-64V242.6l-8 7.2c-9.9 8.8-25 8-33.9-1.8s-8-25 1.8-33.9zm16 50.1L96 199.7V448c0 8.8 7.2 16 16 16h48V360c0-39.8 32.2-72 72-72h48c39.8 0 72 32.2 72 72v104h48c8.8 0 16-7.2 16-16V199.7L256 56.3zM208 464h96V360c0-13.3-10.7-24-24-24h-48c-13.3 0-24 10.7-24 24z"/></svg>\r\n            Home\r\n        </span>\r\n    </button>\r\n    <button data-id="1" class="open-menu">\r\n        <span>\r\n            <svg class="small-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M6.21 13.29a.9.9 0 0 0-.33-.21a1 1 0 0 0-.76 0a.9.9 0 0 0-.54.54a1 1 0 1 0 1.84 0a1 1 0 0 0-.21-.33M13.5 11h1a1 1 0 0 0 0-2h-1a1 1 0 0 0 0 2m-4 0h1a1 1 0 0 0 0-2h-1a1 1 0 0 0 0 2m-3-2h-1a1 1 0 0 0 0 2h1a1 1 0 0 0 0-2M20 5H4a3 3 0 0 0-3 3v8a3 3 0 0 0 3 3h16a3 3 0 0 0 3-3V8a3 3 0 0 0-3-3m1 11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1Zm-6-3H9a1 1 0 0 0 0 2h6a1 1 0 0 0 0-2m3.5-4h-1a1 1 0 0 0 0 2h1a1 1 0 0 0 0-2m.71 4.29a1 1 0 0 0-.33-.21a1 1 0 0 0-.76 0a.9.9 0 0 0-.33.21a1 1 0 0 0-.21.33a1 1 0 1 0 1.92.38a.84.84 0 0 0-.08-.38a1 1 0 0 0-.21-.33"/></svg>\r\n            Keybinds\r\n        </span>\r\n    </button>\r\n    <button data-id="2" class="open-menu">\r\n        <span>\r\n            <svg class="small-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="m19.05 21.6l-2.925-2.9l-2.2 2.2l-.7-.7q-.575-.575-.575-1.425t.575-1.425l4.225-4.225q.575-.575 1.425-.575t1.425.575l.7.7l-2.2 2.2l2.9 2.925q.3.3.3.7t-.3.7l-1.25 1.25q-.3.3-.7.3t-.7-.3M22 5.9L10.65 17.25l.125.1q.575.575.575 1.425t-.575 1.425l-.7.7l-2.2-2.2l-2.925 2.9q-.3.3-.7.3t-.7-.3L2.3 20.35q-.3-.3-.3-.7t.3-.7l2.9-2.925l-2.2-2.2l.7-.7q.575-.575 1.425-.575t1.425.575l.1.125L18 1.9h4zM6.95 10.85L2 5.9v-4h4l4.95 4.95z"/></svg>\r\n            Combat\r\n        </span>\r\n    </button>\r\n    <button data-id="3" class="open-menu">\r\n        <span>\r\n            <svg class="small-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M12 5c-6.307 0-9.367 5.683-9.91 6.808a.44.44 0 0 0 0 .384C2.632 13.317 5.692 19 12 19s9.367-5.683 9.91-6.808a.44.44 0 0 0 0-.384C21.368 10.683 18.308 5 12 5"/><circle cx="12" cy="12" r="3"/></g></svg>\r\n            Visuals\r\n        </span>\r\n    </button>\r\n    <button data-id="4" class="open-menu">\r\n        <span>\r\n            <svg class="small-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M2 18h7v2H2zm0-7h9v2H2zm0-7h20v2H2zm18.674 9.025l1.156-.391l1 1.732l-.916.805a4 4 0 0 1 0 1.658l.916.805l-1 1.732l-1.156-.391a4 4 0 0 1-1.435.83L19 21h-2l-.24-1.196a4 4 0 0 1-1.434-.83l-1.156.392l-1-1.732l.916-.805a4 4 0 0 1 0-1.658l-.916-.805l1-1.732l1.156.391c.41-.37.898-.655 1.435-.83L17 11h2l.24 1.196a4 4 0 0 1 1.434.83M18 17a1 1 0 1 0 0-2a1 1 0 0 0 0 2"/></svg>\r\n            Misc\r\n        </span>\r\n    </button>\r\n    <button data-id="5" class="open-menu">\r\n        <span>\r\n            <svg class="small-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M22 14h-1c0-3.87-3.13-7-7-7h-1V5.73A2 2 0 1 0 10 4c0 .74.4 1.39 1 1.73V7h-1c-3.87 0-7 3.13-7 7H2c-.55 0-1 .45-1 1v3c0 .55.45 1 1 1h1v1a2 2 0 0 0 2 2h14c1.11 0 2-.89 2-2v-1h1c.55 0 1-.45 1-1v-3c0-.55-.45-1-1-1m-1 3h-2v3H5v-3H3v-1h2v-2c0-2.76 2.24-5 5-5h4c2.76 0 5 2.24 5 5v2h2zm-3.5-1.5c0 1.11-.89 2-2 2c-.97 0-1.77-.69-1.96-1.6l2.96-2.12c.6.35 1 .98 1 1.72m-10-1.72l2.96 2.12c-.18.91-.99 1.6-1.96 1.6a2 2 0 0 1-2-2c0-.74.4-1.37 1-1.72"/></svg>\r\n            Bots\r\n        </span>\r\n    </button>\r\n    <button data-id="6" class="open-menu bottom-align">\r\n        <span>\r\n            <svg class="small-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="m19.546 7.573l-1.531-1.57l-1.442 1.291l-.959.86l3.876 3.987l-2.426 2.496l-1.451 1.492c.55.499 1.091.99 1.64 1.486l.764.694l2.21-2.277L24 12.14v-.001zM2.992 9.072L0 12.14c2.01 2.073 3.993 4.115 5.984 6.167l.51-.464l1.893-1.715L6.94 14.64l-2.43-2.5l3.109-3.196l.767-.789c-.434-.39-.86-.772-1.288-1.154L5.984 6v.001zm12.585-6.038L11.632 21.6l-.196-.039l-3.029-.595l2.555-12.02L12.353 2.4z"/></svg>\r\n            Devtool\r\n        </span>\r\n    </button>\r\n</div>';
 
-    const Home_default = '<div class="menu-page opened" data-id="0">\r\n    <div class="page-title">Home</div>\r\n\r\n    <div class="section">\r\n        <div class="section-title">Welcome to the Glotus Client!</div>\r\n        <div class="section-content">\r\n\r\n            <div class="content-option left-flex text">\r\n                <span class="option-title">Author: </span>\r\n                <span id="author" class="text-value">Murka</span>\r\n            </div>\r\n\r\n            <div class="content-option left-flex text">\r\n                <a href="https://discord.gg/cPRFdcZkeD" class="text-value" target="_blank">\r\n                    <svg class="icon link" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M19.303 5.337A17.3 17.3 0 0 0 14.963 4c-.191.329-.403.775-.552 1.125a16.6 16.6 0 0 0-4.808 0C9.454 4.775 9.23 4.329 9.05 4a17 17 0 0 0-4.342 1.337C1.961 9.391 1.218 13.35 1.59 17.255a17.7 17.7 0 0 0 5.318 2.664a13 13 0 0 0 1.136-1.836c-.627-.234-1.22-.52-1.794-.86c.149-.106.297-.223.435-.34c3.46 1.582 7.207 1.582 10.624 0c.149.117.287.234.435.34c-.573.34-1.167.626-1.793.86a13 13 0 0 0 1.135 1.836a17.6 17.6 0 0 0 5.318-2.664c.457-4.52-.722-8.448-3.1-11.918M8.52 14.846c-1.04 0-1.889-.945-1.889-2.101s.828-2.102 1.89-2.102c1.05 0 1.91.945 1.888 2.102c0 1.156-.838 2.1-1.889 2.1m6.974 0c-1.04 0-1.89-.945-1.89-2.101s.828-2.102 1.89-2.102c1.05 0 1.91.945 1.889 2.102c0 1.156-.828 2.1-1.89 2.1"/>\r\n                    </svg>\r\n                </a>\r\n\r\n                <a href="https://github.com/Murka007/Glotus-Client" class="text-value" target="_blank">\r\n                    <svg class="icon link" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5c.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34c-.46-1.16-1.11-1.47-1.11-1.47c-.91-.62.07-.6.07-.6c1 .07 1.53 1.03 1.53 1.03c.87 1.52 2.34 1.07 2.91.83c.09-.65.35-1.09.63-1.34c-2.22-.25-4.55-1.11-4.55-4.92c0-1.11.38-2 1.03-2.71c-.1-.25-.45-1.29.1-2.64c0 0 .84-.27 2.75 1.02c.79-.22 1.65-.33 2.5-.33s1.71.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02c.55 1.35.2 2.39.1 2.64c.65.71 1.03 1.6 1.03 2.71c0 3.82-2.34 4.66-4.57 4.91c.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2"/></svg>\r\n                </a>\r\n\r\n                <a href="https://greasyfork.org/en/users/919633-murka007" class="text-value" target="_blank">\r\n                    <svg class="icon link" version="1.1" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg">\r\n                    <circle cx="48" cy="48" r="48"/>\r\n                    <clipPath id="a">\r\n                    <circle cx="48" cy="48" r="47"/>\r\n                    </clipPath>\r\n                    <text clip-path="url(#a)" fill="#fff" font-family="\'DejaVu Sans\', Verdana, Arial, \'Liberation Sans\', sans-serif" font-size="18" letter-spacing="-.75" pointer-events="none" text-anchor="middle" style="-moz-user-select:none;-ms-user-select:none;-webkit-user-select:none;user-select:none"><tspan x="51" y="13" textLength="57">= null;</tspan> <tspan x="56" y="35" textLength="98">function init</tspan> <tspan x="49" y="57" textLength="113">for (const i = 0;</tspan> <tspan x="50" y="79" textLength="105">XmlHttpReq</tspan> <tspan x="48" y="101" textLength="80">appendCh</tspan></text>\r\n                    <path d="m44 29a6.364 6.364 0 0 1 0 9l36 36a3.25 3.25 0 0 1-6.5 6.5l-36-36a6.364 6.364 0 0 1-9 0l-19-19a1.7678 1.7678 0 0 1 0-2.5l13-13a1.7678 1.7678 0 0 1 2.5 0z" stroke="#000" stroke-width="4"/>\r\n                    <path d="m44 29a6.364 6.364 0 0 1 0 9l36 36a3.25 3.25 0 0 1-6.5 6.5l-36-36a6.364 6.364 0 0 1-9 0l-19-19a1.7678 1.7678 0 0 1 2.5-2.5l14 14 4-4-14-14a1.7678 1.7678 0 0 1 2.5-2.5l14 14 4-4-14-14a1.7678 1.7678 0 0 1 2.5-2.5z" fill="#fff"/>\r\n                    </svg>\r\n                </a>\r\n\r\n            </div>\r\n\r\n            <div class="content-option left-flex text">\r\n                <span class="option-title">Building hash: </span>\r\n                <span id="author" class="text-value">WjozCQUhJYXYFg4</span>\r\n            </div>\r\n\r\n        </div>\r\n    </div>\r\n\r\n    <div class="section">\r\n        <div class="section-content">\r\n            \r\n            <div class="content-option text">\r\n                <span class="text-value simplified">Leaking source code myself.. <span class="highlight">unfortunately</span>. The reason you can read this message and use this client is quite tragic, for more info join my discord server and check annoucements channel. I\'ll leave the source and its up to you to decide what to do with it. Just make sure to put my credits, as the original author of this client.</span>\r\n            </div>\r\n            \r\n            <div class="content-option text">\r\n                <span class="text-value simplified">My main goal in creating this hack was to automate absolutely everything. So don\'t be surprised by the lack of numerous hotkeys - not even for switching weapons. This client is designed for simple <span class="highlight">WASD</span> movement and primarly <span class="highlight">polearm + hammer</span>, which is what makes it great. There\'s no need to remember dozens of hotkeys, chat commands, or anything else.</span>\r\n            </div>\r\n            \r\n            <div class="content-option text">\r\n                <span class="text-value simplified">This client is <span class="highlight">no longer</span> under active development, so all future updates will rely entirely on community contributions. I strongly recommend to not edit the code in Tampermonkey and switch to a proper IDE instead. You\'ll safe your time by <span class="highlight">a lot!</span></span>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n</div>';
+    const Home_default = '<div class="menu-page opened" data-id="0">\r\n    <div class="page-title">Home</div>\r\n\r\n    <div class="section">\r\n        <div class="section-title">Welcome to the Glotus Client!</div>\r\n        <div class="section-content">\r\n\r\n            <div class="content-option left-flex text">\r\n                <span class="option-title">Author: </span>\r\n                <span id="author" class="text-value">Murka</span>\r\n            </div>\r\n\r\n            <div class="content-option left-flex text">\r\n                <a href="https://discord.gg/cPRFdcZkeD" class="text-value" target="_blank">\r\n                    <svg class="icon link" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M19.303 5.337A17.3 17.3 0 0 0 14.963 4c-.191.329-.403.775-.552 1.125a16.6 16.6 0 0 0-4.808 0C9.454 4.775 9.23 4.329 9.05 4a17 17 0 0 0-4.342 1.337C1.961 9.391 1.218 13.35 1.59 17.255a17.7 17.7 0 0 0 5.318 2.664a13 13 0 0 0 1.136-1.836c-.627-.234-1.22-.52-1.794-.86c.149-.106.297-.223.435-.34c3.46 1.582 7.207 1.582 10.624 0c.149.117.287.234.435.34c-.573.34-1.167.626-1.793.86a13 13 0 0 0 1.135 1.836a17.6 17.6 0 0 0 5.318-2.664c.457-4.52-.722-8.448-3.1-11.918M8.52 14.846c-1.04 0-1.889-.945-1.889-2.101s.828-2.102 1.89-2.102c1.05 0 1.91.945 1.888 2.102c0 1.156-.838 2.1-1.889 2.1m6.974 0c-1.04 0-1.89-.945-1.89-2.101s.828-2.102 1.89-2.102c1.05 0 1.91.945 1.889 2.102c0 1.156-.828 2.1-1.89 2.1"/>\r\n                    </svg>\r\n                </a>\r\n\r\n                <a href="https://github.com/Murka007/Glotus-Client" class="text-value" target="_blank">\r\n                    <svg class="icon link" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5c.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34c-.46-1.16-1.11-1.47-1.11-1.47c-.91-.62.07-.6.07-.6c1 .07 1.53 1.03 1.53 1.03c.87 1.52 2.34 1.07 2.91.83c.09-.65.35-1.09.63-1.34c-2.22-.25-4.55-1.11-4.55-4.92c0-1.11.38-2 1.03-2.71c-.1-.25-.45-1.29.1-2.64c0 0 .84-.27 2.75 1.02c.79-.22 1.65-.33 2.5-.33s1.71.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02c.55 1.35.2 2.39.1 2.64c.65.71 1.03 1.6 1.03 2.71c0 3.82-2.34 4.66-4.57 4.91c.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2"/></svg>\r\n                </a>\r\n\r\n                <a href="https://greasyfork.org/en/users/919633-murka007" class="text-value" target="_blank">\r\n                    <svg class="icon link" version="1.1" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg">\r\n                    <circle cx="48" cy="48" r="48"/>\r\n                    <clipPath id="a">\r\n                    <circle cx="48" cy="48" r="47"/>\r\n                    </clipPath>\r\n                    <text clip-path="url(#a)" fill="#fff" font-family="\'DejaVu Sans\', Verdana, Arial, \'Liberation Sans\', sans-serif" font-size="18" letter-spacing="-.75" pointer-events="none" text-anchor="middle" style="-moz-user-select:none;-ms-user-select:none;-webkit-user-select:none;user-select:none"><tspan x="51" y="13" textLength="57">= null;</tspan> <tspan x="56" y="35" textLength="98">function init</tspan> <tspan x="49" y="57" textLength="113">for (const i = 0;</tspan> <tspan x="50" y="79" textLength="105">XmlHttpReq</tspan> <tspan x="48" y="101" textLength="80">appendCh</tspan></text>\r\n                    <path d="m44 29a6.364 6.364 0 0 1 0 9l36 36a3.25 3.25 0 0 1-6.5 6.5l-36-36a6.364 6.364 0 0 1-9 0l-19-19a1.7678 1.7678 0 0 1 0-2.5l13-13a1.7678 1.7678 0 0 1 2.5 0z" stroke="#000" stroke-width="4"/>\r\n                    <path d="m44 29a6.364 6.364 0 0 1 0 9l36 36a3.25 3.25 0 0 1-6.5 6.5l-36-36a6.364 6.364 0 0 1-9 0l-19-19a1.7678 1.7678 0 0 1 2.5-2.5l14 14 4-4-14-14a1.7678 1.7678 0 0 1 2.5-2.5l14 14 4-4-14-14a1.7678 1.7678 0 0 1 2.5-2.5z" fill="#fff"/>\r\n                    </svg>\r\n                </a>\r\n\r\n            </div>\r\n\r\n            <div class="content-option left-flex text">\r\n                <span class="option-title">Building hash: </span>\r\n                <span id="author" class="text-value">JfdXdHTCwS3nD1I</span>\r\n            </div>\r\n\r\n        </div>\r\n    </div>\r\n\r\n    <div class="section">\r\n        <div class="section-content">\r\n            \r\n            <div class="content-option text">\r\n                <span class="text-value simplified">Leaking source code myself.. <span class="highlight">unfortunately</span>. The reason you can read this message and use this client is quite tragic, for more info join my discord server and check annoucements channel. I\'ll leave the source and its up to you to decide what to do with it. Just make sure to put my credits, as the original author of this client.</span>\r\n            </div>\r\n            \r\n            <div class="content-option text">\r\n                <span class="text-value simplified">My main goal in creating this hack was to automate absolutely everything. So don\'t be surprised by the lack of numerous hotkeys - not even for switching weapons. This client is designed for simple <span class="highlight">WASD</span> movement and primarly <span class="highlight">polearm + hammer</span>, which is what makes it great. There\'s no need to remember dozens of hotkeys, chat commands, or anything else.</span>\r\n            </div>\r\n            \r\n            <div class="content-option text">\r\n                <span class="text-value simplified">This client is <span class="highlight">no longer</span> under active development, so all future updates will rely entirely on community contributions. I strongly recommend to not edit the code in Tampermonkey and switch to a proper IDE instead. You\'ll safe your time by <span class="highlight">a lot!</span></span>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n</div>';
 
     const Keybinds_default = '<div class="menu-page" data-id="1">\r\n    <div class="page-title">Keybinds</div>\r\n    <p class="page-description">Setup keybinds for items, weapons and hats</p>\r\n\r\n    \x3c!-- Items & Weapons --\x3e\r\n    <div class="section">\r\n        <div class="section-title">Items & Weapons</div>\r\n        <div class="section-content split">\r\n\r\n            <div class="content-split">\r\n                <div class="content-option">\r\n                    <span class="option-title">Food</span>\r\n                    <button id="_food" class="hotkeyInput"></button>\r\n                    <span class="option-description">It is useful to press this button, when you have a really high ping. Because AutoQ is not able to detect such threats</span>\r\n                </div>\r\n\r\n                <div class="content-option">\r\n                    <span class="option-title">Wall</span>\r\n                    <button id="_wall" class="hotkeyInput"></button>\r\n                </div>\r\n\r\n                <div class="content-option">\r\n                    <span class="option-title">Spike</span>\r\n                    <button id="_spike" class="hotkeyInput"></button>\r\n                </div>\r\n\r\n                <div class="content-option">\r\n                    <span class="option-title">Windmill</span>\r\n                    <button id="_windmill" class="hotkeyInput"></button>\r\n                </div>\r\n            </div>\r\n\r\n            <div class="content-split">\r\n                <div class="content-option">\r\n                    <span class="option-title">Farm</span>\r\n                    <button id="_farm" class="hotkeyInput"></button>\r\n                    <span class="option-description">Places trees/mines</span>\r\n                </div>\r\n\r\n                <div class="content-option">\r\n                    <span class="option-title">Trap</span>\r\n                    <button id="_trap" class="hotkeyInput"></button>\r\n                    <span class="option-description">Places traps/boostpads</span>\r\n                </div>\r\n\r\n                <div class="content-option">\r\n                    <span class="option-title">Turret</span>\r\n                    <button id="_turret" class="hotkeyInput"></button>\r\n                    <span class="option-description">Places turrets, teleports, platforms etc</span>\r\n                </div>\r\n\r\n                <div class="content-option">\r\n                    <span class="option-title">Spawn</span>\r\n                    <button id="_spawn" class="hotkeyInput"></button>\r\n                </div>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n    \x3c!-- Controls & Movement --\x3e\r\n    <div class="section">\r\n        <div class="section-title">Controls & Movement</div>\r\n        <div class="section-content">\r\n\r\n            <div class="content-split">\r\n\r\n                <div class="content-option">\r\n                    <span class="option-title">Lock bot position</span>\r\n                    <button id="_lockBotPosition" class="hotkeyInput"></button>\r\n                    <span class="option-description">Press this button and bots will be locked to your last cursor position</span>\r\n                </div>\r\n\r\n                <div class="content-option">\r\n                    <span class="option-title">Toggle Shop</span>\r\n                    <button id="_toggleShop" class="hotkeyInput"></button>\r\n                </div>\r\n\r\n                <div class="content-option">\r\n                    <span class="option-title">Toggle Clan</span>\r\n                    <button id="_toggleClan" class="hotkeyInput"></button>\r\n                </div>\r\n\r\n                <div class="content-option">\r\n                    <span class="option-title">Toggle Menu</span>\r\n                    <button id="_toggleMenu" class="hotkeyInput"></button>\r\n                    <span class="option-description">Press this button to open and close the menu</span>\r\n                </div>\r\n\r\n                <div class="content-option">\r\n                    <span class="option-title">Instakill</span>\r\n                    <button id="_instakill" class="hotkeyInput"></button>\r\n                </div>\r\n\r\n            </div>\r\n        </div>\r\n    </div>\r\n</div>';
 
@@ -5072,15 +5072,8 @@ window.grbtp = 35;
         client;
         Encoder=null;
         Decoder=null;
-        packetCount=0;
         constructor(client2) {
             this.client = client2;
-            if (this.client.isOwner) {
-                setInterval(() => {
-                    GameUI_default.updatePackets(this.packetCount);
-                    this.packetCount = 0;
-                }, 1e3);
-            }
         }
         send(data) {
             const {socket: socket, socketSend: socketSend} = this.client.SocketManager;
@@ -5090,9 +5083,6 @@ window.grbtp = 35;
             const [type, ...args] = data;
             const encoded = this.Encoder.encode([ type, args ]);
             socketSend(encoded);
-            if (this.client.isOwner) {
-                this.packetCount += 1;
-            }
         }
         clanRequest(id, accept) {
             this.send([ "P", id, Number(accept) ]);
@@ -5614,7 +5604,7 @@ window.grbtp = 35;
                 const owner = this.client.ownerClient;
                 UI_default.updateBotOption(this.client, "title");
                 owner.clientIDList.add(this.id);
-                staticModules.tempData.setAttacking(owner._ModuleHandler.attacking);
+                staticModules.tempData.setWeapon(ModuleHandler.weapon);
                 staticModules.tempData.setStore(0, owner._ModuleHandler.store[0].actual);
                 staticModules.tempData.setStore(1, owner._ModuleHandler.store[1].actual);
             }
@@ -5762,7 +5752,11 @@ window.grbtp = 35;
             }
         }
         spawn(customName) {
-            const name = customName || window.localStorage.getItem("moo_name") || "";
+            let name = customName || window.localStorage.getItem("moo_name") || "";
+            if (!this.client.isOwner && !customName) {
+                const names = [ "Glotus Bot", "MooMoo Hero", "Silent Assassin", "Fast Picker", "Wood Master", "Stone Cold", "Gold Digger", "Bot 9000", "Alpha Bot", "Beta Bot", "Gamma Bot", "Delta Bot", "Speedy", "Tanky", "Ninja", "Ghost", "Striker" ];
+                name = names[Math.floor(Math.random() * names.length)];
+            }
             const skin = Number(window.localStorage.getItem("skin_color")) || 0;
             this.client.PacketManager.spawn(name, 1, skin === 10 ? "constructor" : skin);
         }
@@ -6275,6 +6269,12 @@ window.grbtp = 35;
         action=null;
         constructor(client2) {
             this.client = client2;
+            if (this.client.isOwner) {
+                setInterval(() => {
+                    GameUI_default.updatePackets(this.packetCount);
+                    this.packetCount = 0;
+                }, 1e3);
+            }
         }
         get isSandbox() {
             return this.socket !== null && /localhost/.test(this.socket.url);
@@ -6302,13 +6302,14 @@ window.grbtp = 35;
                 this.client.PacketManager.pingRequest();
             }, 3e3);
         }
-        handlePlayerInit(player) {}
+        handlePlayerInit() {}
         handleMessage(event) {
             const decoder = this.client.PacketManager.Decoder;
             if (decoder === null) {
                 return;
             }
             const data = event.data;
+            this.packetCount += 1;
             const decoded = decoder.decode(new Uint8Array(data));
             const temp = [ decoded[0], ...decoded[1] ];
             const {myPlayer: myPlayer, EnemyManager: EnemyManager2, _ModuleHandler: ModuleHandler, PlayerManager: PlayerManager2, ObjectManager: ObjectManager2, ProjectileManager: ProjectileManager2, LeaderboardManager: LeaderboardManager2, PacketManager: PacketManager2} = this.client;
@@ -6350,14 +6351,14 @@ window.grbtp = 35;
               case "D":
                 {
                     const data2 = temp[1];
-                    const player = PlayerManager2.createPlayer({
+                    PlayerManager2.createPlayer({
                         socketID: data2[0],
                         id: data2[1],
                         nickname: data2[2],
                         health: data2[6],
                         skinID: data2[9]
                     });
-                    this.handlePlayerInit(player);
+                    this.handlePlayerInit();
                     break;
                 }
 
@@ -6855,16 +6856,16 @@ window.grbtp = 35;
                 this.placementHandler(9, event.code);
             }
             const copyMove = this.move;
-            if (event.code === Settings_default._up) {
+            if (event.code === Settings_default._up || event.code === "ArrowUp") {
                 this.move |= 1;
             }
-            if (event.code === Settings_default._left) {
+            if (event.code === Settings_default._left || event.code === "ArrowLeft") {
                 this.move |= 4;
             }
-            if (event.code === Settings_default._down) {
+            if (event.code === Settings_default._down || event.code === "ArrowDown") {
                 this.move |= 2;
             }
-            if (event.code === Settings_default._right) {
+            if (event.code === Settings_default._right || event.code === "ArrowRight") {
                 this.move |= 8;
             }
             if (copyMove !== this.move) {
@@ -6898,16 +6899,16 @@ window.grbtp = 35;
                 return;
             }
             const copyMove = this.move;
-            if (event.code === Settings_default._up) {
+            if (event.code === Settings_default._up || event.code === "ArrowUp") {
                 this.move &= -2;
             }
-            if (event.code === Settings_default._left) {
+            if (event.code === Settings_default._left || event.code === "ArrowLeft") {
                 this.move &= -5;
             }
-            if (event.code === Settings_default._down) {
+            if (event.code === Settings_default._down || event.code === "ArrowDown") {
                 this.move &= -3;
             }
-            if (event.code === Settings_default._right) {
+            if (event.code === Settings_default._right || event.code === "ArrowRight") {
                 this.move &= -9;
             }
             if (copyMove !== this.move) {
@@ -6939,9 +6940,7 @@ window.grbtp = 35;
                 ModuleHandler.attacking = state;
                 ModuleHandler.attackingState = state;
                 if (isOwner) {
-                    for (const client2 of clients) {
-                        client2._ModuleHandler.staticModules.tempData.setAttacking(state);
-                    }
+                    for (const client2 of clients) {}
                 }
             }
         }
@@ -6953,9 +6952,7 @@ window.grbtp = 35;
                     ModuleHandler.attacking = 0;
                 }
                 if (isOwner) {
-                    for (const client2 of clients) {
-                        client2._ModuleHandler.staticModules.tempData.setAttacking(0);
-                    }
+                    for (const client2 of clients) {}
                 }
             }
         }
@@ -6982,9 +6979,12 @@ window.grbtp = 35;
         setAttacking(attacking) {
             const {_ModuleHandler: ModuleHandler} = this.client;
             ModuleHandler.attacking = attacking;
-            if (attacking !== 0) {
-                ModuleHandler.attackingState = attacking;
-            }
+            ModuleHandler.attackingState = attacking;
+        }
+        setWeapon(weapon) {
+            const {_ModuleHandler: ModuleHandler} = this.client;
+            ModuleHandler.weapon = weapon;
+            ModuleHandler.forceWeapon = weapon;
         }
         setStore(type, id) {
             this.store[type] = id;
@@ -10340,7 +10340,7 @@ window.grbtp = 35;
                 this.client.InputHandler.postTick();
                 GameUI_default.updateFastQ(this.didAntiInsta);
                 GameUI_default.updatePlaces(this.totalPlaces);
-                GameUI_default.updateActiveModule(this.activeModule + ", " + this.tickCount);
+                GameUI_default.updateActiveModule(this.activeModule);
                 GameUI_default.updateEquipHat(`${this.store[0].last},  ${this.shouldEquipSoldier}`);
                 const executionTime = Math.round(performance.now() - this.moduleStart);
                 this.maxExecutionTime = Math.max(this.maxExecutionTime, executionTime);
