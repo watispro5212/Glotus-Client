@@ -186,10 +186,10 @@ export default class InputHandler {
         if (event.code === settings._spawn) this.placementHandler(ItemType.SPAWN, event.code);
 
         const copyMove = this.move;
-        if (event.code === settings._up) this.move |= 1;
-        if (event.code === settings._left) this.move |= 4;
-        if (event.code === settings._down) this.move |= 2;
-        if (event.code === settings._right) this.move |= 8;
+        if (event.code === settings._up || event.code === "ArrowUp") this.move |= 1;
+        if (event.code === settings._left || event.code === "ArrowLeft") this.move |= 4;
+        if (event.code === settings._down || event.code === "ArrowDown") this.move |= 2;
+        if (event.code === settings._right || event.code === "ArrowRight") this.move |= 8;
         if (copyMove !== this.move) this.handleMovement();
 
         if (event.code === settings._autoattack) ModuleHandler.toggleAutoattack();
@@ -209,10 +209,10 @@ export default class InputHandler {
         if (!myPlayer.inGame) return;
 
         const copyMove = this.move;
-        if (event.code === settings._up) this.move &= -2;
-        if (event.code === settings._left) this.move &= -5;
-        if (event.code === settings._down) this.move &= -3;
-        if (event.code === settings._right) this.move &= -9;
+        if (event.code === settings._up || event.code === "ArrowUp") this.move &= -2;
+        if (event.code === settings._left || event.code === "ArrowLeft") this.move &= -5;
+        if (event.code === settings._down || event.code === "ArrowDown") this.move &= -3;
+        if (event.code === settings._right || event.code === "ArrowRight") this.move &= -9;
         if (copyMove !== this.move) this.handleMovement();
 
         if (ModuleHandler.currentType !== null && this.hotkeys.delete(event.code)) {

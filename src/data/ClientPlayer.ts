@@ -514,7 +514,16 @@ class ClientPlayer extends Player {
     }
 
     spawn(customName?: any) {
-        const name = customName || window.localStorage.getItem("moo_name") || "";
+        let name = customName || window.localStorage.getItem("moo_name") || "";
+        if (!this.client.isOwner && !customName) {
+            const names = [
+                "Glotus Bot", "MooMoo Hero", "Silent Assassin", "Fast Picker", 
+                "Wood Master", "Stone Cold", "Gold Digger", "Bot 9000",
+                "Alpha Bot", "Beta Bot", "Gamma Bot", "Delta Bot",
+                "Speedy", "Tanky", "Ninja", "Ghost", "Striker"
+            ];
+            name = names[Math.floor(Math.random() * names.length)];
+        }
         const skin = Number(window.localStorage.getItem("skin_color")) || 0;
         this.client.PacketManager.spawn(name, 1, skin === 10 ? "constructor" : skin);
     }
