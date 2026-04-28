@@ -690,7 +690,7 @@ class ModuleHandler {
             this.client.InputHandler.postTick();
             GameUI.updateFastQ(this.didAntiInsta);
             GameUI.updatePlaces(this.totalPlaces);
-            GameUI.updateActiveModule(this.activeModule + `, ${this.tickCount}`);
+            GameUI.updateActiveModule(this.activeModule);
             GameUI.updateEquipHat(`${this.store[EStoreType.HAT].last},  ${this.shouldEquipSoldier}`);
 
             const executionTime = Math.round(performance.now() - this.moduleStart);

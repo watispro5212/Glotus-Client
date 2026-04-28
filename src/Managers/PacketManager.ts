@@ -1,25 +1,15 @@
-import { toRadians } from './../utility/Common';
 import type PlayerClient from "../PlayerClient";
 import type { EItem, EWeapon } from "../types/Items";
-import { SocketClient, type IEncoder } from "../types/Socket";
+import { SocketClient } from "../types/Socket";
 import { EStoreAction, type EStoreType } from "../types/Store";
-import GameUI from "../UI/GameUI";
 
 export default class PacketManager {
     private readonly client: PlayerClient;
     Encoder: any = null;
     Decoder: any = null;
 
-    private packetCount = 0;
     constructor(client: PlayerClient) {
         this.client = client;
-
-        if (this.client.isOwner) {
-            setInterval(() => {
-                GameUI.updatePackets(this.packetCount);
-                this.packetCount = 0;
-            }, 1000);
-        }
     }
 
     private send(data: any) {
@@ -34,10 +24,6 @@ export default class PacketManager {
         const [type, ...args] = data;
         const encoded = this.Encoder.encode([type, args]);
         socketSend(encoded);
-
-        if (this.client.isOwner) {
-            this.packetCount += 1;
-        }
     }
 
     clanRequest(id: number, accept: boolean) {

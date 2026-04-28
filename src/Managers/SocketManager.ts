@@ -1,17 +1,13 @@
 import { PlayerObject, Resource } from "../data/ObjectItem";
 import Projectile from "../data/Projectile";
 import GameUI from "../UI/GameUI";
-import { SocketClient, SocketServer } from "../types/Socket";
+import { SocketServer } from "../types/Socket";
 import { createAction, getUniqueID } from "../utility/Common";
 import Vector from "../modules/Vector";
 import PlayerClient from "../PlayerClient";
 import StoreHandler from "../UI/StoreHandler";
-import CustomStorage from "../utility/CustomStorage";
-import UI from "../UI/UI";
 import { Projectiles } from "../constants/Items";
 import { EProjectile } from "../types/Items";
-import ClientPlayer from "../data/ClientPlayer";
-import type Player from "../data/Player";
 import Logger from "../utility/Logger";
 
 class SocketManager {
@@ -36,6 +32,13 @@ class SocketManager {
 
     constructor(client: PlayerClient) {
         this.client = client;
+
+        if (this.client.isOwner) {
+            setInterval(() => {
+                GameUI.updatePackets(this.packetCount);
+                this.packetCount = 0;
+            }, 1000);
+        }
     }
 
     get isSandbox() {
@@ -91,7 +94,7 @@ class SocketManager {
         }, 3000);
     }
 
-    private handlePlayerInit(player: Player) {
+    private handlePlayerInit() {
         // try {
         //     const { myPlayer: myPlayer } = this.client;
         //     if (
@@ -119,6 +122,7 @@ class SocketManager {
         if (decoder === null) return;
         
         const data = event.data;
+        this.packetCount += 1;
         const decoded = decoder.decode(new Uint8Array(data));
         const temp = [decoded[0], ...decoded[1]];
         const { myPlayer: myPlayer, EnemyManager, _ModuleHandler: ModuleHandler, PlayerManager, ObjectManager, ProjectileManager, LeaderboardManager, PacketManager } = this.client;
@@ -167,7 +171,7 @@ class SocketManager {
                     
             case SocketServer.CREATE_PLAYER: {
                 const data = temp[1];
-                const player = PlayerManager.createPlayer({
+                PlayerManager.createPlayer({
                     socketID: data[0],
                     id: data[1],
                     nickname: data[2],
@@ -175,7 +179,7 @@ class SocketManager {
                     skinID: data[9],
                 });
 
-                this.handlePlayerInit(player);
+                this.handlePlayerInit();
                 break;
             }
             
